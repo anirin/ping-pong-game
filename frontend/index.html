@@ -1,13 +1,33 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ja">
   <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + TS</title>
+    <meta charset="utf-8" />
+    <title>TODOアプリ（TS・読み取り専用）</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; }
+      .done { text-decoration: line-through; opacity: 0.6; }
+      li { display: flex; gap: .5rem; align-items: center; }
+      .todo-text { flex: 1; }
+      button { cursor: pointer; }
+      .muted { color: #666; font-size: .9em; }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <h1>TODOアプリ</h1>
+
+    <p class="muted">サーバーAPIは GET /todos のみを使用（追加/更新/削除はサーバーへ送信しません）</p>
+
+    <button id="reload">最新のTODOを取得</button>
+    <ul id="todo-list"></ul>
+
+    <template id="todo-item-template">
+      <li>
+        <input type="checkbox" class="toggle-completed" />
+        <span class="todo-text"></span>
+      </li>
+    </template>
+
+    <!-- ビルド後の main.js を読み込む想定（Viteやtscで変換してね） -->
+    <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
