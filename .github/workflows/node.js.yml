@@ -8,28 +8,42 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  build-client:
     runs-on: ubuntu-latest
+    steps:
+    # - uses: actions/checkout@v4
+    # - name: Use Node.js ${{ matrix.node-version }}
+    #   uses: actions/setup-node@v4
+    #   with:
+    #     node-version: ${{ matrix.node-version }}
+    #     cache: 'npm'
+    - name: installation
+      run: npm install && cd frontend && npm install
+    - name: build
+      run: npm run build-client
 
+  build-server:
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         node-version: [24.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
     - uses: actions/checkout@v4
-  
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - name: build client
-      run: npm run build-client
-
-    - name: build server
+    - name: installation
+      run: npm install && cd backend && npm install
+    - name: build
       run: npm run build-server
-    
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: installation
+      run: npm install
     - name: lint
       run: npx run lint
