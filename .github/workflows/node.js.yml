@@ -18,7 +18,7 @@ jobs:
     #     node-version: ${{ matrix.node-version }}
     #     cache: 'npm'
     - name: installation
-      run: npm install && cd frontend && npm install
+      run: npm ci
     - name: build
       run: npm run build-client
 
@@ -36,7 +36,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - name: installation
-      run: npm install && cd backend && npm install
+      run: npm ci
     - name: build
       run: npm run build-server
 
@@ -44,6 +44,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: installation
-      run: npm install
+      run: npm ci
     - name: lint
       run: npx run lint
