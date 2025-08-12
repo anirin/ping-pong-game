@@ -14,8 +14,8 @@
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx --ignore-pattern eslint.config.js",
     "format": "prettier --write .",
-    "build:frontend": "tsc -p frontend/tsconfig.json",
-    "build:backend": "tsc -p backend/tsconfig.json",
+    "build:frontend": "tsc -p ./frontend/tsconfig.json",
+    "build:backend": "tsc -p ./backend/tsconfig.json",
     "build": "npm run build:frontend && npm run build:backend"
   },
   "name": "ping-pong-game",
