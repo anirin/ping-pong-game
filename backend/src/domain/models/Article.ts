@@ -1,9 +1,9 @@
 // エンティティ
-export type ArticleId = string
+export type ArticleId = string;
 
 export interface Article {
-  id: ArticleId
-  title: string
-  body: string
-  createdAt: Date
+  id: ArticleId;
+  title: string;
+  body: string;
+  createdAt: Date;
 }
