@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/server",
-    "rootDir": "./server",
+    "outDir": "./backend/dist",
+    "rootDir": "./backend",
     "strict": true,
     "esModuleInterop": true,
     "target": "ES2020",
     "module": "commonjs"
   },
-  "include": ["server/**/*"]
+  "include": ["backend/**/*"]
 }
