@@ -25,9 +25,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-  
     - name: build client
-      run: npm run build-clent
+      run: npm run build-client
 
     - name: build server
       run: npm run build-server
