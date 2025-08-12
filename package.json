@@ -14,8 +14,8 @@
   "scripts": {
     "lint": "eslint . --ext .ts,.tsx --ignore-pattern eslint.config.js",
     "format": "prettier --write .",
-    "build-client": "npx tsc -p tsconfig.client.json",
-    "build-server": "npx tsc -p tsconfig.server.json"
+    "build-client": "tsc -p ./frontend/tsconfig.json",
+    "build-server": "tsc -p ./backend/tsconfig.json"
   },
   "name": "ping-pong-game",
   "version": "1.0.0",
