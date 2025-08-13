@@ -6,7 +6,8 @@ export class RoomEntity {
   @PrimaryColumn('text')
   id!: string;
 
-  @ManyToMany('text')
+  // @ManyToMany('text')
+  @Column('text')
   owner_id!: string;
 
   @Column('text', { default: 'waiting' })

@@ -1,6 +1,7 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import { registerUserRoutes } from '@api/route/users/userRoutes.js';
+import { registerRoomRoutes } from './route/rooms/roomRoutes.js';
 
 export async function buildServer() {
   const app = fastify({ logger: true });
@@ -10,5 +11,6 @@ export async function buildServer() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
   await registerUserRoutes(app);
+  await registerRoomRoutes(app);
   return app;
 }
