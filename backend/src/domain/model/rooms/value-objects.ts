@@ -1,5 +1,5 @@
 
-
+export type RoomId = string
 
 export type RoomStatus = 'waiting' | 'playing' | 'finished'
 
