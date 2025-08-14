@@ -1,18 +1,28 @@
 {
-  "name": "ping-pong-game",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5173",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "devDependencies": {
-    "typescript": "~5.8.3",
-    "vite": "^7.1.0"
-  },
-  "dependencies": {
-    "zod": "^4.0.17"
-  }
+	"name": "ping-pong-game",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite --host 0.0.0.0 --port 5173",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"lint": "biome check .",
+		"fix": "biome check --write .",
+		"format": "biome format --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.1.4",
+		"@types/node": "^24.2.1",
+		"@typescript-eslint/eslint-plugin": "^8.39.1",
+		"@typescript-eslint/parser": "^8.39.1",
+		"eslint-plugin-css": "^0.11.0",
+		"eslint-plugin-html": "^8.1.3",
+		"typescript": "~5.8.3",
+		"vite": "^7.1.0"
+	},
+	"dependencies": {
+		"axios": "^1.11.0",
+		"zod": "^4.0.17"
+	}
 }

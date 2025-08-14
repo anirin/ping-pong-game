@@ -1,23 +1,28 @@
-import { Repository } from 'typeorm';
-import { User } from '@domain/model/users/User.js';
-import { type UserId, Username, AvatarUrl, type UserStatus } from '@domain/model/users/value-objects.js';
-import { type UserRepository } from '@domain/repository/users/UserRepository.js';
-import { UserEntity } from '@infrastructure/entity/users/UserEntity.js';
+import { User } from "@domain/model/users/User.js";
+import {
+	AvatarUrl,
+	type UserId,
+	Username,
+	type UserStatus,
+} from "@domain/model/users/value-objects.js";
+import type { UserRepository } from "@domain/repository/users/UserRepository.js";
+import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
+import type { Repository } from "typeorm";
 
 export class TypeOrmUserRepository implements UserRepository {
-  constructor(private readonly repository: Repository<UserEntity>) {}
+	constructor(private readonly repository: Repository<UserEntity>) {}
 
-  async findById(id: UserId): Promise<User | null> {
-    const entity = await this.repository.findOne({ where: { id } });
-    if (!entity) return null;
-    return this.toDomain(entity);
-  }
+	async findById(id: UserId): Promise<User | null> {
+		const entity = await this.repository.findOne({ where: { id } });
+		if (!entity) return null;
+		return this.toDomain(entity);
+	}
 
-  async findByUsername(username: string): Promise<User | null> {
-    const entity = await this.repository.findOne({ where: { username } });
-    if (!entity) return null;
-    return this.toDomain(entity);
-  }
+	async findByUsername(username: string): Promise<User | null> {
+		const entity = await this.repository.findOne({ where: { username } });
+		if (!entity) return null;
+		return this.toDomain(entity);
+	}
 
   async findByEmail(email: string): Promise<User | null> {
     const entity = await this.repository.findOne({ where: { email } });
@@ -39,10 +44,10 @@ export class TypeOrmUserRepository implements UserRepository {
     await this.repository.delete(id);
   }
 
-  async findAll(): Promise<User[]> {
-    const entities = await this.repository.find();
-    return entities.map((entity) => this.toDomain(entity));
-  }
+	async findAll(): Promise<User[]> {
+		const entities = await this.repository.find();
+		return entities.map((entity) => this.toDomain(entity));
+	}
 
   private toDomain(entity: UserEntity): User {
     const user = new User(

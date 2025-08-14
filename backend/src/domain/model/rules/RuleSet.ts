@@ -1,5 +1,5 @@
-import type { RuleSetId, RoomType } from '../common/types.js'
-import { InvalidArgumentError } from '../common/errors.js'
+import { InvalidArgumentError } from "../common/errors.js";
+import type { RoomType, RuleSetId } from "../common/types.js";
 
 export class RuleSet {
 	constructor(
@@ -11,8 +11,10 @@ export class RuleSet {
 		public readonly boardSpeed?: number,
 		public readonly roomType?: RoomType,
 	) {
-		if (pointToWin <= 0) throw new InvalidArgumentError('pointToWin must be > 0')
-		if (maxPlayers <= 0) throw new InvalidArgumentError('maxPlayers must be > 0')
+		if (pointToWin <= 0)
+			throw new InvalidArgumentError("pointToWin must be > 0");
+		if (maxPlayers <= 0)
+			throw new InvalidArgumentError("maxPlayers must be > 0");
 	}
 }
 
@@ -33,6 +35,6 @@ export class EffectiveRuleSet {
 			overrides?.ballSpeed ?? base.ballSpeed,
 			overrides?.boardSpeed ?? base.boardSpeed,
 			overrides?.roomType ?? base.roomType,
-		)
+		);
 	}
 }
