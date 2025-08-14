@@ -9,13 +9,19 @@ export class UserService {
 
   async createUser(username: string, password: string): Promise<User> {
     const passwordHash = await bcrypt.hash(password, 10); // パスワードハッシュ生成
+
     const user = new User(
-      uuidv4(), // UUID生成
-      new Username(username),
-      passwordHash,
-      'offline',
-      new Date(),
+      uuidv4(),               // id
+      username,               // email を username と同じ文字列に仮置き
+      new Username(username), // username
+      passwordHash,           // passwordHash
+      'offline',              // status
+      new Date(),             // createdAt
+      null,                   // avatar
+      false,                  // twoFAEnabled
+      null                    // twoFASecret
     );
+
     await this.userRepository.save(user);
     return user;
   }

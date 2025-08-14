@@ -1,44 +1,43 @@
 {
-	"compilerOptions": {
-	  // File Layout
-	  "outDir": "./dist",
-	  "rootDir": "./src",
-	  "baseUrl": "./src",
-	  "paths": {
-		"@api/*": ["app/*"],
-		"@domain/*": ["domain/*"],
-		"@domain/model/users/*": ["domain/model/users/*"],
-		"@infrastructure/*": ["infrastructure/*"],
-		"@application/*": ["application/*"]
-	  },
-  
-	  // Environment Settings
-	  "module": "nodenext",
-	  "target": "esnext",
-	  "lib": ["esnext"],
-	  "types": ["node"],
-  
-	  // TypeORM Decorators
-	  "experimentalDecorators": true,
-	  "emitDecoratorMetadata": true,
-  
-	  // Other Outputs
-	  "sourceMap": true,
-	  "declaration": true,
-	  "declarationMap": true,
-  
-	  // Stricter Typechecking Options
-	  "strict": true,
-	  "noUncheckedIndexedAccess": true,
-	  "exactOptionalPropertyTypes": true,
-  
-	  // Style Options
-	  "verbatimModuleSyntax": true,
-	  "isolatedModules": true,
-	  "noUncheckedSideEffectImports": true,
-	  "moduleDetection": "force",
-	  "skipLibCheck": true,
-	},
-	"include": ["src/**/*"],
-	"exclude": ["node_modules", "dist"]
-  }
+  "compilerOptions": {
+    // File Layout
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "./src",
+    "paths": {
+      "@api/*": ["app/*"],
+      "@domain/*": ["domain/*"],
+      "@domain/model/users/*": ["domain/model/users/*"],
+      "@infrastructure/*": ["infrastructure/*"],
+      "@application/*": ["application/*"]
+    },
+
+    // Environment Settings
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "lib": ["esnext"],
+    "types": ["node"],
+
+    // TypeORM Decorators
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // Other Outputs
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Stricter Typechecking Options
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Style Options
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

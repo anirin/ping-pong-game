@@ -23,4 +23,13 @@ export class UserEntity {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  @Column('text', { unique: true })
+  email!: string;
+
+  @Column({ default: false })
+  twoFAEnabled!: boolean;
+
+  @Column('text', { nullable: true })
+  twoFASecret!: string | null;
 }
