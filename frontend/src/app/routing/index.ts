@@ -1,5 +1,5 @@
-import { initHomePage } from "@pages/home/index";
-import homeHtml from "@pages/home/ui/home.html?raw";
+import { renderHomePage } from "@pages/home/index";
+import { renderRoomPage } from "@pages/room/index";
 
 interface Route {
 	path: string;
@@ -51,28 +51,4 @@ export function setupRouter(): void {
 			}
 		}
 	});
-}
-
-// ページのレンダリング関数
-export function renderHomePage(): void {
-	console.log("renderHomePage");
-
-	const appContainer = document.getElementById("app");
-	console.log("appContainer", appContainer);
-	if (appContainer) {
-		appContainer.innerHTML = homeHtml;
-		// ページのスクリプトを再初期化
-		initHomePage();
-		console.log("initHomePage");
-	} else {
-		console.log("appContainer not found");
-	}
-}
-
-export function renderRoomPage(): void {
-	// ルームページは未実装のためプレースホルダー
-	const appContainer = document.getElementById("app");
-	if (appContainer) {
-		appContainer.innerHTML = "<h1>ルーム画面（未実装）</h1>";
-	}
 }
