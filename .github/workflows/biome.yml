@@ -1,0 +1,23 @@
+name: Biome CI (monorepo)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  biome:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workdir: [ "frontend", "backend" ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
+
+      - name: Run Biome (ci) in ${{ matrix.workdir }}
+        working-directory: ${{ matrix.workdir }}
+        run: biome ci --reporter=github .

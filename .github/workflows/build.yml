@@ -1,0 +1,49 @@
+name: Build (monorepo)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workdir: [ frontend, backend ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ matrix.workdir }}/package-lock.json
+
+      - name: Install deps
+        working-directory: ${{ matrix.workdir }}
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "skip: no package.json in $PWD"
+            exit 0
+          fi
+
+      - name: Build
+        working-directory: ${{ matrix.workdir }}
+        run: |
+          if jq -e '.scripts.build' package.json >/dev/null; then
+            npm run build
+          else
+            echo "error: no build script in $PWD/package.json"
+            exit 1
+          fi
