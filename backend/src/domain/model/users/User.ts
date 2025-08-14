@@ -1,84 +1,90 @@
 // src/domain/model/users/User.ts
-import { Username, AvatarUrl, type UserStatus, type UserId } from './value-objects.js';
-import bcrypt from 'bcrypt';
+
+import bcrypt from "bcrypt";
+import type {
+	AvatarUrl,
+	UserId,
+	Username,
+	UserStatus,
+} from "./value-objects.js";
 
 export class User {
-  public readonly id: UserId;
-  public readonly createdAt: Date;
-  private _passwordHash: string;
-  public readonly email: string;
-  public username: Username;
-  public avatar: AvatarUrl | null;
-  private _status: UserStatus = 'offline';
-  private _twoFAEnabled: boolean = false;
-  private _twoFASecret: string | null = null;
+	public readonly id: UserId;
+	public readonly createdAt: Date;
+	private _passwordHash: string;
+	public readonly email: string;
+	public username: Username;
+	public avatar: AvatarUrl | null;
+	private _status: UserStatus = "offline";
+	private _twoFAEnabled: boolean = false;
+	private _twoFASecret: string | null = null;
 
-  constructor(
-    id: UserId,
-    email: string,
-    username: Username,
-    passwordHash: string,
-    status: UserStatus = 'offline',
-    createdAt: Date,
-    avatar?: AvatarUrl | null,
-    twoFAEnabled: boolean = false,
-    twoFASecret: string | null = null
-  ) {
-    this.id = id;
-    this.email = email;
-    this.createdAt = createdAt;
-    this.username = username;
-    this._passwordHash = passwordHash;
-    this.avatar = avatar ?? null;
-    this._status = status;
-    this._twoFAEnabled = twoFAEnabled;
-    this._twoFASecret = twoFASecret;
-  }
+	constructor(
+		id: UserId,
+		email: string,
+		username: Username,
+		passwordHash: string,
+		status: UserStatus = "offline",
+		createdAt: Date,
+		avatar?: AvatarUrl | null,
+		twoFAEnabled: boolean = false,
+		twoFASecret: string | null = null,
+	) {
+		this.id = id;
+		this.email = email;
+		this.createdAt = createdAt;
+		this.username = username;
+		this._passwordHash = passwordHash;
+		this.avatar = avatar ?? null;
+		this._status = status;
+		this._twoFAEnabled = twoFAEnabled;
+		this._twoFASecret = twoFASecret;
+	}
 
-  get status(): UserStatus {
-    return this._status;
-  }
+	get status(): UserStatus {
+		return this._status;
+	}
 
-  setStatus(next: UserStatus): void {
-    const allowed = ['offline', 'online', 'busy', 'away'] as const;
-    if (!allowed.includes(next)) throw new Error('invalid status');
-    this._status = next;
-  }
+	setStatus(next: UserStatus): void {
+		const allowed = ["offline", "online", "busy", "away"] as const;
+		if (!allowed.includes(next)) throw new Error("invalid status");
+		this._status = next;
+	}
 
-  clearAvatar(): void {
-    this.avatar = null;
-  }
+	clearAvatar(): void {
+		this.avatar = null;
+	}
 
-  getPasswordHash(): string {
-    return this._passwordHash;
-  }
+	getPasswordHash(): string {
+		return this._passwordHash;
+	}
 
-  async verifyPassword(password: string): Promise<boolean> {
-    return await bcrypt.compare(password, this._passwordHash);
-  }
+	async verifyPassword(password: string): Promise<boolean> {
+		return await bcrypt.compare(password, this._passwordHash);
+	}
 
-  async setPassword(password: string) {
-    this._passwordHash = await bcrypt.hash(password, 10);
-  }
+	async setPassword(password: string) {
+		this._passwordHash = await bcrypt.hash(password, 10);
+	}
 
-  enableTwoFA(secret: string) {
-    this.setTwoFA(secret, true);
-  }
+	enableTwoFA(secret: string) {
+		this.setTwoFA(secret, true);
+	}
 
-  disableTwoFA() {
-    this.setTwoFA(null, false);
-  }
+	disableTwoFA() {
+		this.setTwoFA(null, false);
+	}
 
-  isTwoFAEnabled(): boolean {
-    return this._twoFAEnabled;
-  }
+	isTwoFAEnabled(): boolean {
+		return this._twoFAEnabled;
+	}
 
-  getTwoFASecret(): string | null {
-    return this._twoFASecret;
-  }
+	getTwoFASecret(): string | null {
+		return this._twoFASecret;
+	}
 
-  setTwoFA(secret: string | null, enabled: boolean) {
-    this._twoFASecret = secret;
-    this._twoFAEnabled = enabled;
-  }
+	setTwoFA(secret: string | null, enabled: boolean) {
+		this._twoFASecret = secret;
+		this._twoFAEnabled = enabled;
+	}
 }

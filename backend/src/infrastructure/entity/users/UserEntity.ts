@@ -27,15 +27,15 @@ export class UserEntity {
 	@CreateDateColumn()
 	created_at!: Date;
 
-  @UpdateDateColumn()
-  updated_at!: Date;
+	@UpdateDateColumn()
+	updated_at!: Date;
 
-  @Column('text', { unique: true })
-  email!: string;
+	@Column("text", { unique: true })
+	email!: string;
 
-  @Column({ default: false })
-  twoFAEnabled!: boolean;
+	@Column({ default: false })
+	twoFAEnabled!: boolean;
 
-  @Column('text', { nullable: true })
-  twoFASecret!: string | null;
+	@Column("text", { nullable: true })
+	twoFASecret!: string | null;
 }
