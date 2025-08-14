@@ -1,12 +1,12 @@
 body {
 	margin: 0;
 	font-family: Arial, sans-serif;
-  }
-  
-  a {
+}
+
+a {
 	transition: color 0.2s;
-  }
-  
-  a:hover {
+}
+
+a:hover {
 	color: #0056b3;
-  }
+}
