@@ -19,6 +19,14 @@ const routes: Route[] = [
 		path: "/room/entrance",
 		handler: renderRoomEntrancePage,
 	},
+	{
+		path: "/online/room/:id",
+		handler: renderOnlineRoomPage,
+	},
+	// {
+	// 	path: "/offline/room/:id",
+	// 	handler: renderOfflineRoomPage,
+	// },
 ];
 
 export function setupRouter(): void {

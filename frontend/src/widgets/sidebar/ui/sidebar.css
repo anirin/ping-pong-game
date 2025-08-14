@@ -1,0 +1,34 @@
+.site-sidebar {
+	width: 150px;
+	border-right: 1px solid #e5e7eb;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+}
+
+.nav {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2rem; /* リンク間の間隔を広げる */
+}
+
+.nav-link {
+	text-decoration: none;
+	color: #374151;
+	font-size: 24px; /* ヘッダーと同じフォントサイズ */
+	font-weight: 500;
+	padding: 0.75rem 1rem;
+	border-radius: 0.5rem;
+	transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+	background-color: #f3f4f6;
+	color: #1f2937;
+}

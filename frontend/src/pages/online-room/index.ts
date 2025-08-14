@@ -1,6 +1,6 @@
-import html from './ui/room-entrance.html?raw'
-import { mountRoomEntrance } from './ui/controller'
-import './ui/room-entrance.css'
+import html from './ui/online-room.html?raw'
+import { mountOnlineRoom } from './ui/controller'
+import './ui/online-room.css'
 import { HeaderWidget } from '@widgets/header'
 import { SidebarWidget } from '@widgets/sidebar'
 

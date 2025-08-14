@@ -1,22 +1,16 @@
-import { HomeModel } from "@pages/home/model/home-model";
-import homeHtml from "./ui/home.html?raw";
+import html from './ui/home.html?raw'
+import { HeaderWidget } from '@widgets/header'
+import { SidebarWidget } from '@widgets/sidebar'
 
-export async function initHomePage() {
-	const homeModel = new HomeModel();
-	await homeModel.init();
-}
+export function renderHomePage() {
+	const app = document.getElementById('app')!
+	app.innerHTML = html
+	
+	// Header widgetを初期化
+	const headerHost = app.querySelector('#header-widget') as HTMLElement
+	HeaderWidget(headerHost)
 
-export function renderHomePage(): void {
-	console.log("renderHomePage");
-
-	const appContainer = document.getElementById("app");
-	console.log("appContainer", appContainer);
-	if (appContainer) {
-		appContainer.innerHTML = homeHtml;
-		// ページのスクリプトを再初期化
-		initHomePage();
-		console.log("initHomePage");
-	} else {
-		console.log("appContainer not found");
-	}
+	// Sidebar widgetを初期化
+	const sidebarHost = app.querySelector('#sidebar-widget') as HTMLElement
+	SidebarWidget(sidebarHost)
 }
