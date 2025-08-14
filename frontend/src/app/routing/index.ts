@@ -1,5 +1,5 @@
 import { renderHomePage } from "@pages/home/index";
-import { renderRoomPage } from "@pages/room/index";
+import { renderRoomEntrancePage } from "@pages/room-entrance/index";
 
 interface Route {
 	path: string;
@@ -16,8 +16,8 @@ const routes: Route[] = [
 		handler: renderHomePage,
 	},
 	{
-		path: "/room",
-		handler: renderRoomPage,
+		path: "/room/entrance",
+		handler: renderRoomEntrancePage,
 	},
 ];
 
