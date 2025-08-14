@@ -1,5 +1,3 @@
-import { fetchHomeData } from "@pages/home/api/home-api";
-
 export interface HomeState {
 	message: string;
 }
