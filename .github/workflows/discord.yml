@@ -17,4 +17,4 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          args: '🎉 Pull Request #${{ github.event.pull_request.number }} が main ブランチにマージされました！\nリポジトリ: ${{ github.repository }}\nマージしたユーザー: ${{ github.event.pull_request.merged_by.login }}\n詳細: ${{ github.event.pull_request.html_url }}'
+          args: '🎉 main ブランチにマージされました！ マージしたユーザー: "${{ github.event.pull_request.merged_by.login }}" 詳細: ${{ github.event.pull_request.html_url }}'
