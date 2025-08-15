@@ -16,6 +16,7 @@ export default defineConfig({
 			"@utils": path.resolve(__dirname, "src/shared/lib"),
 			"@types": path.resolve(__dirname, "src/shared/types"),
 			"@components": path.resolve(__dirname, "src/shared/components"),
+			"@widgets": path.resolve(__dirname, "src/widgets"),
 		},
 	},
 	server: {},

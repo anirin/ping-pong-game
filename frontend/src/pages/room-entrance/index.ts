@@ -1,8 +1,10 @@
+import { mountRoomEntrance } from "./ui/controller";
+import html from "./ui/room-entrance.html?raw";
+import "./ui/room-entrance.css";
 import { HeaderWidget } from "@widgets/header";
 import { SidebarWidget } from "@widgets/sidebar";
-import html from "./ui/home.html?raw";
 
-export function renderHomePage() {
+export function renderRoomEntrancePage() {
 	const app = document.getElementById("app")!;
 	app.innerHTML = html;
 
@@ -13,4 +15,11 @@ export function renderHomePage() {
 	// Sidebar widgetを初期化
 	const sidebarHost = app.querySelector("#sidebar-widget") as HTMLElement;
 	SidebarWidget(sidebarHost);
+
+	// Room entrance controllerを初期化
+	const root = app.querySelector("#room-entrance") as HTMLElement;
+	mountRoomEntrance(root, (path) => {
+		history.pushState({}, "", path);
+		dispatchEvent(new PopStateEvent("popstate"));
+	});
 }

@@ -33,7 +33,8 @@
 			"@lib/*": ["src/shared/lib/*"],
 			"@utils/*": ["src/shared/lib/*"],
 			"@types/*": ["src/shared/types/*"],
-			"@components/*": ["src/shared/components/*"]
+			"@components/*": ["src/shared/components/*"],
+			"@widgets/*": ["src/widgets/*"]
 		}
 	},
 	"include": ["src", "src/types/*.d.ts"]
