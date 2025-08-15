@@ -1,25 +1,25 @@
-import html from './ui/room-entrance.html?raw'
-import { mountRoomEntrance } from './ui/controller'
-import './ui/room-entrance.css'
-import { HeaderWidget } from '@widgets/header'
-import { SidebarWidget } from '@widgets/sidebar'
+import { mountRoomEntrance } from "./ui/controller";
+import html from "./ui/room-entrance.html?raw";
+import "./ui/room-entrance.css";
+import { HeaderWidget } from "@widgets/header";
+import { SidebarWidget } from "@widgets/sidebar";
 
 export function renderRoomEntrancePage() {
-	const app = document.getElementById('app')!
-	app.innerHTML = html
-	
+	const app = document.getElementById("app")!;
+	app.innerHTML = html;
+
 	// Header widgetを初期化
-	const headerHost = app.querySelector('#header-widget') as HTMLElement
-	HeaderWidget(headerHost)
-	
+	const headerHost = app.querySelector("#header-widget") as HTMLElement;
+	HeaderWidget(headerHost);
+
 	// Sidebar widgetを初期化
-	const sidebarHost = app.querySelector('#sidebar-widget') as HTMLElement
-	SidebarWidget(sidebarHost)
-	
+	const sidebarHost = app.querySelector("#sidebar-widget") as HTMLElement;
+	SidebarWidget(sidebarHost);
+
 	// Room entrance controllerを初期化
-	const root = app.querySelector('#room-entrance') as HTMLElement
+	const root = app.querySelector("#room-entrance") as HTMLElement;
 	mountRoomEntrance(root, (path) => {
-		history.pushState({}, '', path)
-		dispatchEvent(new PopStateEvent('popstate'))
-	})
+		history.pushState({}, "", path);
+		dispatchEvent(new PopStateEvent("popstate"));
+	});
 }

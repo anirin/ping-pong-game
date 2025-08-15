@@ -1,16 +1,16 @@
-import html from './ui/home.html?raw'
-import { HeaderWidget } from '@widgets/header'
-import { SidebarWidget } from '@widgets/sidebar'
+import { HeaderWidget } from "@widgets/header";
+import { SidebarWidget } from "@widgets/sidebar";
+import html from "./ui/home.html?raw";
 
 export function renderHomePage() {
-	const app = document.getElementById('app')!
-	app.innerHTML = html
-	
+	const app = document.getElementById("app")!;
+	app.innerHTML = html;
+
 	// Header widgetを初期化
-	const headerHost = app.querySelector('#header-widget') as HTMLElement
-	HeaderWidget(headerHost)
+	const headerHost = app.querySelector("#header-widget") as HTMLElement;
+	HeaderWidget(headerHost);
 
 	// Sidebar widgetを初期化
-	const sidebarHost = app.querySelector('#sidebar-widget') as HTMLElement
-	SidebarWidget(sidebarHost)
+	const sidebarHost = app.querySelector("#sidebar-widget") as HTMLElement;
+	SidebarWidget(sidebarHost);
 }

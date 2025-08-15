@@ -1,6 +1,6 @@
-import headerHtml from './ui/header.html?raw'
-import './ui/header.css'
+import headerHtml from "./ui/header.html?raw";
+import "./ui/header.css";
 
 export function HeaderWidget(host: HTMLElement) {
-	host.innerHTML = headerHtml
+	host.innerHTML = headerHtml;
 }
