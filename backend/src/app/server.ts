@@ -1,9 +1,9 @@
-import { registerUserRoutes } from "@api/route/users/userRoutes.js";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastify from "fastify";
-import authRoutes from "./route/auth/authRoutes.js";
+import { registerUserRoutes } from "@api/route/users/userRoutes.js";
 import { registerRoomRoutes } from "./route/rooms/roomRoutes.js";
+import authRoutes from "./route/auth/authRoutes.js";
 
 export async function buildServer() {
 	const app = fastify({ logger: true });
@@ -14,8 +14,12 @@ export async function buildServer() {
 		allowedHeaders: ["Content-Type", "Authorization"],
 	});
 
+	if (!process.env.JWT_SECRET) {
+		throw new Error("JWT_SECRET is not set in environment variables");
+	}
+
 	await app.register(fastifyJwt, {
-		secret: process.env.JWT_SECRET || "fallback_secret",
+		secret: process.env.JWT_SECRET as string,
 	});
 
 	app.decorate("authenticate", async (request: any, reply: any) => {
@@ -28,7 +32,7 @@ export async function buildServer() {
 
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);
-	await app.register(authRoutes, { prefix: "/auth" }); // ← 追加（プレフィックス任意）
+	await app.register(authRoutes, { prefix: "/auth" });
 
 	return app;
 }
