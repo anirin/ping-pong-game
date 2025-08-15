@@ -1,0 +1,20 @@
+name: Discord Notification on Merge to Main
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  notify-discord:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: '🎉 Pull Request #${{ github.event.pull_request.number }} が main ブランチにマージされました！\nリポジトリ: ${{ github.repository }}\nマージしたユーザー: ${{ github.event.pull_request.merged_by.login }}\n詳細: ${{ github.event.pull_request.html_url }}'
