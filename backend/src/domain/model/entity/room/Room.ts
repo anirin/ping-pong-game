@@ -1,10 +1,9 @@
 import {
 	AlreadyJoinedError,
 	InvalidTransitionError,
-	RoomFullError,
-} from "../common/errors.js";
-import type { Role, UserId } from "../common/types.js";
-import { EffectiveRuleSet } from "../rules/RuleSet.js";
+} from "../../common/errors.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import type { Role } from "@domain/model/value-object/room/Room.js";
 import type {
 	RoomId,
 	RoomMode,

@@ -1,8 +1,12 @@
 import {
 	InvalidArgumentError,
 	InvalidTransitionError,
-} from "../common/errors.js";
-import type { MatchId, MatchStatus, UserId } from "../common/types.js";
+} from "../../common/errors.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import type {
+	MatchId,
+	MatchStatus,
+} from "@domain/model/value-object/match/Match.js";
 
 export class Score {
 	constructor(

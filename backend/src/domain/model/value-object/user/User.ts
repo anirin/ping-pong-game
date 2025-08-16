@@ -9,6 +9,7 @@ export class Username {
 export class AvatarUrl {
 	constructor(public readonly value: string) {
 		try {
+			// @ts-ignore
 			new URL(value);
 		} catch {
 			throw new Error("invalid url");

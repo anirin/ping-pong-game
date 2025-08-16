@@ -1,13 +1,13 @@
 import {
 	InvalidArgumentError,
 	InvalidTransitionError,
-} from "../common/errors.js";
+} from "../../common/errors.js";
 import type {
 	MatchId,
 	TournamentId,
 	TournamentStatus,
 	UserId,
-} from "../common/types.js";
+} from "../../common/types.js";
 
 export class Tournament {
 	private _status: TournamentStatus = "waiting";

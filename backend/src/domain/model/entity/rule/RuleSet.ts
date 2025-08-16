@@ -1,5 +1,5 @@
-import { InvalidArgumentError } from "../common/errors.js";
-import type { RoomType, RuleSetId } from "../common/types.js";
+import { InvalidArgumentError } from "../../common/errors.js";
+import type { RoomType, RuleSetId } from "../../common/types.js";
 
 export class RuleSet {
 	constructor(
