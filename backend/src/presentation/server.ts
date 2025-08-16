@@ -1,27 +1,32 @@
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
-import { registerUserRoutes } from "@presentation/route/users/userRoutes.js";
+import fastifyWebSocket from "@fastify/websocket";
+import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import authRoutes from "./route/auth/authRoutes.js";
-import { registerRoomRoutes } from "./route/rooms/roomRoutes.js";
+import { registerRoomRoutes } from "./route/room/roomRoutes.js";
+import { registerTournamentWs } from "./route/tournament/ws.js";
 
 export async function buildServer() {
+	if (!process.env.JWT_SECRET) {
+		throw new Error("JWT_SECRET is not set in environment variables");
+	}
+
 	const app = fastify({ logger: true });
 
+	// corsの設定
 	await app.register(cors, {
 		origin: true,
 		methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization"],
 	});
 
-	if (!process.env.JWT_SECRET) {
-		throw new Error("JWT_SECRET is not set in environment variables");
-	}
-
+	// jwtの設定
 	await app.register(fastifyJwt, {
 		secret: process.env.JWT_SECRET as string,
 	});
 
+	// jwtのデコレーター
 	app.decorate("authenticate", async (request: any, reply: any) => {
 		try {
 			await request.jwtVerify();
@@ -30,8 +35,12 @@ export async function buildServer() {
 		}
 	});
 
+	// webSocketの設定
+	await app.register(fastifyWebSocket);
+
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);
+	await registerTournamentWs(app);
 	await app.register(authRoutes, { prefix: "/auth" });
 
 	return app;
