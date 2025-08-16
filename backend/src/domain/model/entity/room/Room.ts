@@ -1,15 +1,15 @@
-import type { Role } from "@domain/model/value-object/room/Room.js";
-import type { UserId } from "@domain/model/value-object/user/User.js";
-import {
-	AlreadyJoinedError,
-	InvalidTransitionError,
-} from "../../common/errors.js";
 import type {
+	Role,
 	RoomId,
 	RoomMode,
 	RoomStatus,
 	RoomType,
 } from "@domain/model/value-object/room/Room.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import {
+	AlreadyJoinedError,
+	InvalidTransitionError,
+} from "../../common/errors.js";
 
 export class RoomParticipant {
 	constructor(
