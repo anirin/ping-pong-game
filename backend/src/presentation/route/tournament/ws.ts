@@ -95,8 +95,8 @@ export async function registerTournamentWs(app: FastifyInstance) {
 	);
 
 	// /ws プレフィクスは fastifyWebSocket 登録側で設定している想定
-	app.get("/tournament", { websocket: true }, (connection: any /*, req */) => {
-		const ws = connection.socket as unknown as WebSocket;
+	app.get("/ws/tournament", { websocket: true }, (connection: any /*, req */) => {
+		const ws = connection;
 
 		// このコネクション専用の状態
 		let authedUser: UserId | null = null;

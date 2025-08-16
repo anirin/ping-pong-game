@@ -3,11 +3,12 @@ import { DataSource } from "typeorm";
 import { RoomEntity } from "./entity/rooms/RoomEntity.js";
 import { TournamentEntity } from "./entity/tournament/TournamentEntity.js";
 import { UserEntity } from "./entity/users/UserEntity.js";
+import { MatchEntity } from "./entity/match/MatchEntity.js";
 
 export const AppDataSource = new DataSource({
 	type: "sqlite",
 	database: "./database.sqlite",
-	entities: [UserEntity, RoomEntity, TournamentEntity],
+	entities: [UserEntity, RoomEntity, TournamentEntity, MatchEntity],
 	synchronize: true,
 	logging: true,
 });

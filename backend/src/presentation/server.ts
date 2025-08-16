@@ -36,9 +36,7 @@ export async function buildServer() {
 	});
 
 	// webSocketの設定
-	await app.register(fastifyWebSocket, {
-		prefix: "/ws",
-	});
+	await app.register(fastifyWebSocket);
 
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);

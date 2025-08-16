@@ -27,7 +27,7 @@ export class MatchEntity {
 	@Column("text")
 	status!: string;
 
-	@Column("uuid")
+	@Column("uuid", { nullable: true })
 	winnerId!: string | null;
 
 	@Column("int")
