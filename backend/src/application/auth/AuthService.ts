@@ -1,43 +1,50 @@
 import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { User } from "@domain/model/entity/user/User.js";
 import { Username } from "@domain/model/value-object/user/User.js";
-import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
-import jwt from "jsonwebtoken";
-import { authenticator } from "otplib";
-import qrcode from "qrcode";
+
+import type {
+	PasswordHasher,
+	TokenService,
+	TwoFactorAuthService,
+	QrCodeGenerator,
+} from "@domain/interface/user/AuthRepository.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
 export class AuthService {
-	constructor(private readonly userRepo: UserRepository) {}
+	constructor(
+		private readonly userRepo: UserRepository,
+		private readonly hasher: PasswordHasher,
+		private readonly tokenService: TokenService,
+		private readonly twoFAService: TwoFactorAuthService,
+		private readonly qrCodeService: QrCodeGenerator,
+	) { }
 
-	// ユーザー登録
-	async register(
-		email: string,
-		username: string,
-		password: string,
-	): Promise<string> {
-		const existingUser = await this.userRepo.findByEmail(email);
-		if (existingUser) throw new Error("User already exists");
+	async register(email: string, username: string, password: string): Promise<string> {
+		const existingUserByEmail = await this.userRepo.findByEmail(email);
+		if (existingUserByEmail) throw new Error("Email already exists");
 
-		const hashedPassword = await bcrypt.hash(password, 10);
+		const existingUserByUsername = await this.userRepo.findByUsername(username);
+		if (existingUserByUsername) throw new Error("Username already exists");
+
+		const hashedPassword = await this.hasher.hash(password, 10);
 
 		const user = new User(
-			randomUUID(), // id
-			email, // email
-			new Username(username), // username
-			hashedPassword, // passwordHash
-			"offline", // status
-			new Date(), // createdAt
-			null, // avatar
-			false, // twoFAEnabled
-			null, // twoFASecret
+			randomUUID(),
+			email,
+			new Username(username),
+			hashedPassword,
+			"offline",
+			new Date(),
+			null,
+			false,
+			null,
 		);
 
 		await this.userRepo.save(user);
 
-		const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+		const token = this.tokenService.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
 		return token;
 	}
 
@@ -49,14 +56,14 @@ export class AuthService {
 		const user = await this.userRepo.findByEmail(email);
 		if (!user) throw new Error("User not found");
 
-		const isMatch = await user.verifyPassword(password);
+		const isMatch = await this.hasher.compare(password, user.getPasswordHash());
 		if (!isMatch) throw new Error("Password mismatch");
 
 		if (user.isTwoFAEnabled()) {
 			return { twoFARequired: true };
 		}
 
-		const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+		const token = this.tokenService.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
 		return { token };
 	}
 
@@ -65,12 +72,12 @@ export class AuthService {
 		const user = await this.userRepo.findByEmail(email);
 		if (!user) throw new Error("User not found");
 
-		const secret = authenticator.generateSecret();
+		const secret = this.twoFAService.generateSecret();
 		user.setTwoFA(secret, false); // enabled=false
 		await this.userRepo.update(user);
 
-		const otpauth = authenticator.keyuri(email, "MyApp", secret);
-		const qrCodeImageUrl = await qrcode.toDataURL(otpauth);
+		const otpauth = this.twoFAService.keyuri(email, "MyApp", secret);
+		const qrCodeImageUrl = await this.qrCodeService.toDataURL(otpauth);
 
 		return { secret, otpauth_url: otpauth, qrCodeImageUrl };
 	}
@@ -83,13 +90,13 @@ export class AuthService {
 		const secret = user.getTwoFASecret();
 		if (!secret) throw new Error("2FA not setup");
 
-		const isValid = authenticator.verify({ token, secret });
+		const isValid = this.twoFAService.verify(token, secret);
 		if (!isValid) throw new Error("Invalid 2FA token");
 
 		user.setTwoFA(secret, true); // enabled=true
 		await this.userRepo.update(user);
 
-		const jwtToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+		const jwtToken = this.tokenService.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
 		return { token: jwtToken };
 	}
 }
