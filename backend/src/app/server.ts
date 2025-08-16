@@ -1,9 +1,9 @@
+import { registerUserRoutes } from "@api/route/users/userRoutes.js";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastify from "fastify";
-import { registerUserRoutes } from "@api/route/users/userRoutes.js";
-import { registerRoomRoutes } from "./route/rooms/roomRoutes.js";
 import authRoutes from "./route/auth/authRoutes.js";
+import { registerRoomRoutes } from "./route/rooms/roomRoutes.js";
 
 export async function buildServer() {
 	const app = fastify({ logger: true });
