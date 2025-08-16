@@ -9,7 +9,7 @@ import type {
 	RoomMode,
 	RoomStatus,
 	RoomType,
-} from "./value-objects.js";
+} from "@domain/model/value-object/room/Room.js";
 
 export class RoomParticipant {
 	constructor(
