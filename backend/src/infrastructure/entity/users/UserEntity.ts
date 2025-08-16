@@ -1,4 +1,4 @@
-import type { UserStatus } from "@domain/model/users/value-objects.js";
+import type { UserStatus } from "@domain/model/value-object/user/User.js";
 import {
 	Column,
 	CreateDateColumn,

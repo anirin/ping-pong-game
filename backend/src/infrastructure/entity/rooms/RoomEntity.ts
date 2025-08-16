@@ -2,7 +2,7 @@ import type {
 	RoomMode,
 	RoomStatus,
 	RoomType,
-} from "@domain/model/rooms/value-objects.js";
+} from "@domain/model/entity/room/value-objects.js";
 import {
 	Column,
 	CreateDateColumn,
