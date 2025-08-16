@@ -1,11 +1,12 @@
-import { RoomEntity } from "@infrastructure/entity/rooms/RoomEntity.js";
-import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
+// src/infrastructure/data-source.ts
 import { DataSource } from "typeorm";
+import { RoomEntity } from "./entity/rooms/RoomEntity.js";
+import { UserEntity } from "./entity/users/UserEntity.js";
 
 export const AppDataSource = new DataSource({
-	type: "sqlite", // SQLiteデータベースを使用
-	database: "./database.sqlite", // プロジェクトルートに生成
-	entities: [UserEntity, RoomEntity], // すべてのエンティティを登録
-	synchronize: true, // 開発時：エンティティに基づくテーブルを自動作成
-	logging: true, // デバッグ用にSQLログを出力
+	type: "sqlite",
+	database: "./database.sqlite",
+	entities: [UserEntity, RoomEntity],
+	synchronize: true,
+	logging: true,
 });
