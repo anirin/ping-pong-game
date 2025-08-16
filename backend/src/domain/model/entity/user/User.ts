@@ -1,12 +1,10 @@
-// src/domain/model/users/User.ts
-
 import bcrypt from "bcrypt";
 import type {
 	AvatarUrl,
 	UserId,
 	Username,
 	UserStatus,
-} from "./value-objects.js";
+} from "../../value-object/user/User.js";
 
 export class User {
 	public readonly id: UserId;

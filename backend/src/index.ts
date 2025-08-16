@@ -1,6 +1,10 @@
 import "reflect-metadata";
 import { buildServer } from "@api/server.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
+import dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config();
 
 async function main() {
 	try {

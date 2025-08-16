@@ -1,13 +1,13 @@
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type {
+	TournamentId,
+	TournamentStatus,
+} from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 import {
 	InvalidArgumentError,
 	InvalidTransitionError,
-} from "../common/errors.js";
-import type {
-	MatchId,
-	TournamentId,
-	TournamentStatus,
-	UserId,
-} from "../common/types.js";
+} from "../../common/errors.js";
 
 export class Tournament {
 	private _status: TournamentStatus = "waiting";

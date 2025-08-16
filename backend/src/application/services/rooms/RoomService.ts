@@ -1,8 +1,8 @@
-import { Room } from "@domain/model/rooms/Room.js";
-import { User } from "@domain/model/users/User.js";
-import { Username } from "@domain/model/users/value-objects.js";
-import type { RoomRepository } from "@domain/repository/rooms/RoomRepository.js";
-import type { UserRepository } from "@domain/repository/users/UserRepository.js";
+import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepository.js";
+import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
+import { Room } from "@domain/model/entity/room/Room.js";
+import { User } from "@domain/model/entity/user/User.js";
+import { Username } from "@domain/model/value-object/user/User.js";
 import * as bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 

@@ -1,11 +1,11 @@
-import { User } from "@domain/model/users/User.js";
+import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
+import { User } from "@domain/model/entity/user/User.js";
 import {
 	AvatarUrl,
 	type UserId,
 	Username,
 	type UserStatus,
-} from "@domain/model/users/value-objects.js";
-import type { UserRepository } from "@domain/repository/users/UserRepository.js";
+} from "@domain/model/value-object/user/User.js";
 import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import type { Repository } from "typeorm";
 

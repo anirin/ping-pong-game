@@ -1,6 +1,9 @@
-import { Room } from "@domain/model/rooms/Room.js";
-import type { RoomId, RoomStatus } from "@domain/model/rooms/value-objects.js";
-import type { RoomRepository } from "@domain/repository/rooms/RoomRepository.js";
+import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepository.js";
+import { Room } from "@domain/model/entity/room/Room.js";
+import type {
+	RoomId,
+	RoomStatus,
+} from "@domain/model/entity/room/value-objects.js";
 import { RoomEntity } from "@infrastructure/entity/rooms/RoomEntity.js";
 import type { Repository } from "typeorm";
 
