@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { buildServer } from "@api/server.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
+import { buildServer } from "@presentation/server.js";
 import dotenv from "dotenv";
 
 // Load environment variables from .env file

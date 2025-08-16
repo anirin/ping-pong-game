@@ -28,12 +28,6 @@
 			"@app/*": ["src/app/*"],
 			"@pages/*": ["src/pages/*"],
 			"@shared/*": ["src/shared/*"],
-			"@api/*": ["src/shared/api/*"],
-			"@ui/*": ["src/shared/ui/*"],
-			"@lib/*": ["src/shared/lib/*"],
-			"@utils/*": ["src/shared/lib/*"],
-			"@types/*": ["src/shared/types/*"],
-			"@components/*": ["src/shared/components/*"],
 			"@widgets/*": ["src/widgets/*"]
 		}
 	},

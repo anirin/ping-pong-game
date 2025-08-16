@@ -1,6 +1,6 @@
-import { registerUserRoutes } from "@api/route/users/userRoutes.js";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
+import { registerUserRoutes } from "@presentation/route/users/userRoutes.js";
 import fastify from "fastify";
 import authRoutes from "./route/auth/authRoutes.js";
 import { registerRoomRoutes } from "./route/rooms/roomRoutes.js";

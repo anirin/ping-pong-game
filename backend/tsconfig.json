@@ -5,9 +5,8 @@
 		"rootDir": "./src",
 		"baseUrl": "./src",
 		"paths": {
-			"@api/*": ["app/*"],
+			"@presentation/*": ["presentation/*"],
 			"@domain/*": ["domain/*"],
-			"@domain/model/users/*": ["domain/model/users/*"],
 			"@infrastructure/*": ["infrastructure/*"],
 			"@application/*": ["application/*"]
 		},
