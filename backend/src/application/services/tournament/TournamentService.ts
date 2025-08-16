@@ -22,7 +22,10 @@ import type { TournamentRepository } from "@domain/interface/repository/tourname
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 
 export class TournamentService {
-	constructor(private readonly tournamentRepository: TournamentRepository, private readonly matchRepository: MatchRepository) {}
+	constructor(
+		private readonly tournamentRepository: TournamentRepository,
+		private readonly matchRepository: MatchRepository,
+	) {}
 
 	async startTournament(
 		participants: UserId[],
@@ -42,8 +45,7 @@ export class TournamentService {
 
 		// matches の db保存
 		const matches = tournament.matches;
-
-		await this.matchRepository.save(matches);
+		await this.matchRepository.saveAll(matches);
 
 		// tournament の db保存
 		await this.tournamentRepository.save(tournament);
@@ -68,6 +70,12 @@ export class TournamentService {
 		tournament.generateNextRound();
 
 		// そのラウンドにあるmatches の 追加保存
+		const matches = tournament.matches;
+		// currentRound の matches を取得して、それを保存する
+		const currentRoundMatches = matches.filter(
+			(match) => match.round === tournament.currentRound,
+		);
+		await this.matchRepository.saveAll(currentRoundMatches);
 
 		// 次に行う試合も送る
 		const nextMatch = tournament.getNextMatch();
