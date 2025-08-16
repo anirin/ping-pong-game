@@ -13,13 +13,13 @@ match情報
 tournament情報（遷移状態）
 */
 
-import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
-import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
-import { v4 as uuidv4 } from "uuid";
-import type { UserId } from "@domain/model/value-object/user/User.js";
-import type { RoomId } from "@domain/model/value-object/room/Room.js";
-import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
+import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
+import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
+import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import { v4 as uuidv4 } from "uuid";
 
 export class TournamentService {
 	constructor(

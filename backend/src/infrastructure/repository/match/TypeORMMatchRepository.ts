@@ -1,9 +1,8 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
-import { Match } from "@domain/model/entity/match/Match.js";
+import { Match, MatchRule } from "@domain/model/entity/match/Match.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import type { Repository } from "typeorm";
-import { MatchRule } from "@domain/model/entity/match/Match.js";
 
 export class TypeORMMatchRepository implements MatchRepository {
 	constructor(private readonly repository: Repository<MatchEntity>) {}

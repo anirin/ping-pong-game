@@ -1,151 +1,196 @@
-// presentation/route/tournament/ws.ts
+// src/presentation/ws/tournament-ws.ts
+
+import { TournamentService } from "@application/services/tournament/TournamentService.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
+import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import { AppDataSource } from "@infrastructure/data-source.js";
+import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
+import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
+import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
+import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import type { FastifyInstance } from "fastify";
-import type { SocketStream } from "@fastify/websocket";
+import type { WebSocket } from "ws";
 
-type StateSnapshot = {
-	tournament: { id: string; status: "ready" | "running" | "finished" };
-	matches: Array<{
-		id: string;
-		players: {
-			a?: { id: string; name: string };
-			b?: { id: string; name: string };
-		};
-		status: "ready" | "in_progress" | "finished";
-		score?: { a: number; b: number };
-	}>;
-	updatedAt: string;
-};
-
-type ClientMsg =
+// 送受信用の最小DTO。必要なら拡張してOK
+type IncomingMsg =
+	| { action: "subscribe"; room_id: RoomId; user_id: UserId }
 	| {
-			type: "tournament.start";
-			payload: {
-				participants: Array<{ id: string; name: string }>;
-				format?: "single_elim";
-			};
+			action: "start_tournament";
+			room_id: RoomId;
+			created_by: UserId;
+			participants: UserId[];
 	  }
+	| { action: "next_round"; tournament_id: TournamentId; room_id: RoomId }
 	| {
-			type: "match.start";
-			payload: { tournamentId: string; matchId: string };
-	  }
-	| {
-			type: "match.finish";
-			payload: {
-				tournamentId: string;
-				matchId: string;
-				winnerId: string;
-				scoreA: number;
-				scoreB: number;
-			};
-	  }
-	| {
-			type: "state.request";
-			payload: { tournamentId: string };
+			action: "finish_tournament";
+			tournament_id: TournamentId;
+			room_id: RoomId;
+			winner_id: UserId;
 	  };
 
-type ServerMsg =
-	| { type: "state.push"; payload: StateSnapshot }
-	| { type: "error"; payload: { message: string } };
+type OutgoingMsg =
+	| { type: "subscribed"; room_id: RoomId; user_id: UserId }
+	| { type: "tournament_started"; tournament: any; next_match: any | null }
+	| { type: "round_generated"; tournament: any; next_match: any | null }
+	| { type: "tournament_finished"; tournament: any }
+	| { type: "error"; message: string };
 
-type Deps = {
-	StartTournamentWithBracket: (input: {
-		participants: Array<{ id: string; name: string }>;
-		format?: "single_elim";
-	}) => Promise<StateSnapshot>;
-	StartMatch: (input: {
-		tournamentId: string;
-		matchId: string;
-	}) => Promise<StateSnapshot>;
-	FinishMatchAndPropagate: (input: {
-		tournamentId: string;
-		matchId: string;
-		winnerId: string;
-		scoreA: number;
-		scoreB: number;
-	}) => Promise<StateSnapshot>;
-	GetTournamentState: (input: {
-		tournamentId: string;
-	}) => Promise<StateSnapshot>;
-};
+const rooms = new Map<RoomId, Set<WebSocket>>();
 
-export function registerTournamentWs(app: FastifyInstance, deps: Deps) {
-	const clients = new Set<SocketStream["socket"]>();
+function joinRoom(roomId: RoomId, ws: WebSocket) {
+	let set = rooms.get(roomId);
+	if (!set) {
+		set = new Set();
+		rooms.set(roomId, set);
+	}
+	set.add(ws);
+}
 
-	app.get("/ws/tournaments", { websocket: true }, (conn) => {
-		const { socket } = conn;
-		clients.add(socket);
+function leaveAll(ws: WebSocket) {
+	for (const set of rooms.values()) set.delete(ws);
+}
 
-		socket.on("message", async (raw) => {
-			let msg: ClientMsg;
+function broadcast(roomId: RoomId, payload: OutgoingMsg) {
+	const set = rooms.get(roomId);
+	if (!set?.size) return;
+	const msg = JSON.stringify(payload);
+	for (const sock of set) {
+		// sock は ws のインスタンス
+		if ((sock as any).readyState === (sock as any).OPEN) sock.send(msg);
+	}
+}
+
+// class直送しないための最低限の整形
+function toTournamentDTO(t: any) {
+	return {
+		id: t.id,
+		status: t.status ?? t._status,
+		currentRound: t.currentRound,
+		winner_id: t.winner_id ?? null,
+		participants: t.participants,
+		matches: (t.matches ?? []).map(toMatchDTO),
+	};
+}
+
+function toMatchDTO(m: any) {
+	return {
+		id: m.id,
+		player1_id: m.player1_id ?? m._player1?.id,
+		player2_id: m.player2_id ?? m._player2?.id,
+		score1: m.score1 ?? m._score1 ?? 0,
+		score2: m.score2 ?? m._score2 ?? 0,
+		status: m.status ?? m._status,
+		round: m.round ?? 1,
+		winner_id: m.winner_id ?? null,
+	};
+}
+
+export async function registerTournamentWs(app: FastifyInstance) {
+	const svc = new TournamentService(
+		new TypeORMTournamentRepository(
+			AppDataSource.getRepository(TournamentEntity),
+		),
+		new TypeORMMatchRepository(AppDataSource.getRepository(MatchEntity)),
+	);
+
+	// /ws プレフィクスは fastifyWebSocket 登録側で設定している想定
+	app.get("/tournament", { websocket: true }, (connection: any /*, req */) => {
+		const ws = connection.socket as unknown as WebSocket;
+
+		// このコネクション専用の状態
+		let authedUser: UserId | null = null;
+		let joinedRoom: RoomId | null = null;
+
+		ws.on("message", async (raw: any) => {
+			let data: IncomingMsg;
 			try {
-				msg = JSON.parse(String(raw));
+				data = JSON.parse(raw.toString());
 			} catch {
-				send(socket, { type: "error", payload: { message: "invalid_json" } });
+				ws.send(
+					JSON.stringify({
+						type: "error",
+						message: "invalid json",
+					} satisfies OutgoingMsg),
+				);
 				return;
 			}
 
 			try {
-				switch (msg.type) {
-					case "tournament.start": {
-						const state = await deps.StartTournamentWithBracket({
-							participants: msg.payload.participants,
-							format: msg.payload.format ?? "single_elim",
-						});
-						broadcast(clients, { type: "state.push", payload: state });
+				switch (data.action) {
+					case "subscribe": {
+						authedUser = data.user_id;
+						joinedRoom = data.room_id;
+						joinRoom(joinedRoom, ws);
+						ws.send(
+							JSON.stringify({
+								type: "subscribed",
+								room_id: joinedRoom,
+								user_id: authedUser,
+							} satisfies OutgoingMsg),
+						);
 						break;
 					}
-					case "match.start": {
-						const state = await deps.StartMatch({
-							tournamentId: msg.payload.tournamentId,
-							matchId: msg.payload.matchId,
+
+					case "start_tournament": {
+						if (!joinedRoom) throw new Error("not subscribed");
+						const { tournament, nextMatch } = await svc.startTournament(
+							data.participants,
+							data.room_id,
+							data.created_by,
+						);
+						broadcast(data.room_id, {
+							type: "tournament_started",
+							tournament: toTournamentDTO(tournament),
+							next_match: nextMatch ? toMatchDTO(nextMatch) : null,
 						});
-						broadcast(clients, { type: "state.push", payload: state });
 						break;
 					}
-					case "match.finish": {
-						const state = await deps.FinishMatchAndPropagate({
-							tournamentId: msg.payload.tournamentId,
-							matchId: msg.payload.matchId,
-							winnerId: msg.payload.winnerId,
-							scoreA: msg.payload.scoreA,
-							scoreB: msg.payload.scoreB,
+
+					case "next_round": {
+						if (!joinedRoom) throw new Error("not subscribed");
+						const { tournament, nextMatch } = await svc.generateNextRound(
+							data.tournament_id,
+						);
+						broadcast(data.room_id, {
+							type: "round_generated",
+							tournament: toTournamentDTO(tournament),
+							next_match: nextMatch ? toMatchDTO(nextMatch) : null,
 						});
-						broadcast(clients, { type: "state.push", payload: state });
 						break;
 					}
-					case "state.request": {
-						const state = await deps.GetTournamentState({
-							tournamentId: msg.payload.tournamentId,
+
+					case "finish_tournament": {
+						if (!joinedRoom) throw new Error("not subscribed");
+						await svc.finishTournament(data.tournament_id, data.winner_id);
+						broadcast(data.room_id, {
+							type: "tournament_finished",
+							tournament: { id: data.tournament_id, winner_id: data.winner_id },
 						});
-						send(socket, { type: "state.push", payload: state });
 						break;
 					}
+
 					default: {
-						send(socket, {
-							type: "error",
-							payload: { message: "unknown_type" },
-						});
+						ws.send(
+							JSON.stringify({
+								type: "error",
+								message: "unknown action",
+							} satisfies OutgoingMsg),
+						);
 					}
 				}
-			} catch (e) {
-				send(socket, {
-					type: "error",
-					payload: { message: (e as Error).message || "internal_error" },
-				});
+			} catch (e: any) {
+				ws.send(
+					JSON.stringify({
+						type: "error",
+						message: e?.message ?? "internal error",
+					} satisfies OutgoingMsg),
+				);
 			}
 		});
 
-		socket.on("close", () => {
-			clients.delete(socket);
+		ws.on("close", () => {
+			leaveAll(ws);
 		});
 	});
-
-	function send(ws: SocketStream["socket"], msg: ServerMsg) {
-		if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
-	}
-
-	function broadcast(pool: Set<SocketStream["socket"]>, msg: ServerMsg) {
-		const data = JSON.stringify(msg);
-		for (const ws of pool) if (ws.readyState === ws.OPEN) ws.send(data);
-	}
 }

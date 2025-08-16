@@ -1,9 +1,9 @@
 import type { Match } from "@domain/model/entity/match/Match.js";
 import {
-	Entity,
-	PrimaryColumn,
 	Column,
 	CreateDateColumn,
+	Entity,
+	PrimaryColumn,
 	UpdateDateColumn,
 } from "typeorm";
 

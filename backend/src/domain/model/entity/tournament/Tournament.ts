@@ -1,12 +1,12 @@
+import { Match, MatchRule } from "@domain/model/entity/match/Match.js";
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type {
 	TournamentId,
 	TournamentStatus,
 	TournamentType,
 } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-import { Match, MatchRule } from "@domain/model/entity/match/Match.js";
-import type { MatchId } from "@domain/model/value-object/match/Match.js";
-import type { RoomId } from "@domain/model/value-object/room/Room.js";
 
 export class Tournament {
 	public id: TournamentId;

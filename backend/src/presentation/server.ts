@@ -1,10 +1,11 @@
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
+import fastifyWebSocket from "@fastify/websocket";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import authRoutes from "./route/auth/authRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
-import fastifyWebSocket from "@fastify/websocket";
+import { registerTournamentWs } from "./route/tournament/ws.js";
 
 export async function buildServer() {
 	if (!process.env.JWT_SECRET) {
@@ -41,7 +42,7 @@ export async function buildServer() {
 
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);
-	await registerTournamentRoutes(app);
+	await registerTournamentWs(app);
 	await app.register(authRoutes, { prefix: "/auth" });
 
 	return app;

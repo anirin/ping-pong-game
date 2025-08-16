@@ -1,9 +1,9 @@
 import type { Tournament } from "@domain/model/entity/tournament/Tournament.js";
 import {
-	Entity,
-	PrimaryColumn,
 	Column,
 	CreateDateColumn,
+	Entity,
+	PrimaryColumn,
 	UpdateDateColumn,
 } from "typeorm";
 
