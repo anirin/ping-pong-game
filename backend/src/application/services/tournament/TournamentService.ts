@@ -17,51 +17,73 @@ import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import { v4 as uuidv4 } from "uuid";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
+import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
+import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 
 export class TournamentService {
-    async startTournament(participants: UserId[]) {
-        const tournamentId = uuidv4();
-        const tournament = new Tournament(tournamentId, participants);
+	constructor(private readonly tournamentRepository: TournamentRepository, private readonly matchRepository: MatchRepository) {}
 
-        // 一回戦の作成
-        tournament.generateFirstRound();
+	async startTournament(
+		participants: UserId[],
+		room_id: RoomId,
+		createdBy: UserId,
+	) {
+		const tournamentId = uuidv4();
+		const tournament = new Tournament(
+			tournamentId,
+			participants,
+			createdBy,
+			room_id,
+		);
 
-        // matches の db保存
-        tournament.matches
+		// 一回戦の作成
+		tournament.generateFirstRound();
 
-        // tournament の db保存
+		// matches の db保存
+		const matches = tournament.matches;
 
-        // トーナメント開始
-        tournament.start();
+		await this.matchRepository.save(matches);
 
-        // まず最初の試合も送る
-        const nextMatch = tournament.getNextMatch();
+		// tournament の db保存
+		await this.tournamentRepository.save(tournament);
 
-        return {
-            tournament,
-            nextMatch,
-        }
-    }
+		// トーナメント開始
+		tournament.start();
 
-    async generateNextRound(tournamentId: TournamentId) {
-        const tournament = await this.tournamentRepository.findById(tournamentId);
-        tournament.generateNextRound();
+		// まず最初の試合も送る
+		const nextMatch = tournament.getNextMatch();
 
-        // そのラウンドにあるmatches の 追加保存
+		return {
+			tournament,
+			nextMatch,
+		};
+	}
 
+	async generateNextRound(tournamentId: TournamentId) {
+		const tournament = await this.tournamentRepository.findById(tournamentId);
+		if (!tournament) {
+			throw new Error("Tournament not found");
+		}
+		tournament.generateNextRound();
 
-        // 次に行う試合も送る
-        const nextMatch = tournament.getNextMatch();
+		// そのラウンドにあるmatches の 追加保存
 
-        return {
-            tournament,
-            nextMatch,
-        }
-    }
+		// 次に行う試合も送る
+		const nextMatch = tournament.getNextMatch();
 
-    async finishTournament(tournamentId: TournamentId) {
-        const tournament = await this.tournamentRepository.findById(tournamentId);
-        tournament.finish();
-        await this.tournamentRepository.save(tournament);
-    }
+		return {
+			tournament,
+			nextMatch,
+		};
+	}
+
+	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
+		const tournament = await this.tournamentRepository.findById(tournamentId);
+		if (!tournament) {
+			throw new Error("Tournament not found");
+		}
+		tournament.finish(winnerId);
+		await this.tournamentRepository.save(tournament);
+	}
 }
