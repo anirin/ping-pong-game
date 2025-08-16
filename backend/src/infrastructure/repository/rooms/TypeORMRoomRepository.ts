@@ -3,7 +3,7 @@ import { Room } from "@domain/model/entity/room/Room.js";
 import type {
 	RoomId,
 	RoomStatus,
-} from "@domain/model/entity/room/value-objects.js";
+} from "@domain/model/value-object/room/Room.js";
 import { RoomEntity } from "@infrastructure/entity/rooms/RoomEntity.js";
 import type { Repository } from "typeorm";
 
