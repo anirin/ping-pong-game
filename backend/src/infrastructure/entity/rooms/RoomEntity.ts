@@ -7,10 +7,11 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
-	ManyToMany,
+	OneToMany,
 	PrimaryColumn,
 	UpdateDateColumn,
 } from "typeorm";
+import { RoomParticipantEntity } from "./RoomParticipantEntity.js";
 
 @Entity("Room")
 export class RoomEntity {
@@ -29,6 +30,13 @@ export class RoomEntity {
 
 	@Column("text", { default: "1on1" })
 	room_type!: RoomType;
+
+	@OneToMany(
+		() => RoomParticipantEntity,
+		(middle) => middle.room,
+		{ cascade: true },
+	)
+	room_participants!: RoomParticipantEntity[];
 
 	@CreateDateColumn()
 	created_at!: Date;

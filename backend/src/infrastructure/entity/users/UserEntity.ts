@@ -3,9 +3,11 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	OneToMany,
 	PrimaryColumn,
 	UpdateDateColumn,
 } from "typeorm";
+import { RoomParticipantEntity } from "../rooms/RoomParticipantEntity.js";
 
 @Entity("users")
 export class UserEntity {
@@ -23,6 +25,13 @@ export class UserEntity {
 
 	@Column("text")
 	password_hash!: string;
+
+	@OneToMany(
+		() => RoomParticipantEntity,
+		(middle) => middle.user,
+		{ cascade: true },
+	)
+	room_participant!: RoomParticipantEntity[];
 
 	@CreateDateColumn()
 	created_at!: Date;
