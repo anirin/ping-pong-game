@@ -64,10 +64,18 @@ export class TournamentService {
 
 	async generateNextRound(tournamentId: TournamentId) {
 		const tournament = await this.tournamentRepository.findById(tournamentId);
+		const tournamentMatches =
+			await this.matchRepository.findByTournamentId(tournamentId);
+		tournament!.matches = tournamentMatches;
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
-		tournament.generateNextRound();
+		try {
+			tournament.generateNextRound();
+		} catch (error) {
+			console.error(error);
+			throw new Error("Failed to generate next round");
+		}
 
 		// そのラウンドにあるmatches の 追加保存
 		const matches = tournament.matches;
@@ -84,6 +92,20 @@ export class TournamentService {
 			tournament,
 			nextMatch,
 		};
+	}
+
+	async getNextMatch(tournamentId: TournamentId) {
+		const tournament = await this.tournamentRepository.findById(tournamentId);
+		if (!tournament) {
+			throw new Error("Tournament not found");
+		}
+		const tournamentMatches =
+			await this.matchRepository.findByTournamentId(tournamentId);
+		if (!tournamentMatches) {
+			throw new Error("Tournament matches not found");
+		}
+		tournament.matches = tournamentMatches;
+		return tournament.getNextMatch();
 	}
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {

@@ -1,6 +1,10 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import { Match, MatchRule } from "@domain/model/entity/match/Match.js";
-import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type {
+	MatchId,
+	MatchStatus,
+} from "@domain/model/value-object/match/Match.js";
+import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import type { Repository } from "typeorm";
 
@@ -28,10 +32,15 @@ export class TypeORMMatchRepository implements MatchRepository {
 		await this.repository.update(match.id, entity);
 	}
 
+	async findByTournamentId(tournamentId: TournamentId): Promise<Match[]> {
+		const entities = await this.repository.find({ where: { tournamentId } });
+		return entities.map((entity) => this.toDomain(entity));
+	}
+
 	private toDomain(entity: MatchEntity): Match {
 		const matchRule = new MatchRule(2);
 
-		return new Match(
+		const match = new Match(
 			entity.id,
 			entity.player1,
 			entity.player2,
@@ -39,6 +48,15 @@ export class TypeORMMatchRepository implements MatchRepository {
 			entity.round,
 			entity.tournamentId,
 		);
+
+		match.score1 = entity.score1;
+		match.score2 = entity.score2;
+		match.status = entity.status as MatchStatus;
+		match.winnerId = entity.winnerId;
+		match.round = entity.round;
+		match.tournamentId = entity.tournamentId;
+
+		return match;
 	}
 
 	private toEntity(match: Match): MatchEntity {

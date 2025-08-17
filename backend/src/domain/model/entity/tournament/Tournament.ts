@@ -72,9 +72,14 @@ export class Tournament {
 
 	// これはdomain service に置いていた方がいい気がする
 	generateNextRound() {
+		// debug 全てのmatch を出力
+		console.log("all matches", this.matches);
 		const current_matches = this.matches.filter(
 			(match) => match.round === this.currentRound,
 		);
+
+		// log で見たい
+		console.log("current_matches", current_matches);
 		// 全て終了していることを確認
 		if (current_matches.some((match) => match.status !== "finished")) {
 			throw new Error("all matches must be finished");
@@ -100,6 +105,9 @@ export class Tournament {
 
 	getNextMatch() {
 		// currentRound かつ finished でないもを取り出す
+        // 仮で2にする debug
+        this.currentRound = 2;
+		console.log("currentRound", this.currentRound);
 		const current_matches = this.matches.filter(
 			(match) => match.round === this.currentRound,
 		);
