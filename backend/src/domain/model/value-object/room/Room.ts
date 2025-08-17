@@ -8,14 +8,14 @@ export type RoomMode = "online" | "offline";
 export type Role = "player" | "spectator";
 
 type RoomUser = {
-	id: UserId,
-	name: Username,
-  avatar: AvatarUrl,
-  num_win: 0,
-  num_lose: 0,
-}
+	id: UserId;
+	name: Username;
+	avatar: AvatarUrl;
+	num_win: 0;
+	num_lose: 0;
+};
 
 export type WSRoomData = {
-	action: "USER" | "DELETE",
-	users: RoomUser[]
-}
+	action: "USER" | "DELETE";
+	users: RoomUser[];
+};
