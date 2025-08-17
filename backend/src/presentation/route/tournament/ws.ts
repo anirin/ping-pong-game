@@ -4,11 +4,6 @@ import { TournamentService } from "@application/services/tournament/TournamentSe
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-import { AppDataSource } from "@infrastructure/data-source.js";
-import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
-import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
-import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
-import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
 
@@ -93,12 +88,7 @@ function toMatchDTO(m: any) {
 }
 
 export async function registerTournamentWs(app: FastifyInstance) {
-	const svc = new TournamentService(
-		new TypeORMTournamentRepository(
-			AppDataSource.getRepository(TournamentEntity),
-		),
-		new TypeORMMatchRepository(AppDataSource.getRepository(MatchEntity)),
-	);
+	const svc = new TournamentService();
 
 	// /ws プレフィクスは fastifyWebSocket 登録側で設定している想定
 	app.get(
