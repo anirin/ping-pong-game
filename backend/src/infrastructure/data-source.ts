@@ -1,9 +1,9 @@
 // src/infrastructure/data-source.ts
 import { DataSource } from "typeorm";
+import { MatchEntity } from "./entity/match/MatchEntity.js";
 import { RoomEntity } from "./entity/rooms/RoomEntity.js";
 import { TournamentEntity } from "./entity/tournament/TournamentEntity.js";
 import { UserEntity } from "./entity/users/UserEntity.js";
-import { MatchEntity } from "./entity/match/MatchEntity.js";
 
 export const AppDataSource = new DataSource({
 	type: "sqlite",

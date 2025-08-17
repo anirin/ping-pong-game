@@ -105,8 +105,8 @@ export class Tournament {
 
 	getNextMatch() {
 		// currentRound かつ finished でないもを取り出す
-        // 仮で2にする debug
-        this.currentRound = 2;
+		// 仮で2にする debug
+		this.currentRound = 2;
 		console.log("currentRound", this.currentRound);
 		const current_matches = this.matches.filter(
 			(match) => match.round === this.currentRound,
