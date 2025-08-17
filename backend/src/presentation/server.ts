@@ -1,3 +1,4 @@
+import fs from "fs";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
@@ -8,11 +9,17 @@ import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerTournamentWs } from "./route/tournament/ws.js";
 
 export async function buildServer() {
-	if (!process.env.JWT_SECRET) {
-		throw new Error("JWT_SECRET is not set in environment variables");
+	if (!process.env.JWT_SECRET || !process.env.HTTPS_KEY || !process.env.HTTPS_CERT) {
+		throw new Error("some SECRET is not set in environment variables");
 	}
 
-	const app = fastify({ logger: true });
+	const app = fastify({
+		logger: true,
+		https: {
+    	key: fs.readFileSync(process.env.HTTPS_KEY),
+    	cert: fs.readFileSync(process.env.HTTPS_CERT),
+  	}
+	});
 
 	// corsの設定
 	await app.register(cors, {
