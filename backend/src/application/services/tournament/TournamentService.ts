@@ -19,12 +19,12 @@ import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-import { v4 as uuidv4 } from "uuid";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
+import { v4 as uuidv4 } from "uuid";
 
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
@@ -33,7 +33,9 @@ export class TournamentService {
 		this.tournamentRepository = new TypeORMTournamentRepository(
 			AppDataSource.getRepository(TournamentEntity),
 		);
-		this.matchRepository = new TypeORMMatchRepository(AppDataSource.getRepository(MatchEntity));
+		this.matchRepository = new TypeORMMatchRepository(
+			AppDataSource.getRepository(MatchEntity),
+		);
 	}
 
 	async startTournament(
