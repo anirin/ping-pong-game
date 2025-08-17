@@ -2,70 +2,79 @@ import type {
 	MatchId,
 	MatchStatus,
 } from "@domain/model/value-object/match/Match.js";
-import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import {
+	InvalidArgumentError,
+	InvalidTransitionError,
+} from "../../common/errors.js";
 
-// こいつをどこにおくのかは大問題
-export class MatchRule {
-	public readonly pointToWin: number;
-
-	constructor(pointToWin: number) {
-		this.pointToWin = pointToWin;
+export class Score {
+	constructor(
+		public readonly p1: number = 0,
+		public readonly p2: number = 0,
+	) {
+		if (p1 < 0 || p2 < 0) throw new InvalidArgumentError("score must be >= 0");
+	}
+	addP1(): Score {
+		return new Score(this.p1 + 1, this.p2);
+	}
+	addP2(): Score {
+		return new Score(this.p1, this.p2 + 1);
 	}
 }
 
 export class Match {
-	public id: MatchId;
-	public player1: UserId;
-	public player2: UserId;
-	public score1: number = 0;
-	public score2: number = 0;
-	public status: MatchStatus = "scheduled";
-	public winnerId: UserId | null = null;
-	private _rule: MatchRule; // 型は定義するが値として持っておく
-	public round: number;
-	public tournamentId: TournamentId;
+	private _status: MatchStatus = "scheduled";
+	private _score: Score = new Score();
+	private _winnerId: UserId | null = null;
 
 	constructor(
-		id: MatchId,
-		player1: UserId,
-		player2: UserId,
-		rule: MatchRule,
-		round: number,
-		tournamentId: TournamentId,
+		public readonly id: MatchId,
+		public readonly player1Id: UserId,
+		public readonly player2Id: UserId,
+		private readonly pointToWin: number,
 	) {
-		this.id = id;
-		this.player1 = player1;
-		this.player2 = player2;
-		this.score1 = 0;
-		this.score2 = 0;
-		this.status = "scheduled";
-		this.winnerId = null;
-		this._rule = rule;
-		this.round = round;
-		this.tournamentId = tournamentId;
+		if (player1Id === player2Id)
+			throw new InvalidArgumentError("players must be distinct");
+		if (pointToWin <= 0)
+			throw new InvalidArgumentError("pointToWin must be > 0");
+	}
+
+	get status() {
+		return this._status;
+	}
+	get score() {
+		return this._score;
+	}
+	get winnerId() {
+		return this._winnerId;
 	}
 
 	start() {
-		if (this.status !== "scheduled") throw new Error("invalid transition");
-		this.status = "playing";
+		if (this._status !== "scheduled")
+			throw new InvalidTransitionError("invalid transition");
+		this._status = "playing";
 	}
 
-	finish(winnerId: UserId) {
-		if (this.status !== "playing") throw new Error("invalid transition");
-		this.status = "finished";
-		this.winnerId = winnerId;
-	}
+	scorePoint(by: UserId) {
+		if (this._status !== "playing")
+			throw new InvalidTransitionError("not playing");
+		if (by !== this.player1Id && by !== this.player2Id)
+			throw new InvalidArgumentError("not a player");
 
-	addScore(playerId: UserId) {
-		if (this.status !== "playing") throw new Error("invalid transition");
-		if (playerId === this.player1) this.score1++;
-		else this.score2++;
-
-		if (this.score1 >= this._rule.pointToWin) {
-			this.finish(this.player1);
-		} else if (this.score2 >= this._rule.pointToWin) {
-			this.finish(this.player2);
+		this._score =
+			by === this.player1Id ? this._score.addP1() : this._score.addP2();
+		const p1Win = this._score.p1 >= this.pointToWin;
+		const p2Win = this._score.p2 >= this.pointToWin;
+		if (p1Win || p2Win) {
+			this._winnerId = p1Win ? this.player1Id : this.player2Id;
+			this._status = "finished";
 		}
+	}
+
+	cancel() {
+		if (this._status === "finished")
+			throw new InvalidTransitionError("already finished");
+		this._status = "canceled";
 	}
 }

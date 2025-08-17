@@ -1,5 +1,9 @@
 import { renderHomePage } from "@pages/home/index";
 import { renderRoomEntrancePage } from "@pages/room-entrance/index";
+import { renderAuthPage } from '@pages/first_page/index'; 
+import { renderRegisterPage } from "@pages/register/index";
+import { renderLoginPage } from "@pages/login/index";
+import { renderSetupPage } from "@pages/setup/index";
 
 interface Route {
 	path: string;
@@ -18,6 +22,22 @@ const routes: Route[] = [
 	{
 		path: "/room/entrance",
 		handler: renderRoomEntrancePage,
+	},
+	{
+		path: '/auth',
+		handler: renderAuthPage,
+	},
+	{
+		path: "/auth/register",
+		handler: renderRegisterPage,
+	},
+	{
+		path: "/auth/login",
+		handler: renderLoginPage,
+	},
+	{
+		path: "/auth/setup",
+		handler: renderSetupPage,
 	},
 	// {
 	// 	path: "/online/room/:id",

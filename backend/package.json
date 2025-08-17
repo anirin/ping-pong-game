@@ -19,12 +19,10 @@
 		"@fastify/cors": "^11.1.0",
 		"@fastify/jwt": "^10.0.0",
 		"@fastify/static": "^8.2.0",
-		"@fastify/websocket": "^11.2.0",
 		"@types/uuid": "^10.0.0",
 		"bcrypt": "^6.0.0",
 		"dotenv": "^17.2.1",
 		"fastify": "^5.5.0",
-		"fs": "^0.0.1-security",
 		"jsonwebtoken": "^9.0.2",
 		"otplib": "^12.0.1",
 		"qrcode": "^1.5.4",
@@ -32,8 +30,7 @@
 		"sqlite3": "^5.1.7",
 		"typeorm": "^0.3.25",
 		"uuid": "^11.1.0",
-		"validator": "^13.15.15",
-		"ws": "^8.18.3"
+		"validator": "^13.15.15"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.1.4",
@@ -44,7 +41,6 @@
 		"@types/otplib": "^7.0.0",
 		"@types/qrcode": "^1.5.5",
 		"@types/validator": "^13.15.2",
-		"@types/ws": "^8.18.1",
 		"nodemon": "^3.1.10",
 		"ts-node": "^10.9.2",
 		"tsc-alias": "^1.8.16",

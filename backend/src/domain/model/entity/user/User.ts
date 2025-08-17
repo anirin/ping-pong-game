@@ -17,7 +17,7 @@ export class User {
 	private _twoFAEnabled: boolean = false;
 	private _twoFASecret: string | null = null;
 
-	constructor(
+constructor(
 		id: UserId,
 		email: string,
 		username: Username,
@@ -37,7 +37,7 @@ export class User {
 		this._status = status;
 		this._twoFAEnabled = twoFAEnabled;
 		this._twoFASecret = twoFASecret;
-	}
+	}	
 
 	get status(): UserStatus {
 		return this._status;

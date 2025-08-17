@@ -1,12 +1,8 @@
 node_modules
 dist/
-secrets
 
 .env
 .env.local
 .env.*.local
 
 database.sqlite
-
-cert.pem
-key.pem
