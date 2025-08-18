@@ -1,13 +1,13 @@
 import { AuthService } from "@application/auth/AuthService.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
-import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
-import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import {
 	BcryptPasswordHasher,
 	JwtTokenService,
 	OtplibTwoFactorAuthService,
 	QrCodeService,
 } from "@infrastructure/entity/jwt_2fa/logic.js";
+import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
+import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { FastifyPluginAsync } from "fastify";
 import validator from "validator";
 

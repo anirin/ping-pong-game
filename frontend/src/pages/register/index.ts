@@ -1,83 +1,83 @@
-import registerHtml from './register.html?raw';
+import registerHtml from "./register.html?raw";
 
 // handleRegisterSubmit関数をasyncにして、awaitを使えるようにする
 async function handleRegisterSubmit(event: SubmitEvent): Promise<void> {
 	event.preventDefault();
 
 	// エラーメッセージを表示する要素を取得（HTML側に追加しておくと良い）
-	const errorElement = document.getElementById('error-message');
+	const errorElement = document.getElementById("error-message");
 	if (errorElement) {
-		errorElement.textContent = ''; // 前のエラーメッセージをクリア
+		errorElement.textContent = ""; // 前のエラーメッセージをクリア
 	}
 
-	const emailInput = document.getElementById('email') as HTMLInputElement;
-	const usernameInput = document.getElementById('username') as HTMLInputElement;
-	const passwordInput = document.getElementById('password') as HTMLInputElement;
-	
-    // バックエンドに送信するデータを作成
+	const emailInput = document.getElementById("email") as HTMLInputElement;
+	const usernameInput = document.getElementById("username") as HTMLInputElement;
+	const passwordInput = document.getElementById("password") as HTMLInputElement;
+
+	// バックエンドに送信するデータを作成
 	const userData = {
 		email: emailInput.value,
 		username: usernameInput.value,
 		password: passwordInput.value,
 	};
 
-	console.log('Sending data to backend:', userData);
+	console.log("Sending data to backend:", userData);
 
 	try {
-        // fetch APIを使ってバックエンドにPOSTリクエストを送信
-		const response = await fetch('https://localhost:8080/auth/register', {
-			method: 'POST',
+		// fetch APIを使ってバックエンドにPOSTリクエストを送信
+		const response = await fetch("https://localhost:8080/auth/register", {
+			method: "POST",
 			headers: {
-				'Content-Type': 'application/json',
+				"Content-Type": "application/json",
 			},
 			body: JSON.stringify(userData), // JavaScriptオブジェクトをJSON文字列に変換
 		});
 
-        // レスポンスが成功（HTTPステータスが200番台）かどうかをチェック
+		// レスポンスが成功（HTTPステータスが200番台）かどうかをチェック
 		if (response.ok) {
 			// 成功した場合
-			console.log('User registered successfully!');
-			alert('登録が成功しました！ログインページに移動します。');
-			
+			console.log("User registered successfully!");
+			alert("登録が成功しました！ログインページに移動します。");
+
 			// ログインページへリダイレクト（パスはご自身のプロジェクトに合わせてください）
-			window.location.href = '/auth'; 
+			window.location.href = "/auth";
 		} else {
 			// 失敗した場合 (例: emailが既に存在するなど)
 			const errorData = await response.json(); // バックエンドからのエラーメッセージを取得
-			console.error('Registration failed:', errorData);
+			console.error("Registration failed:", errorData);
 
 			if (errorElement) {
 				// バックエンドからのエラーメッセージを表示
-				errorElement.textContent = errorData.message || '登録に失敗しました。';
+				errorElement.textContent = errorData.message || "登録に失敗しました。";
 			} else {
-				alert(errorData.message || '登録に失敗しました。');
+				alert(errorData.message || "登録に失敗しました。");
 			}
 		}
 	} catch (err) {
 		// ネットワークエラーなど、リクエスト自体が失敗した場合
-		console.error('An error occurred:', err);
+		console.error("An error occurred:", err);
 		if (errorElement) {
-			errorElement.textContent = 'サーバーとの通信に失敗しました。';
+			errorElement.textContent = "サーバーとの通信に失敗しました。";
 		} else {
-			alert('サーバーとの通信に失敗しました。');
+			alert("サーバーとの通信に失敗しました。");
 		}
 	}
 }
 
 // renderRegisterPage関数は変更なし
 export function renderRegisterPage(): void {
-	const app = document.getElementById('app');
+	const app = document.getElementById("app");
 	if (!app) {
-		console.error('App root element not found!');
+		console.error("App root element not found!");
 		return;
 	}
 
 	app.innerHTML = registerHtml;
 
-	const registerForm = document.getElementById('register-form');
+	const registerForm = document.getElementById("register-form");
 	if (registerForm) {
-		registerForm.addEventListener('submit', handleRegisterSubmit);
+		registerForm.addEventListener("submit", handleRegisterSubmit);
 	} else {
-		console.error('Register form not found!');
+		console.error("Register form not found!");
 	}
 }

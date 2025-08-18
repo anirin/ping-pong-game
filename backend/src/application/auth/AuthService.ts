@@ -1,14 +1,13 @@
+import type {
+	PasswordHasher,
+	QrCodeGenerator,
+	TokenService,
+	TwoFactorAuthService,
+} from "@domain/interface/repository/users/AuthRepository.js";
 import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { User } from "@domain/model/entity/user/User.js";
 import { Username } from "@domain/model/value-object/user/User.js";
 import { randomUUID } from "crypto";
-
-import type {
-	PasswordHasher,
-	TokenService,
-	TwoFactorAuthService,
-	QrCodeGenerator,
-} from "@domain/interface/repository/users/AuthRepository.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
@@ -19,9 +18,13 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 		private readonly twoFAService: TwoFactorAuthService,
 		private readonly qrCodeService: QrCodeGenerator,
-	) { }
+	) {}
 
-	async register(email: string, username: string, password: string): Promise<string> {
+	async register(
+		email: string,
+		username: string,
+		password: string,
+	): Promise<string> {
 		const existingUserByEmail = await this.userRepo.findByEmail(email);
 		if (existingUserByEmail) throw new Error("Email already exists");
 
@@ -44,7 +47,9 @@ export class AuthService {
 
 		await this.userRepo.save(user);
 
-		const token = this.tokenService.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+		const token = this.tokenService.sign({ email }, JWT_SECRET, {
+			expiresIn: "24h",
+		});
 		return token;
 	}
 
@@ -63,7 +68,9 @@ export class AuthService {
 			return { twoFARequired: true };
 		}
 
-		const token = this.tokenService.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+		const token = this.tokenService.sign({ email }, JWT_SECRET, {
+			expiresIn: "24h",
+		});
 		return { token };
 	}
 
@@ -96,7 +103,9 @@ export class AuthService {
 		user.setTwoFA(secret, true); // enabled=true
 		await this.userRepo.update(user);
 
-		const jwtToken = this.tokenService.sign({ email }, JWT_SECRET, { expiresIn: "24h" });
+		const jwtToken = this.tokenService.sign({ email }, JWT_SECRET, {
+			expiresIn: "24h",
+		});
 		return { token: jwtToken };
 	}
 }

@@ -1,8 +1,8 @@
+import { renderAuthPage } from "@pages/first_page/index";
 import { renderHomePage } from "@pages/home/index";
-import { renderRoomEntrancePage } from "@pages/room-entrance/index";
-import { renderAuthPage } from '@pages/first_page/index'; 
-import { renderRegisterPage } from "@pages/register/index";
 import { renderLoginPage } from "@pages/login/index";
+import { renderRegisterPage } from "@pages/register/index";
+import { renderRoomEntrancePage } from "@pages/room-entrance/index";
 import { renderSetupPage } from "@pages/setup/index";
 
 interface Route {
@@ -23,8 +23,8 @@ const routes: Route[] = [
 		path: "/room/entrance",
 		handler: renderRoomEntrancePage,
 	},
-		{
-		path: '/auth',
+	{
+		path: "/auth",
 		handler: renderAuthPage,
 	},
 	{
