@@ -1,0 +1,68 @@
+<style>
+  /* ページ全体のスタイル */
+  .auth-page-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 垂直方向中央揃え */
+    align-items: center;   /* 水平方向中央揃え */
+    height: 90vh; /* 画面の高さいっぱいに広げる */
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* ボタンをまとめるグループ */
+  .button-group {
+    display: flex;
+    flex-direction: column; /* ボタンを縦に並べる */
+    gap: 15px; /* ボタン間のスペース */
+    margin-top: 30px;
+    width: 200px; /* ボタンの幅を統一 */
+  }
+
+  /* ボタンの共通スタイル */
+  .auth-btn {
+    padding: 15px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+  }
+  
+  .auth-btn:hover {
+      transform: translateY(-2px); /* 少し浮き上がる効果 */
+  }
+
+  .auth-btn:active {
+      transform: translateY(0);
+  }
+
+  /* 新規登録ボタンのスタイル */
+  #auth-register-btn {
+    background-color: #28a745; /* 緑色 */
+    color: white;
+  }
+  #auth-register-btn:hover {
+    background-color: #218838;
+  }
+
+  /* ログインボタンのスタイル */
+  #auth-login-btn {
+    background-color: #007bff; /* 青色 */
+    color: white;
+  }
+  #auth-login-btn:hover {
+    background-color: #0069d9;
+  }
+</style>
+
+<div class="auth-page-container">
+  <h1>Welcome!</h1>
+  <p>ft_transcendenceへようこそ</p>
+  <div class="button-group">
+    <!-- IDを付けてTypeScriptから特定できるようにします -->
+    <button id="auth-register-btn" class="auth-btn">新規登録</button>
+    <button id="auth-login-btn" class="auth-btn">ログイン</button>
+  </div>
+</div>

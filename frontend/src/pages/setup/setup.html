@@ -1,0 +1,146 @@
+<style>
+  /* ページ全体を中央に配置するためのラッパー */
+  .tfa-setup-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 90vh; /* 画面の高さの90%を使って中央揃え */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* コンテナのスタイル */
+  .tfa-setup-container {
+    background-color: #ffffff;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px; /* 少し幅を広めに設定 */
+    text-align: center;
+  }
+
+  .tfa-setup-container h1 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .tfa-setup-container p {
+    color: #555;
+    line-height: 1.5;
+  }
+
+  /* QRコードのコンテナ */
+  #qr-code-container {
+    margin: 25px 0;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    display: inline-block; /* QRコードのサイズに合わせる */
+    background-color: white;
+  }
+
+  #qr-code-image {
+    display: block; /* 余白を取り除く */
+  }
+
+  /* 秘密鍵のコンテナ */
+  #secret-key-container {
+    margin-bottom: 25px;
+  }
+
+  #secret-key-container p {
+      margin: 5px 0;
+      font-size: 14px;
+  }
+/* 
+  #secret-key {
+    font-family: monospace;
+    background-color: #f5f5f5;
+    padding: 8px;
+    border-radius: 4px;
+    color: #d63384; /* 少し目立つ色に 
+    font-weight: bold;
+    word-wrap: break-word; /* 長いキーがはみ出ないように 
+  } */
+
+  /* 検証コード入力フォーム */
+  #verify-form .form-group {
+    text-align: left;
+    margin-bottom: 20px;
+  }
+
+  #verify-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+  }
+
+  #verify-code {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 24px; /* コードを大きく表示 */
+    text-align: center;
+    letter-spacing: 8px; /* 数字の間隔を広げる */
+  }
+  
+  #verify-code:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  /* 送信ボタン */
+  .btn-submit {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background-color: #007bff; /* 青色 */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .btn-submit:hover {
+    background-color: #0069d9;
+  }
+
+  /* エラーメッセージ */
+  #error-message {
+    min-height: 1.2em;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+</style>
+
+<div class="tfa-setup-wrapper">
+  <div class="tfa-setup-container">
+    <h1>二段階認証</h1>
+    <p>認証アプリ（Google Authenticatorなど）で以下のQRコードをスキャンし、表示された6桁のコードを入力してください。</p>
+    
+    <div id="qr-code-container">
+      <img id="qr-code-image" src="" alt="QR Code is loading...">
+    </div>
+
+    <!-- <div id="secret-key-container">
+      <p>または、以下のキーを手動で入力:</p>
+      <p id="secret-key"></p>
+    </div> -->
+
+    <form id="verify-form">
+      <div class="form-group">
+        <label for="verify-code">認証コード</label>
+        <input type="text" id="verify-code" required maxlength="6" pattern="\d{6}">
+      </div>
+      <button type="submit" class="btn-submit">認証してログイン</button>
+    </form>
+    <p id="error-message" style="color: red;"></p>
+  </div>
+</div>
