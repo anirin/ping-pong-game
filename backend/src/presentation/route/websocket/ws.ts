@@ -1,9 +1,38 @@
-import type { FastifyInstance } from "fastify";
-import WebSocket from "@fastify/websocket";
-import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
-import type { UserId } from "@domain/model/value-object/user/User.js";
+import { RoomService } from "@application/services/rooms/RoomService.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import type WebSocket from "@fastify/websocket";
+import { AppDataSource } from "@infrastructure/data-source.js";
+import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
+import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
+import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
+import type { FastifyInstance } from "fastify";
 import { RoomWSHandler } from "../room/roomRoutes.js";
+import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
+
+const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
+
+function joinRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
+	let set = rooms.get(roomId);
+	if (!set) {
+		set = new Set();
+		rooms.set(roomId, set);
+	}
+	set.add(ws);
+}
+
+function leaveAll(ws: WebSocket.WebSocket) {
+	for (const set of rooms.values()) set.delete(ws);
+}
+
+function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
+	const set = rooms.get(roomId);
+	if (!set?.size) return;
+	const msg = JSON.stringify(payload);
+	for (const sock of set) {
+		if ((sock as any).readyState === (sock as any).OPEN) sock.send(msg);
+	}
+}
 
 export type WebSocketContext = {
 	authedUser: UserId | null;
@@ -14,7 +43,19 @@ export async function registerWebSocket(app: FastifyInstance) {
 	app.get("/wss", { websocket: true }, (connection: WebSocket.WebSocket) => {
 		const ws = connection;
 
-		let context: WebSocketContext = { authedUser: null, joinedRoom: null };
+		const roomRepository = new TypeOrmRoomRepository(
+			AppDataSource.getRepository("RoomEntity"),
+		);
+		const roomService = new RoomService(roomRepository);
+
+		const tournamentRepository = new TypeORMTournamentRepository(
+			AppDataSource.getRepository("TournamentEntity"),
+		);
+		const matchRepository = new TypeORMMatchRepository(
+			AppDataSource.getRepository("MatchEntity"),
+		);
+
+		const context: WebSocketContext = { authedUser: null, joinedRoom: null };
 
 		ws.on("message", async (raw: any) => {
 			let data: WSIncomingMsg;
@@ -32,7 +73,14 @@ export async function registerWebSocket(app: FastifyInstance) {
 			try {
 				switch (data.status) {
 					case "Room": {
-						RoomWSHandler(ws, data.action, context);
+						const resultmsg = await RoomWSHandler(
+							data.action,
+							roomService,
+							context,
+						);
+						if (resultmsg.status === "error")
+							ws.send(JSON.stringify(resultmsg));
+						else broadcast(context.joinedRoom!, resultmsg);
 					}
 					case "User": {
 					}
@@ -42,110 +90,8 @@ export async function registerWebSocket(app: FastifyInstance) {
 			} catch {}
 		});
 
-		// // このコネクション専用の状態
-
-		// ws.on("message", async (raw: any) => {
-		//   let data: IncomingMsg;
-		//   try {
-		//     data = JSON.parse(raw.toString());
-		//   } catch {
-		//     ws.send(
-		//       JSON.stringify({
-		//         type: "error",
-		//         message: "invalid json",
-		//       } satisfies OutgoingMsg),
-		//     );
-		//     return;
-		//   }
-
-		//   try {
-		//     switch (data.action) {
-		//       case "subscribe": {
-		//         authedUser = data.user_id;
-		//         joinedRoom = data.room_id;
-		//         joinRoom(joinedRoom, ws);
-		//         ws.send(
-		//           JSON.stringify({
-		//             type: "subscribed",
-		//             room_id: joinedRoom,
-		//             user_id: authedUser,
-		//           } satisfies OutgoingMsg),
-		//         );
-		//         break;
-		//       }
-
-		//       case "start_tournament": {
-		//         if (!joinedRoom) throw new Error("not subscribed");
-		//         const { tournament, nextMatch } = await svc.startTournament(
-		//           data.participants,
-		//           data.room_id,
-		//           data.created_by,
-		//         );
-		//         broadcast(data.room_id, {
-		//           type: "tournament_started",
-		//           tournament: toTournamentDTO(tournament),
-		//           next_match: nextMatch ? toMatchDTO(nextMatch) : null,
-		//         });
-		//           break;
-		//         }
-
-		//         case "next_round": {
-		//           if (!joinedRoom) throw new Error("not subscribed");
-		//           const { tournament, nextMatch } = await svc.generateNextRound(
-		//             data.tournament_id,
-		//           );
-		//           broadcast(data.room_id, {
-		//             type: "round_generated",
-		//             tournament: toTournamentDTO(tournament),
-		//             next_match: nextMatch ? toMatchDTO(nextMatch) : null,
-		//           });
-		//           break;
-		//         }
-
-		//         case "get_next_match": {
-		//           if (!joinedRoom) throw new Error("not subscribed");
-		//           const nextMatch = await svc.getNextMatch(data.tournament_id);
-		//           broadcast(data.room_id, {
-		//             type: "next_match",
-		//             next_match: nextMatch ? toMatchDTO(nextMatch) : null,
-		//           });
-		//           break;
-		//         }
-
-		//         case "finish_tournament": {
-		//           if (!joinedRoom) throw new Error("not subscribed");
-		//           await svc.finishTournament(data.tournament_id, data.winner_id);
-		//           broadcast(data.room_id, {
-		//             type: "tournament_finished",
-		//             tournament: {
-		//               id: data.tournament_id,
-		//               winner_id: data.winner_id,
-		//             },
-		//           });
-		//           break;
-		//         }
-
-		//         default: {
-		//           ws.send(
-		//             JSON.stringify({
-		//               type: "error",
-		//               message: "unknown action",
-		//             } satisfies OutgoingMsg),
-		//           );
-		//         }
-		//       }
-		//     } catch (e: any) {
-		//       ws.send(
-		//         JSON.stringify({
-		//           type: "error",
-		//           message: e?.message ?? "internal error",
-		//         } satisfies OutgoingMsg),
-		//       );
-		//     }
-		//   });
-
-		//   ws.on("close", () => {
-		//     leaveAll(ws);
-		//   });
+		ws.on("close", () => {
+			leaveAll(ws);
+		});
 	});
 }

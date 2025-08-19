@@ -5,8 +5,8 @@ import type { UserId } from "@domain/model/value-object/user/User.js";
 export interface RoomRepository {
 	findById(id: RoomId): Promise<Room | null>;
 	save(user: Room): Promise<void>;
-	start(id: RoomId): Promise<void>;
-	delete(id: RoomId): Promise<void>;
+	start(id: RoomId): Promise<boolean>;
+	delete(id: RoomId): Promise<boolean>;
 	findAllParticipants(id: RoomId): Promise<UserId[]>;
 	findAll(): Promise<Room[]>;
 }

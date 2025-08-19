@@ -6,7 +6,7 @@ import { RoomEntity } from "./RoomEntity.js";
 @Unique(["user"])
 export class RoomParticipantEntity {
 	@PrimaryGeneratedColumn()
-	id!: number;
+	id!: string;
 
 	@ManyToOne(
 		() => RoomEntity,

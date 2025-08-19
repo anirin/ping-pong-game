@@ -2,7 +2,7 @@ import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepo
 import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { Room } from "@domain/model/entity/room/Room.js";
 import { User } from "@domain/model/entity/user/User.js";
-import { Username } from "@domain/model/value-object/user/User.js";
+import { type UserId, Username } from "@domain/model/value-object/user/User.js";
 import * as bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 
@@ -19,11 +19,37 @@ export class RoomService {
 		return this.roomRepository.findById(id);
 	}
 
-	async updateStatus(id: string, status: string): Promise<Room | null> {
-		const user = await this.roomRepository.findById(id);
-		if (!user) throw new Error("User not found");
-		user.setStatus(status as any);
-		await this.roomRepository.save(user);
-		return user;
+	async startRoom(id: string): Promise<boolean> {
+		const room = await this.roomRepository.findById(id);
+		if (room === null) return false;
+		if (room.ownerId === id && room.status === "waiting")
+			return this.roomRepository.start(id);
+		return false;
+	}
+
+	async deleteRoom(id: string): Promise<boolean> {
+		const room = await this.roomRepository.findById(id);
+		if (room === null) return false;
+		if (room.ownerId === id && room.status === "waiting")
+			return this.roomRepository.delete(id);
+		return false;
+	}
+
+	async getAllParticipants(id: string): Promise<UserId[]> {
+		return this.roomRepository.findAllParticipants(id);
+	}
+
+	// async updateStatus(id: string, status: string): Promise<Room | null> {
+	// 	const user = await this.roomRepository.findById(id);
+	// 	if (!user) throw new Error("User not found");
+	// 	user.setStatus(status as any);
+	// 	await this.roomRepository.save(user);
+	// 	return user;
+	// }
+
+	async checkOwner(id: string): Promise<boolean> {
+		const room = await this.roomRepository.findById(id);
+		if (room === null) return false;
+		return room.ownerId === id;
 	}
 }

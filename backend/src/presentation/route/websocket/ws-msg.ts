@@ -1,10 +1,10 @@
-import type { UserId } from "@domain/model/value-object/user/User.js";
-import type { WSRoomData } from "@domain/model/value-object/room/Room.js";
 import type {
 	MatchPosition,
 	WSMatchData,
 } from "@domain/model/value-object/match/Match.js";
+import type { WSRoomData } from "@domain/model/value-object/room/Room.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 
 export type WSIncomingMsg =
 	| {
@@ -36,6 +36,6 @@ export type WSOutgoingMsg =
 			data: WSTournamentData;
 	  }
 	| {
-			state: "Match";
+			status: "Match";
 			data: WSMatchData;
 	  };
