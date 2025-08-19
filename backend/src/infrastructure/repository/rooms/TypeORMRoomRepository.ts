@@ -1,11 +1,9 @@
 import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepository.js";
 import { Room } from "@domain/model/entity/room/Room.js";
-import type {
-	RoomId,
-	RoomStatus,
-} from "@domain/model/value-object/room/Room.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import { RoomEntity } from "@infrastructure/entity/rooms/RoomEntity.js";
 import type { Repository } from "typeorm";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 
 export class TypeOrmRoomRepository implements RoomRepository {
 	constructor(private readonly repository: Repository<RoomEntity>) {}
@@ -21,6 +19,10 @@ export class TypeOrmRoomRepository implements RoomRepository {
 		await this.repository.save(entity);
 	}
 
+	async start(id: RoomId): Promise<void> {
+		this.repository.manager.update(Room, { id: id }, { status: "playing" });
+	}
+
 	async delete(id: RoomId): Promise<void> {
 		await this.repository.delete(id);
 	}
@@ -28,6 +30,16 @@ export class TypeOrmRoomRepository implements RoomRepository {
 	async findAll(): Promise<Room[]> {
 		const entities = await this.repository.find();
 		return entities.map((entity) => this.toDomain(entity));
+	}
+
+	async findAllParticipants(id: RoomId): Promise<UserId[]> {
+		const target_room = await this.repository.findOne({ where: { id } });
+		const userids: UserId[] = [];
+
+		if (target_room === null) throw Error("no room found");
+		const participants = target_room.room_participants;
+		participants.forEach((p) => userids.push(p.user.id));
+		return userids;
 	}
 
 	private toDomain(entity: RoomEntity): Room {

@@ -3,13 +3,19 @@ import WebSocket from "@fastify/websocket";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
+import { RoomWSHandler } from "../room/roomRoutes.js";
+
+export type WebSocketContext = {
+	authedUser: UserId | null;
+	joinedRoom: RoomId | null;
+};
 
 export async function registerWebSocket(app: FastifyInstance) {
 	app.get("/wss", { websocket: true }, (connection: WebSocket.WebSocket) => {
 		const ws = connection;
 
-		let authedUser: UserId | null = null;
-		let joinedRoom: RoomId | null = null;
+		let context: WebSocketContext = { authedUser: null, joinedRoom: null };
+
 		ws.on("message", async (raw: any) => {
 			let data: WSIncomingMsg;
 			try {
@@ -26,7 +32,7 @@ export async function registerWebSocket(app: FastifyInstance) {
 			try {
 				switch (data.status) {
 					case "Room": {
-						RoomWSHandler();
+						RoomWSHandler(ws, data.action, context);
 					}
 					case "User": {
 					}

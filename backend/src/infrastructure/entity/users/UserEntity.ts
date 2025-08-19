@@ -1,4 +1,7 @@
-import type { UserStatus } from "@domain/model/value-object/user/User.js";
+import type {
+	UserId,
+	UserStatus,
+} from "@domain/model/value-object/user/User.js";
 import {
 	Column,
 	CreateDateColumn,
@@ -12,7 +15,7 @@ import { RoomParticipantEntity } from "../rooms/RoomParticipantEntity.js";
 @Entity("users")
 export class UserEntity {
 	@PrimaryColumn("text")
-	id!: string;
+	id!: UserId;
 
 	@Column("text", { unique: true })
 	username!: string;
