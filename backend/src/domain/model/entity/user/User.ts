@@ -1,13 +1,6 @@
 import bcrypt from "bcrypt";
-import {
-	AvatarUrl,
-	Username,
-} from "../../value-object/user/User.js";
-
-import type{
-	UserId,
-	UserStatus,
-} from "../../value-object/user/User.js";
+import type { UserId, UserStatus } from "../../value-object/user/User.js";
+import { AvatarUrl, Username } from "../../value-object/user/User.js";
 export class User {
 	public readonly id: UserId;
 	public readonly createdAt: Date;
@@ -54,7 +47,7 @@ export class User {
 	clearAvatar(): void {
 		this.avatar = null;
 	}
-	
+
 	changeAvatar(newAvatar: string) {
 		this.avatar = new AvatarUrl(newAvatar);
 	}

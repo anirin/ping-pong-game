@@ -47,7 +47,13 @@ export class AuthService {
 
 		await this.userRepo.save(user);
 
-		const token = this.tokenService.sign({ email }, JWT_SECRET, {
+		const payload = {
+			id: user.id,
+			email: user.email,
+			username: user.username.value,
+		};
+
+		const token = this.tokenService.sign(payload, JWT_SECRET, {
 			expiresIn: "24h",
 		});
 		return token;
@@ -68,7 +74,13 @@ export class AuthService {
 			return { twoFARequired: true };
 		}
 
-		const token = this.tokenService.sign({ email }, JWT_SECRET, {
+		const payload = {
+			id: user.id,
+			email: user.email,
+			username: user.username.value,
+		};
+
+		const token = this.tokenService.sign(payload, JWT_SECRET, {
 			expiresIn: "24h",
 		});
 		return { token };
@@ -103,7 +115,13 @@ export class AuthService {
 		user.setTwoFA(secret, true); // enabled=true
 		await this.userRepo.update(user);
 
-		const jwtToken = this.tokenService.sign({ email }, JWT_SECRET, {
+		const payload = {
+			id: user.id,
+			email: user.email,
+			username: user.username.value,
+		};
+
+		const jwtToken = this.tokenService.sign(payload, JWT_SECRET, {
 			expiresIn: "24h",
 		});
 		return { token: jwtToken };

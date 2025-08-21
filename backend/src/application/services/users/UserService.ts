@@ -5,7 +5,7 @@ import * as bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 
 export class UserService {
-	constructor(private readonly userRepository: UserRepository) { }
+	constructor(private readonly userRepository: UserRepository) {}
 
 	async createUser(username: string, password: string): Promise<User> {
 		const passwordHash = await bcrypt.hash(password, 10); // パスワードハッシュ生成
@@ -55,8 +55,4 @@ export class UserService {
 		await this.userRepository.save(user);
 		return user;
 	}
-
-
-
 }
-
