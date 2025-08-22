@@ -1,5 +1,5 @@
 .site-sidebar {
-	width: 150px;
+	width: 250px;
 	border-right: 1px solid #e5e7eb;
 	box-sizing: border-box;
 	display: flex;
@@ -7,6 +7,10 @@
 	justify-content: center;
 	align-items: center;
 	height: 100vh;
+	background-color: #ffffff;
+	position: fixed;
+	left: 0;
+	top: 0;
 }
 
 .nav {
@@ -15,20 +19,26 @@
 	margin: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 2rem; /* リンク間の間隔を広げる */
+	gap: 2rem;
 }
 
 .nav-link {
 	text-decoration: none;
 	color: #374151;
-	font-size: 24px; /* ヘッダーと同じフォントサイズ */
+	font-size: 24px;
 	font-weight: 500;
-	padding: 0.75rem 1rem;
+	padding: 0.75rem 1.5rem;
 	border-radius: 0.5rem;
 	transition: all 0.2s ease;
+	display: block;
+	width: 150px;
+	text-align: center;
 }
 
 .nav-link:hover {
 	background-color: #f3f4f6;
 	color: #1f2937;
 }
+
+
+

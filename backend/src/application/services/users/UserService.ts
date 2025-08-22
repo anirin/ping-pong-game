@@ -37,4 +37,26 @@ export class UserService {
 		await this.userRepository.save(user);
 		return user;
 	}
+
+	async updateUsername(id: string, newUsername: string): Promise<User | null> {
+		const user = await this.userRepository.findById(id);
+		if (!user) return null;
+
+		user.changeUsername(newUsername);
+		await this.userRepository.save(user);
+		return user;
+	}
+
+	async updateAvatar(id: string, newAvatar: string): Promise<User | null> {
+		const user = await this.userRepository.findById(id);
+		if (!user) return null;
+
+		user.changeAvatar(newAvatar);
+		await this.userRepository.save(user);
+		return user;
+	}
+
+
+
 }
+

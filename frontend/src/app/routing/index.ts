@@ -4,6 +4,7 @@ import { renderLoginPage } from "@pages/login/index";
 import { renderRegisterPage } from "@pages/register/index";
 import { renderRoomEntrancePage } from "@pages/room-entrance/index";
 import { renderSetupPage } from "@pages/setup/index";
+import { renderChangeUsernamePage } from "@pages/change_username/index";
 
 interface Route {
 	path: string;
@@ -38,6 +39,10 @@ const routes: Route[] = [
 	{
 		path: "/auth/setup",
 		handler: renderSetupPage,
+	},
+	{
+		path: "/users/changeusername",
+		handler: renderChangeUsernamePage,
 	},
 	// {
 	// 	path: "/online/room/:id",
