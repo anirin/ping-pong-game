@@ -1,3 +1,4 @@
+import { renderChangeUsernamePage } from "@pages/change_username/index";
 import { renderAuthPage } from "@pages/first_page/index";
 import { renderHomePage } from "@pages/home/index";
 import { renderLoginPage } from "@pages/login/index";
@@ -38,6 +39,10 @@ const routes: Route[] = [
 	{
 		path: "/auth/setup",
 		handler: renderSetupPage,
+	},
+	{
+		path: "/users/changeusername",
+		handler: renderChangeUsernamePage,
 	},
 	// {
 	// 	path: "/online/room/:id",
