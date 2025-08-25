@@ -1,14 +1,35 @@
 import { AuthService } from "@application/auth/AuthService.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
+import {
+	BcryptPasswordHasher,
+	JwtTokenService,
+	OtplibTwoFactorAuthService,
+	QrCodeService,
+} from "@infrastructure/entity/jwt_2fa/logic.js";
 import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { FastifyPluginAsync } from "fastify";
 import validator from "validator";
 
+// Repository
 const userRepo = new TypeOrmUserRepository(
 	AppDataSource.getRepository(UserEntity),
 );
-const authService = new AuthService(userRepo);
+
+// Infrastructure implementations
+const hasher = new BcryptPasswordHasher();
+const tokenService = new JwtTokenService();
+const twoFAService = new OtplibTwoFactorAuthService();
+const qrCodeService = new QrCodeService();
+
+// AuthService with dependencies
+const authService = new AuthService(
+	userRepo,
+	hasher,
+	tokenService,
+	twoFAService,
+	qrCodeService,
+);
 
 interface RegisterBody {
 	email?: string;

@@ -1,11 +1,6 @@
 import bcrypt from "bcrypt";
-import type {
-	AvatarUrl,
-	UserId,
-	Username,
-	UserStatus,
-} from "../../value-object/user/User.js";
-
+import type { UserId, UserStatus } from "../../value-object/user/User.js";
+import { AvatarUrl, Username } from "../../value-object/user/User.js";
 export class User {
 	public readonly id: UserId;
 	public readonly createdAt: Date;
@@ -53,6 +48,10 @@ export class User {
 		this.avatar = null;
 	}
 
+	changeAvatar(newAvatar: string) {
+		this.avatar = new AvatarUrl(newAvatar);
+	}
+
 	getPasswordHash(): string {
 		return this._passwordHash;
 	}
@@ -84,5 +83,8 @@ export class User {
 	setTwoFA(secret: string | null, enabled: boolean) {
 		this._twoFASecret = secret;
 		this._twoFAEnabled = enabled;
+	}
+	changeUsername(newUsername: string) {
+		this.username = new Username(newUsername);
 	}
 }

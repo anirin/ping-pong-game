@@ -1,0 +1,58 @@
+<style>
+  /* このウィジェット専用のスタイル */
+  .avatar-settings-container {
+    background-color: #ffffff;
+    padding: 25px 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9e9e9;
+    width: 100%;
+    max-width: 500px;
+  }
+  .avatar-settings-container h2 {
+    margin-top: 0; margin-bottom: 25px; text-align: left;
+    border-bottom: 2px solid #f0f0f0; padding-bottom: 15px;
+    font-size: 24px; color: #333;
+  }
+  .avatar-preview-container {
+    display: flex; flex-direction: column; align-items: center; margin: 20px 0;
+  }
+  #avatar-preview {
+   width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #eee;
+      background-color: #f8f8f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      color: #aaa;
+      font-size: 14px;
+      font-family: sans-serif;
+  }
+  #avatar-upload-label {
+    margin-top: 15px; padding: 10px 20px; background-color: #5c6bc0;
+    color: white; border-radius: 5px; cursor: pointer; font-weight: bold;
+  }
+  #avatar-upload {
+    display: none; /* デフォルトのファイル選択ボタンは隠す */
+  }
+  #avatar-response-message {
+    margin-top: 15px; font-weight: bold; text-align: center; min-height: 1.2em;
+  }
+</style>
+
+<div class="avatar-settings-container">
+  <h2>アバター変更</h2>
+  <form id="update-avatar-form">
+    <div class="avatar-preview-container">
+      <img id="avatar-preview" src="" alt="Preview">
+      <label for="avatar-upload" id="avatar-upload-label">画像を選択</label>
+      <input type="file" id="avatar-upload" accept="image/png, image/jpeg, image/gif">
+    </div>
+    <button type="submit" class="btn btn-primary">アバターを保存</button>
+  </form>
+  <p id="avatar-response-message" style="color: red;"></p>
+</div>

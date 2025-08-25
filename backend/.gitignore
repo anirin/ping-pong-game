@@ -7,3 +7,6 @@ secrets
 .env.*.local
 
 database.sqlite
+
+cert.pem
+key.pem
