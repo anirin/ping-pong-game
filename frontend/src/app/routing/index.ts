@@ -1,5 +1,6 @@
 import { renderChangeUsernamePage } from "@pages/change_username/index";
 import { renderAuthPage } from "@pages/first_page/index";
+import { renderGamePage } from "@pages/game/index";
 import { renderHomePage } from "@pages/home/index";
 import { renderLoginPage } from "@pages/login/index";
 import { renderRegisterPage } from "@pages/register/index";
@@ -8,7 +9,8 @@ import { renderSetupPage } from "@pages/setup/index";
 
 interface Route {
 	path: string;
-	handler: () => void;
+	// handler: () => void;
+	handler: (params?: { [key: string]: string }) => void;
 }
 
 const routes: Route[] = [
@@ -44,25 +46,64 @@ const routes: Route[] = [
 		path: "/users/changeusername",
 		handler: renderChangeUsernamePage,
 	},
+	{
+		path: "/game/:matchId",
+		handler: renderGamePage,
+	},
+
 	// {
 	// 	path: "/online/room/:id",
 	// 	handler: renderOnlineRoomPage,
 	// },
 ];
 
+function matchRoute(
+	path: string,
+): { route: Route; params: { [key: string]: string } } | null {
+	for (const route of routes) {
+		const routeParts = route.path.split("/").filter((p) => p);
+		const pathParts = path.split("/").filter((p) => p);
+
+		if (routeParts.length !== pathParts.length) {
+			continue;
+		}
+
+		const params: { [key: string]: string } = {};
+		let isMatch = true;
+
+		for (let i = 0; i < routeParts.length; i++) {
+			const routePart = routeParts[i];
+			const pathPart = pathParts[i];
+
+			if (routePart.startsWith(":")) {
+				const paramName = routePart.substring(1);
+				params[paramName] = pathPart;
+			} else if (routePart !== pathPart) {
+				isMatch = false;
+				break;
+			}
+		}
+		if (isMatch) {
+			return { route, params };
+		}
+	}
+	return null;
+}
+
 export function setupRouter(): void {
 	const navigate = () => {
 		const path = window.location.pathname;
-		const route = routes.find((r) => r.path === path);
+		const match = matchRoute(path);
 
-		if (route) {
-			route.handler();
+		if (match) {
+			// マッチしたハンドラに、抽出したパラメータを渡す
+			match.route.handler(match.params);
 		} else {
-			// パスが見つからない場合はホームページにリダイレクト
 			window.history.replaceState({}, "", "/");
 			renderHomePage();
 		}
 	};
+	// ... (以
 
 	// 初回ロードとpopstateイベントでルーティングを処理
 	window.addEventListener("popstate", navigate);

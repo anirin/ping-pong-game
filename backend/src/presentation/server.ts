@@ -1,6 +1,8 @@
+import "dotenv/config";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
+import gameRoutes from "@presentation/route/game/gameRoutes.js";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
@@ -55,6 +57,7 @@ export async function buildServer() {
 	await registerUserChange(app);
 	await registerTournamentWs(app);
 	await app.register(authRoutes, { prefix: "/auth" });
+	await app.register(gameRoutes);
 
 	return app;
 }

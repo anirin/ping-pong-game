@@ -1,10 +1,10 @@
 import type { Match } from "@domain/model/entity/match/Match.js";
 import {
 	Column,
-	CreateDateColumn,
+	// CreateDateColumn,
 	Entity,
 	PrimaryColumn,
-	UpdateDateColumn,
+	// UpdateDateColumn,
 } from "typeorm";
 
 @Entity("Match")
