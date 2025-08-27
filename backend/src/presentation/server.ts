@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
@@ -8,6 +9,7 @@ import authRoutes from "./route/auth/authRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerTournamentWs } from "./route/tournament/ws.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
+import gameRoutes from "@presentation/route/game/gameRoutes.js";
 
 export async function buildServer() {
 	if (
@@ -55,6 +57,7 @@ export async function buildServer() {
 	await registerUserChange(app);
 	await registerTournamentWs(app);
 	await app.register(authRoutes, { prefix: "/auth" });
+	await app.register(gameRoutes);
 
 	return app;
 }
