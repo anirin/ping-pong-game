@@ -60,11 +60,7 @@ export class GameService {
     public handlePlayerInput(matchId: MatchId, playerId: UserId, y: number): void {
         const activeGame = this.activeGames.get(matchId);
         if (activeGame) {
-            console.log(`[INPUT RECEIVED] Handling input for ${matchId}. Current Paddle Y: ${activeGame.match.paddle1State.y}`);
             activeGame.match.movePaddle(playerId, y);
-            console.log(`[INPUT PROCESSED] Paddle Y updated to: ${activeGame.match.paddle1State.y}`);
-        } else {
-            console.log(`[INPUT IGNORED] No active game found for matchId: ${matchId}`);
         }
     }
 

@@ -14,17 +14,16 @@ const gameRoutes: FastifyPluginAsync = async (fastify) => {
         preHandler: [(fastify as any).authenticate] // ★認証を要求する
     }, async (request, reply) => {
         // ★認証されたユーザーのIDを取得
-        console.log("Decoded JWT payload from request.user:", request.user);
-        const user = request.user as { id: string };
-        const player1Id = user.id;
-        const player2Id = "opponent-dummy-id"; // 対戦相手はダミーでOK
 
-        const rule = new MatchRule(20, { vx: 3, vy: 3 }, { width: 800, height: 600 });
+        const { player1Id, player2Id } = request.body as { player1Id: string, player2Id: string };
+        if (!player1Id || !player2Id) {
+            return reply.code(400).send({ error: "player1Id and player2Id are required." });
+        }
+        const rule = new MatchRule(20, { vx: 5, vy: 5 }, { width: 800, height: 600 });
         const matchId = `test-match-${Date.now()}`;
         const match = new Match(matchId, "test-tourney", player1Id, player2Id, 1, rule);
         await matchRepository.save(match);
-
-        console.log(`[Test Endpoint] Created a new match. ID: ${matchId}, Player1: ${player1Id}`);
+        console.log(`[Test Endpoint] Created match. ID: ${matchId}, P1: ${player1Id}, P2: ${player2Id}`);
         return reply.code(201).send({ message: "Test match created successfully", matchId: matchId });
     });
     fastify.get('/ws/game/:matchId', { websocket: true }, (connection: any, request: FastifyRequest) => {

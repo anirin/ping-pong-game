@@ -72,19 +72,13 @@ class GamePage {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
         }
-        // このページで追加したグローバルなイベントリスナーを削除
         window.removeEventListener('keydown', this.handleKeyDownRef);
         window.removeEventListener('keyup', this.handleKeyUpRef);
     }
 
     private connectToWebSocket(): void {
-        // テスト用の試合IDを固定
          const matchId = this.matchId;
-
-        // ▼▼▼【ここが修正点】▼▼▼
-        // localStorageからトークンを取得する際のキー名を'accessToken'に修正
         const token = localStorage.getItem('accessToken');
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         if (!token) {
             alert("Token not found. Please login.");
