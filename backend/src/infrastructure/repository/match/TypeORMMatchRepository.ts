@@ -1,7 +1,10 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import { Match } from "@domain/model/entity/match/Match.js";
+import type {
+	MatchId,
+	MatchStatus,
+} from "@domain/model/value-object/match/Match.js";
 import { MatchRule } from "@domain/model/value-object/match/Match.js";
-import type { MatchId, MatchStatus } from "@domain/model/value-object/match/Match.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import type { Repository } from "typeorm";
@@ -40,22 +43,22 @@ export class TypeORMMatchRepository implements MatchRepository {
 		const matchRule = new MatchRule(
 			2, // pointToWin: 本来はDBから取得するか、設定ファイルから読み込むべき
 			{ vx: 7, vy: 7 }, // initialBallSpeed: デフォルト値
-			{ width: 800, height: 600 } // fieldSize: デフォルト値
+			{ width: 800, height: 600 }, // fieldSize: デフォルト値
 		);
 
 		// Match.reconstitute静的メソッドを使って、安全にドメインエンティティを復元
 		return Match.reconstitute({
-            id: entity.id,
-            tournamentId: entity.tournamentId,
-            player1Id: entity.player1,
-            player2Id: entity.player2,
-            round: entity.round,
-            rule: matchRule,
-            status: entity.status as MatchStatus,
-            score1: entity.score1,
-            score2: entity.score2,
-            winnerId: entity.winnerId,
-        });
+			id: entity.id,
+			tournamentId: entity.tournamentId,
+			player1Id: entity.player1,
+			player2Id: entity.player2,
+			round: entity.round,
+			rule: matchRule,
+			status: entity.status as MatchStatus,
+			score1: entity.score1,
+			score2: entity.score2,
+			winnerId: entity.winnerId,
+		});
 	}
 
 	/**

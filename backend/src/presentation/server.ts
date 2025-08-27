@@ -1,7 +1,8 @@
-import 'dotenv/config';
+import "dotenv/config";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
+import gameRoutes from "@presentation/route/game/gameRoutes.js";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
@@ -9,7 +10,6 @@ import authRoutes from "./route/auth/authRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerTournamentWs } from "./route/tournament/ws.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
-import gameRoutes from "@presentation/route/game/gameRoutes.js";
 
 export async function buildServer() {
 	if (

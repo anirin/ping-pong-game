@@ -1,6 +1,6 @@
 import { Match } from "@domain/model/entity/match/Match.js";
-import { MatchRule } from "@domain/model/value-object/match/Match.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import { MatchRule } from "@domain/model/value-object/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type {
 	TournamentId,
@@ -41,10 +41,10 @@ export class Tournament {
 	generateFirstRound() {
 		// 1. このトーナメントで使う試合のルールを定義
 		const matchRule = new MatchRule(
-            2,                          // pointToWin
-            { vx: 7, vy: 7 },           // initialBallSpeed
-            { width: 800, height: 600 } // fieldSize
-        );
+			2, // pointToWin
+			{ vx: 7, vy: 7 }, // initialBallSpeed
+			{ width: 800, height: 600 }, // fieldSize
+		);
 
 		const matchId1: MatchId = "1";
 		const matchId2: MatchId = "2";
@@ -58,27 +58,26 @@ export class Tournament {
 		const matches = [
 			new Match(
 				matchId1,
-                tournamentId, // tournamentId
+				tournamentId, // tournamentId
 				this.participants[0]!,
 				this.participants[1]!,
-                1,            // round
-				matchRule,    // rule
+				1, // round
+				matchRule, // rule
 			),
 			new Match(
 				matchId2,
-                tournamentId, // tournamentId
+				tournamentId, // tournamentId
 				this.participants[2]!,
 				this.participants[3]!,
-                1,            // round
-				matchRule,    // rule
+				1, // round
+				matchRule, // rule
 			),
 		];
 		this.matches = matches;
-
 	}
 
 	generateNextRound() {
-        // debug 全てのmatch を出力
+		// debug 全てのmatch を出力
 		console.log("all matches", this.matches);
 		const current_matches = this.matches.filter(
 			(match) => match.round === this.currentRound,
@@ -92,26 +91,26 @@ export class Tournament {
 		}
 
 		const matchId3: MatchId = "3";
-        // 1. ルールを定義
+		// 1. ルールを定義
 		const matchRule = new MatchRule(
-            2,
-            { vx: 7, vy: 7 },
-            { width: 800, height: 600 }
-        );
+			2,
+			{ vx: 7, vy: 7 },
+			{ width: 800, height: 600 },
+		);
 
 		const nextRound = this.currentRound + 1;
 		const tournamentId = this.id;
 
-        // 2. 新しいコンストラクタに合わせてMatchを生成
+		// 2. 新しいコンストラクタに合わせてMatchを生成
 		const finalMatch = new Match(
 			matchId3,
-            tournamentId, // tournamentId
+			tournamentId, // tournamentId
 			current_matches[0]!.winnerId!,
 			current_matches[1]!.winnerId!,
-			nextRound,    // round
-			matchRule,    // rule
+			nextRound, // round
+			matchRule, // rule
 		);
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+		// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 		this.matches.push(finalMatch);
 		this.currentRound = nextRound;

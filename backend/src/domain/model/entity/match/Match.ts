@@ -1,15 +1,12 @@
+import type {
+	BallState,
+	MatchId,
+	MatchRule,
+	MatchStatus,
+	PaddleState,
+} from "@domain/model/value-object/match/Match.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-import type {
-	MatchId,
-	MatchStatus,
-} from "@domain/model/value-object/match/Match.js";
-
-import {
-	MatchRule,
-	type BallState,
-	type PaddleState,
-} from "@domain/model/value-object/match/Match.js";
 
 export class Match {
 	public readonly id: MatchId;
@@ -54,20 +51,36 @@ export class Match {
 	}
 
 	// --- Public Getters (外部から状態を安全に読み取るため) ---
-	get status(): MatchStatus { return this._status; }
-	get score1(): number { return this._score1; }
-	get score2(): number { return this._score2; }
-	get winnerId(): UserId | null { return this._winnerId; }
-	get ballState(): BallState { return { ...this._ballState }; } // コピーを返して内部状態を保護
-	get paddle1State(): PaddleState { return { ...this._paddle1State }; }
-	get paddle2State(): PaddleState { return { ...this._paddle2State }; }
+	get status(): MatchStatus {
+		return this._status;
+	}
+	get score1(): number {
+		return this._score1;
+	}
+	get score2(): number {
+		return this._score2;
+	}
+	get winnerId(): UserId | null {
+		return this._winnerId;
+	}
+	get ballState(): BallState {
+		return { ...this._ballState };
+	} // コピーを返して内部状態を保護
+	get paddle1State(): PaddleState {
+		return { ...this._paddle1State };
+	}
+	get paddle2State(): PaddleState {
+		return { ...this._paddle2State };
+	}
 
 	// --- 振る舞い (ドメインロジック) ---
 
 	/** 試合を開始する */
 	public start(): void {
 		if (this._status !== "scheduled") {
-			throw new Error("Match cannot be started because it is not in 'scheduled' status.");
+			throw new Error(
+				"Match cannot be started because it is not in 'scheduled' status.",
+			);
 		}
 		this._status = "playing";
 		this.resetRealtimeState();
@@ -89,24 +102,28 @@ export class Match {
 			player2Paddle: this._paddle2State,
 		};
 
-		const { nextBallState, scorer } = this._rule.calculateNextFrame(currentState);
+		const { nextBallState, scorer } =
+			this._rule.calculateNextFrame(currentState);
 		this._ballState = nextBallState;
 
 		if (scorer) {
-			const actualScorerId = scorer === "player1" ? this.player1Id : this.player2Id;
+			const actualScorerId =
+				scorer === "player1" ? this.player1Id : this.player2Id;
 			this.addScore(actualScorerId);
 			this.resetRealtimeState();
 		}
 	}
 
 	public movePaddle(playerId: UserId, y: number): void {
-
 		if (this._status !== "playing") return;
 
 		const fieldHeight = this._rule.fieldSize.height;
 		const paddleHeight = 100;
 
-		const newY = Math.max(paddleHeight / 2, Math.min(fieldHeight - paddleHeight / 2, y));
+		const newY = Math.max(
+			paddleHeight / 2,
+			Math.min(fieldHeight - paddleHeight / 2, y),
+		);
 
 		if (playerId === this.player1Id) {
 			this._paddle1State.y = newY;
@@ -151,20 +168,18 @@ export class Match {
 		this._paddle1State = { y: this._rule.fieldSize.height / 2 };
 		this._paddle2State = { y: this._rule.fieldSize.height / 2 };
 	}
-	public static reconstitute(
-		props: {
-			id: MatchId;
-			tournamentId: TournamentId;
-			player1Id: UserId;
-			player2Id: UserId;
-			round: number;
-			rule: MatchRule;
-			status: MatchStatus;
-			score1: number;
-			score2: number;
-			winnerId: UserId | null;
-		}
-	): Match {
+	public static reconstitute(props: {
+		id: MatchId;
+		tournamentId: TournamentId;
+		player1Id: UserId;
+		player2Id: UserId;
+		round: number;
+		rule: MatchRule;
+		status: MatchStatus;
+		score1: number;
+		score2: number;
+		winnerId: UserId | null;
+	}): Match {
 		const match = new Match(
 			props.id,
 			props.tournamentId,
@@ -182,10 +197,6 @@ export class Match {
 		return match;
 	}
 }
-
-
-
-
 
 // import type {
 // 	MatchId,
