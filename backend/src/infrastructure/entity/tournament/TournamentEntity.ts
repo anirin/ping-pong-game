@@ -1,4 +1,4 @@
-import type { Tournament } from "@domain/model/entity/tournament/Tournament.js";
+// import type { Tournament } from "@domain/model/entity/tournament/Tournament.js";
 import {
 	Column,
 	CreateDateColumn,

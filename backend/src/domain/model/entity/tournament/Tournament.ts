@@ -59,8 +59,14 @@ export class Tournament {
 			new Match(
 				matchId1,
 				tournamentId, // tournamentId
-				this.participants[0]!,
-				this.participants[1]!,
+				this.participants[0] ??
+					(() => {
+						throw new Error("Missing participant[0]");
+					})(),
+				this.participants[1] ??
+					(() => {
+						throw new Error("Missing participant[1]");
+					})(),
 				1, // round
 				matchRule, // rule
 			),

@@ -124,13 +124,25 @@ class GamePage {
 		if (!btnUp || !btnDown) return;
 
 		// ボタン操作
-		btnUp.addEventListener("mousedown", () => (this.movingUp = true));
-		btnUp.addEventListener("mouseup", () => (this.movingUp = false));
-		btnUp.addEventListener("mouseleave", () => (this.movingUp = false));
+		btnUp.addEventListener("mousedown", () => {
+			this.movingUp = true;
+		});
+		btnUp.addEventListener("mouseup", () => {
+			this.movingUp = false;
+		});
+		btnUp.addEventListener("mouseleave", () => {
+			this.movingUp = false;
+		});
 
-		btnDown.addEventListener("mousedown", () => (this.movingDown = true));
-		btnDown.addEventListener("mouseup", () => (this.movingDown = false));
-		btnDown.addEventListener("mouseleave", () => (this.movingDown = false));
+		btnDown.addEventListener("mousedown", () => {
+			this.movingDown = true;
+		});
+		btnDown.addEventListener("mouseup", () => {
+			this.movingDown = false;
+		});
+		btnDown.addEventListener("mouseleave", () => {
+			this.movingDown = false;
+		});
 
 		// キーボード操作 (クリーンアップのために参照を保持)
 		window.addEventListener("keydown", this.handleKeyDownRef);
