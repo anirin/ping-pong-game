@@ -7,13 +7,13 @@ import type {
 	WSRoomData,
 } from "@domain/model/value-object/room/Room.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
+import type WebSocket from "@fastify/websocket";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
-import WebSocket from "@fastify/websocket";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
 	const roomRepository = new TypeOrmRoomRepository(
