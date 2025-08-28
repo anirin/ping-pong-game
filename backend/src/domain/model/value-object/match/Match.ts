@@ -1,4 +1,4 @@
-import type { AvatarUrl, Username, UserId } from "../user/User.js";
+import type { AvatarUrl, UserId, Username } from "../user/User.js";
 export type MatchId = string;
 export type MatchStatus = "scheduled" | "playing" | "finished" | "canceled";
 export type MatchPosition = [number, number];
