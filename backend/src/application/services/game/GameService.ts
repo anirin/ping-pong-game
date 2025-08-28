@@ -76,11 +76,12 @@ export class GameService {
 
 		clearInterval(activeGame.loopId);
 
+		const finalStateDto = this.createDtoFromMatch(activeGame.match);
 		this.activeGames.delete(matchId);
 
 		this.gameNotifier.notifyMatchFinish(matchId, {
+			...finalStateDto,
 			status: "finished",
-			winnerId: activeGame.match.winnerId!,
 		});
 
 		console.log(`[GameService] Match ${matchId} has finished.`);
@@ -94,13 +95,36 @@ export class GameService {
 				y: match.ballState.y,
 			},
 			paddles: {
-				player1: { y: match.paddle1State.y },
-				player2: { y: match.paddle2State.y },
+				player1: { id: match.player1Id, y: match.paddle1State.y },
+				player2: { id: match.player2Id, y: match.paddle2State.y },
 			},
 			scores: {
 				player1: match.score1,
 				player2: match.score2,
 			},
 		};
+	}
+	public handleDisconnection(
+		matchId: MatchId,
+		disconnectedPlayerId: UserId,
+	): void {
+		const activeGame = this.activeGames.get(matchId);
+		if (!activeGame || activeGame.match.status === "finished") {
+			return;
+		}
+
+		console.log(
+			`[GameService] Player ${disconnectedPlayerId} disconnected from match ${matchId}.`,
+		);
+
+		const match = activeGame.match;
+		const winnerId =
+			disconnectedPlayerId === match.player1Id
+				? match.player2Id
+				: match.player1Id;
+
+		match.concludeByDisconnection(winnerId);
+		this.matchRepository.save(match);
+		this.stopMatch(matchId);
 	}
 }
