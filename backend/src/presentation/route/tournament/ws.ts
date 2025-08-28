@@ -77,13 +77,15 @@ function toTournamentDTO(t: any) {
 function toMatchDTO(m: any) {
 	return {
 		id: m.id,
-		player1_id: m.player1_id ?? m._player1?.id,
-		player2_id: m.player2_id ?? m._player2?.id,
+		player1_id: m.player1Id ?? m.player1_id ?? m._player1?.id,
+		player2_id: m.player2Id ?? m.player2_id ?? m._player2?.id,
+		player1_name: m.player1_name ?? m._player1?.name ?? m.player1Id ?? m.player1_id ?? m._player1?.id,
+		player2_name: m.player2_name ?? m._player2?.name ?? m.player2Id ?? m.player2_id ?? m._player2?.id,
 		score1: m.score1 ?? m._score1 ?? 0,
 		score2: m.score2 ?? m._score2 ?? 0,
 		status: m.status ?? m._status,
 		round: m.round ?? 1,
-		winner_id: m.winner_id ?? null,
+		winner_id: m.winner_id ?? m.winnerId ?? null,
 	};
 }
 
