@@ -26,10 +26,10 @@ export class RoomService {
 		return false;
 	}
 
-	async deleteRoom(id: string): Promise<boolean> {
+	async deleteRoom(id: string, userid: UserId): Promise<boolean> {
 		const room = await this.roomRepository.findById(id);
 		if (room === null) return false;
-		if (room.ownerId === id && room.status === "waiting")
+		if (room.ownerId === userid && room.status === "waiting")
 			return this.roomRepository.delete(id);
 		return false;
 	}
