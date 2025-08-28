@@ -16,16 +16,35 @@
   width: 100%;
 }
 
-.match {
-  display: flex;
-  flex-direction: column;
-  width: 300px;
-}
-
 .main {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
   width: 100%;
+  flex-direction: column;
+}
+
+.center-match-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px;
+}
+
+.match-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.start-match-btn {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 15px 30px;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 10px;
 }
