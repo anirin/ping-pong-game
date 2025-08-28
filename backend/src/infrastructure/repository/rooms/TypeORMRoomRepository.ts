@@ -16,7 +16,10 @@ export class TypeOrmRoomRepository implements RoomRepository {
 	constructor(private readonly repository: Repository<RoomEntity>) {}
 
 	async findById(id: RoomId): Promise<Room | null> {
-		const entity = await this.repository.findOne({ where: { id } });
+		const entity = await this.repository.findOne({
+			where: { id },
+			relations: ["participants"],
+		});
 		if (!entity) return null;
 		return this.toDomain(entity);
 	}
@@ -69,7 +72,7 @@ export class TypeOrmRoomRepository implements RoomRepository {
 			this.toDomain(room).checkOwner(user.id)
 		)
 			return false;
-		room.participants.filter((p) => p.id !== user.id);
+		room.participants = room.participants.filter((p) => p.id !== user.id);
 		await this.repository.save(room);
 		return true;
 	}
@@ -80,12 +83,16 @@ export class TypeOrmRoomRepository implements RoomRepository {
 	}
 
 	async findAllParticipants(id: RoomId): Promise<RoomUser[]> {
-		const target_room = await this.repository.findOne({ where: { id } });
+		const target_room = await this.repository.findOne({
+			where: { id },
+			relations: ["participants"],
+		});
 		const userids: RoomUser[] = [];
 
-		if (target_room === null) throw Error("no room found");
+		if (!target_room) throw Error("no room found");
 		const participants = target_room.participants;
-		participants.forEach((p) => userids.push(this.extractRoomUser(p)));
+		if (participants.length !== 0)
+			participants.forEach((p) => userids.push(this.extractRoomUser(p)));
 		return userids;
 	}
 
@@ -93,6 +100,7 @@ export class TypeOrmRoomRepository implements RoomRepository {
 		return new Room(
 			entity.id,
 			entity.owner_id,
+			entity.participants,
 			entity.status,
 			entity.mode,
 			entity.room_type,

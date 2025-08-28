@@ -13,6 +13,7 @@ import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
+import WebSocket from "@fastify/websocket";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
 	const roomRepository = new TypeOrmRoomRepository(
@@ -98,7 +99,9 @@ export async function RoomWSHandler(
 	if (context.joinedRoom === null) throw Error("joined no room");
 	switch (action) {
 		case "START": {
-			if (await room_service.startRoom(context.joinedRoom)) {
+			if (
+				await room_service.startRoom(context.joinedRoom, context.authedUser)
+			) {
 				return {
 					status: "Tournament",
 					data: {
@@ -114,7 +117,6 @@ export async function RoomWSHandler(
 			}
 		}
 		case "DELETE": {
-			console.log(context.joinedRoom);
 			if (
 				await room_service.deleteRoom(context.joinedRoom, context.authedUser)
 			) {
@@ -141,16 +143,22 @@ export async function RoomUserWSHandler(
 	room_id: RoomId | null,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
+	const roomId = action === "ADD" ? room_id : context.joinedRoom;
+	if (!roomId) throw Error("no room specified");
+	const roomSockets = context.roomSockets;
+	const set = roomSockets.get(roomId) ?? new Set<WebSocket.WebSocket>();
+	const ws = context.websocket;
 	switch (action) {
 		case "ADD": {
-			if (room_id === null) throw Error("no room to join specified");
-			if (await room_user_service.joinRoom(context.authedUser, room_id)) {
-				context.joinedRoom = room_id;
+			if (await room_user_service.joinRoom(context.authedUser, roomId)) {
+				context.joinedRoom = roomId;
+				set.add(ws);
+				roomSockets.set(roomId, set);
 				return {
 					status: "Room",
 					data: {
 						action: "USER",
-						users: await room_user_service.getAllParticipants(room_id),
+						users: await room_user_service.getAllParticipants(roomId),
 					} satisfies WSRoomData,
 				} satisfies WSOutgoingMsg;
 			} else {
@@ -161,15 +169,16 @@ export async function RoomUserWSHandler(
 			}
 		}
 		case "DELETE": {
-			if (context.joinedRoom === null) throw Error("joined no room");
 			if (await room_user_service.leaveRoom(context.authedUser)) {
+				context.joinedRoom = null;
+				set.delete(ws);
+				if (set.size) roomSockets.set(roomId, set);
+				else roomSockets.delete(roomId);
 				return {
 					status: "Room",
 					data: {
 						action: "USER",
-						users: await room_user_service.getAllParticipants(
-							context.joinedRoom,
-						),
+						users: await room_user_service.getAllParticipants(roomId),
 					} satisfies WSRoomData,
 				} satisfies WSOutgoingMsg;
 			} else {

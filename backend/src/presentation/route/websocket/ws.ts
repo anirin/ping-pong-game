@@ -33,6 +33,8 @@ function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 export type WebSocketContext = {
 	authedUser: UserId;
 	joinedRoom: RoomId | null;
+	websocket: WebSocket.WebSocket;
+	roomSockets: Map<RoomId, Set<WebSocket.WebSocket>>;
 };
 
 export async function registerWebSocket(app: FastifyInstance) {
@@ -75,6 +77,8 @@ export async function registerWebSocket(app: FastifyInstance) {
 			const context: WebSocketContext = {
 				authedUser: userId,
 				joinedRoom: null,
+				websocket: ws,
+				roomSockets: rooms,
 			};
 
 			ws.on("message", async (raw: any) => {
@@ -118,7 +122,9 @@ export async function registerWebSocket(app: FastifyInstance) {
 						case "Match": {
 						}
 					}
-				} catch {}
+				} catch (e) {
+					console.error(e);
+				}
 			});
 
 			ws.on("close", () => {

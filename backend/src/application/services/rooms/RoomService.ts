@@ -9,7 +9,7 @@ export class RoomService {
 	constructor(private readonly roomRepository: RoomRepository) {}
 
 	async createRoom(owner_id: string): Promise<Room> {
-		const room = new Room(uuidv4(), owner_id);
+		const room = new Room(uuidv4(), owner_id, []);
 		await this.roomRepository.save(room);
 		return room;
 	}
@@ -18,10 +18,10 @@ export class RoomService {
 		return this.roomRepository.findById(id);
 	}
 
-	async startRoom(id: string): Promise<boolean> {
+	async startRoom(id: string, userid: UserId): Promise<boolean> {
 		const room = await this.roomRepository.findById(id);
 		if (room === null) return false;
-		if (room.ownerId === id && room.status === "waiting")
+		if (room.ownerId === userid && room.status === "waiting")
 			return this.roomRepository.start(id);
 		return false;
 	}

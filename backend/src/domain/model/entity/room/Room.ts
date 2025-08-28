@@ -5,24 +5,23 @@ import type {
 	RoomType,
 } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import type { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 
 export class Room {
-	private participants: UserId[] = [];
+	private _participants: UserId[] = [];
 	private max_player = 0;
 
 	constructor(
 		public readonly id: RoomId,
 		public readonly ownerId: UserId,
-		private _status: RoomStatus = "waiting",
+		public readonly participants: UserEntity[],
+		public readonly status: RoomStatus = "waiting",
 		public readonly mode: RoomMode = "online",
 		public readonly roomType: RoomType = "1on1",
 		public readonly createdAt: Date = new Date(),
 	) {
 		this.max_player = this.roomType === "1on1" ? 2 : 4;
-	}
-
-	get status() {
-		return this._status;
+		participants.forEach((p) => this._participants.push(p.id));
 	}
 
 	get allParticipants() {
