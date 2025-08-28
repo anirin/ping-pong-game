@@ -6,11 +6,12 @@ import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	ManyToOne,
 	OneToMany,
 	PrimaryColumn,
 	UpdateDateColumn,
 } from "typeorm";
-import { RoomParticipantEntity } from "../rooms/RoomParticipantEntity.js";
+import { RoomEntity } from "../rooms/RoomEntity.js";
 
 @Entity("users")
 export class UserEntity {
@@ -29,12 +30,12 @@ export class UserEntity {
 	@Column("text")
 	password_hash!: string;
 
-	@OneToMany(
-		() => RoomParticipantEntity,
-		(middle) => middle.user,
-		{ cascade: true },
+	@ManyToOne(
+		() => RoomEntity,
+		(room) => room.participants,
+		{ cascade: true, nullable: true },
 	)
-	room_participant!: RoomParticipantEntity[];
+	room?: RoomEntity;
 
 	@CreateDateColumn()
 	created_at!: Date;

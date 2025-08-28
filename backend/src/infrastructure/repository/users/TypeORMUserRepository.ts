@@ -58,6 +58,7 @@ export class TypeOrmUserRepository implements UserRepository {
 			entity.status as UserStatus,
 			entity.created_at,
 			entity.avatar_url ? new AvatarUrl(entity.avatar_url) : null,
+			entity.room ? entity.room.id : null,
 			entity.twoFAEnabled ?? false,
 			entity.twoFASecret ?? null,
 		);

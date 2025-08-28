@@ -7,10 +7,10 @@ export type RoomType = "1on1" | "multi";
 export type RoomMode = "online" | "offline";
 export type Role = "player" | "spectator";
 
-type RoomUser = {
+export type RoomUser = {
 	id: UserId;
 	name: Username;
-	avatar: AvatarUrl;
+	avatar: AvatarUrl | null;
 	num_win: 0;
 	num_lose: 0;
 };

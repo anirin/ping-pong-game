@@ -1,12 +1,16 @@
 import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepository.js";
 import { Room } from "@domain/model/entity/room/Room.js";
-import type { RoomId } from "@domain/model/value-object/room/Room.js";
-import type { UserId } from "@domain/model/value-object/user/User.js";
+import type { User } from "@domain/model/entity/user/User.js";
+import type { RoomId, RoomUser } from "@domain/model/value-object/room/Room.js";
+import {
+	AvatarUrl,
+	type UserId,
+	Username,
+} from "@domain/model/value-object/user/User.js";
 import { RoomEntity } from "@infrastructure/entity/rooms/RoomEntity.js";
-import { RoomParticipantEntity } from "@infrastructure/entity/rooms/RoomParticipantEntity.js";
+import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import type { Repository } from "typeorm";
 import type { DeleteResult, UpdateResult } from "typeorm/browser";
-import { v4 as uuidv4 } from "uuid";
 
 export class TypeOrmRoomRepository implements RoomRepository {
 	constructor(private readonly repository: Repository<RoomEntity>) {}
@@ -40,30 +44,48 @@ export class TypeOrmRoomRepository implements RoomRepository {
 		);
 	}
 
-	// async join(room_id: RoomId, user_id: UserId): Promise<boolean> {
-	// 	const room = await this.repository.findOne({ where: { id: room_id } });
-	// 	if (room === null || this.toDomain(room).isFull()) return false;
-	// 	const participants = room.room_participants;
-	// 	const requester = new RoomParticipantEntity();
-	// 	requester.id = uuidv4();
-	// 	requester.room = room_id;
-	// 	requester.user = user_id;
-	// 	participants.push(requester);
-	// 	const result: UpdateResult = await this.repository.manager.update(RoomEntity, { id: room_id }, { room_participants:  })
-	// }
+	async join(room_id: RoomId, user: User): Promise<boolean> {
+		const room = await this.repository.findOne({
+			where: { id: room_id },
+			relations: ["participants"],
+		});
+		if (room === null || this.toDomain(room).isFull()) return false;
+		room.participants.push(this.userToEntity(user));
+		await this.repository.save(room);
+		return true;
+	}
+
+	// for participants, not owner. for owner, use delete instead
+	async leave(user: User): Promise<boolean> {
+		const room_id = user._room_id;
+		if (room_id === null) return false;
+		const room = await this.repository.findOne({
+			where: { id: room_id },
+			relations: ["participants"],
+		});
+		if (
+			room === null ||
+			this.toDomain(room).isEmpty() ||
+			this.toDomain(room).checkOwner(user.id)
+		)
+			return false;
+		room.participants.filter((p) => p.id !== user.id);
+		await this.repository.save(room);
+		return true;
+	}
 
 	async findAll(): Promise<Room[]> {
 		const entities = await this.repository.find();
 		return entities.map((entity) => this.toDomain(entity));
 	}
 
-	async findAllParticipants(id: RoomId): Promise<UserId[]> {
+	async findAllParticipants(id: RoomId): Promise<RoomUser[]> {
 		const target_room = await this.repository.findOne({ where: { id } });
-		const userids: UserId[] = [];
+		const userids: RoomUser[] = [];
 
 		if (target_room === null) throw Error("no room found");
-		const participants = target_room.room_participants;
-		participants.forEach((p) => userids.push(p.user.id));
+		const participants = target_room.participants;
+		participants.forEach((p) => userids.push(this.extractRoomUser(p)));
 		return userids;
 	}
 
@@ -87,6 +109,35 @@ export class TypeOrmRoomRepository implements RoomRepository {
 		entity.room_type = room.roomType;
 		entity.created_at = room.createdAt;
 		entity.updated_at = new Date();
+		return entity;
+	}
+
+	private extractRoomUser(user: UserEntity): RoomUser {
+		const room_user: RoomUser = {
+			id: user.id,
+			name: new Username(user.username),
+			avatar: user.avatar_url ? new AvatarUrl(user.avatar_url) : null,
+			num_win: 0,
+			num_lose: 0,
+		};
+		return room_user;
+	}
+
+	private userToEntity(user: User) {
+		const entity = new UserEntity();
+		entity.id = user.id;
+		entity.email = user.email;
+		entity.username = user.username.value;
+		entity.avatar_url = user.avatar?.value ?? null;
+		entity.status = user.status;
+		entity.password_hash = user.getPasswordHash();
+		entity.created_at = user.createdAt;
+		entity.updated_at = new Date();
+
+		// 2FA 情報を反映
+		entity.twoFAEnabled = user.isTwoFAEnabled();
+		entity.twoFASecret = user.getTwoFASecret() ?? null;
+
 		return entity;
 	}
 }
