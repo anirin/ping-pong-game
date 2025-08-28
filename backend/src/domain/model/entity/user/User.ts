@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import type { RoomId } from "../../value-object/room/Room.js";
 import type { UserId, UserStatus } from "../../value-object/user/User.js";
 import { AvatarUrl, Username } from "../../value-object/user/User.js";
 export class User {
@@ -8,6 +9,7 @@ export class User {
 	public readonly email: string;
 	public username: Username;
 	public avatar: AvatarUrl | null;
+	public _room_id: RoomId | null;
 	private _status: UserStatus = "offline";
 	private _twoFAEnabled: boolean = false;
 	private _twoFASecret: string | null = null;
@@ -20,6 +22,7 @@ export class User {
 		status: UserStatus = "offline",
 		createdAt: Date,
 		avatar?: AvatarUrl | null,
+		room_id?: RoomId | null,
 		twoFAEnabled: boolean = false,
 		twoFASecret: string | null = null,
 	) {
@@ -29,6 +32,7 @@ export class User {
 		this.username = username;
 		this._passwordHash = passwordHash;
 		this.avatar = avatar ?? null;
+		this._room_id = room_id ?? null;
 		this._status = status;
 		this._twoFAEnabled = twoFAEnabled;
 		this._twoFASecret = twoFASecret;

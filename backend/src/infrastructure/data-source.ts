@@ -10,5 +10,5 @@ export const AppDataSource = new DataSource({
 	database: "./database.sqlite",
 	entities: [UserEntity, RoomEntity, TournamentEntity, MatchEntity],
 	synchronize: true,
-	logging: true,
+	logging: ["error"],
 });

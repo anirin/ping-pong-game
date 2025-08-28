@@ -8,7 +8,10 @@ import {
 } from "@infrastructure/entity/jwt_2fa/logic.js";
 import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
-import type { FastifyPluginAsync } from "fastify";
+import fastify, {
+	type FastifyInstance,
+	type FastifyPluginAsync,
+} from "fastify";
 import validator from "validator";
 
 // Repository
@@ -45,6 +48,20 @@ interface LoginBody {
 interface TwoFABody {
 	email?: string;
 	token?: string;
+}
+
+export function decodeJWT(
+	fastify: FastifyInstance,
+	token: string,
+): string | null {
+	try {
+		console.log("token:", token);
+		const decoded = fastify.jwt.decode(token) as { id: string };
+		console.log("Decoded JWT payload from token:", decoded);
+		return decoded.id;
+	} catch (err) {
+		return null;
+	}
 }
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
