@@ -1,7 +1,12 @@
-import { RoomService } from "@application/services/rooms/RoomService.js";
-import type { WSRoomData } from "@domain/model/value-object/room/Room.js";
+import {
+	RoomService,
+	type RoomUserService,
+} from "@application/services/rooms/RoomService.js";
+import type {
+	RoomId,
+	WSRoomData,
+} from "@domain/model/value-object/room/Room.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
-import WebSocket from "@fastify/websocket";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import type { FastifyInstance } from "fastify";
@@ -120,6 +125,52 @@ export async function RoomWSHandler(
 				return {
 					status: "error",
 					msg: "failed to delete room",
+				} satisfies WSOutgoingMsg;
+			}
+		}
+	}
+}
+
+export async function RoomUserWSHandler(
+	action: "ADD" | "DELETE",
+	room_user_service: RoomUserService,
+	room_id: RoomId | null,
+	context: WebSocketContext,
+): Promise<WSOutgoingMsg> {
+	switch (action) {
+		case "ADD": {
+			if (room_id === null) throw Error("no room to join specified");
+			if (await room_user_service.joinRoom(context.authedUser, room_id)) {
+				return {
+					status: "Room",
+					data: {
+						action: "USER",
+						users: await room_user_service.getAllParticipants(room_id),
+					} satisfies WSRoomData,
+				} satisfies WSOutgoingMsg;
+			} else {
+				return {
+					status: "error",
+					msg: "failed to join room",
+				} satisfies WSOutgoingMsg;
+			}
+		}
+		case "DELETE": {
+			if (context.joinedRoom === null) throw Error("joined no room");
+			if (await room_user_service.leaveRoom(context.authedUser)) {
+				return {
+					status: "Room",
+					data: {
+						action: "USER",
+						users: await room_user_service.getAllParticipants(
+							context.joinedRoom,
+						),
+					} satisfies WSRoomData,
+				} satisfies WSOutgoingMsg;
+			} else {
+				return {
+					status: "error",
+					msg: "failed to leave room",
 				} satisfies WSOutgoingMsg;
 			}
 		}

@@ -1,5 +1,5 @@
-import type { RoomId } from "@domain/model/rooms/value-objects.js";
 import bcrypt from "bcrypt";
+import type { RoomId } from "../../value-object/room/Room.js";
 import type { UserId, UserStatus } from "../../value-object/user/User.js";
 import { AvatarUrl, Username } from "../../value-object/user/User.js";
 export class User {

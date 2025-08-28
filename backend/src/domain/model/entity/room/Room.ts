@@ -1,4 +1,3 @@
-import type { WSInterface } from "@domain/model/rooms/value-objects.js";
 import type {
 	RoomId,
 	RoomMode,
@@ -6,11 +5,6 @@ import type {
 	RoomType,
 } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-import {
-	AlreadyJoinedError,
-	InvalidTransitionError,
-	RoomFullError,
-} from "../../common/errors.js";
 
 export class Room {
 	private participants: UserId[] = [];

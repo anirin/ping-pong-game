@@ -1,4 +1,7 @@
-import { RoomService } from "@application/services/rooms/RoomService.js";
+import {
+	RoomService,
+	RoomUserService,
+} from "@application/services/rooms/RoomService.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
@@ -6,20 +9,12 @@ import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
-import type { FastifyInstance } from "fastify";
-import { RoomWSHandler } from "../room/roomRoutes.js";
+import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
+import { type FastifyInstance, fastify } from "fastify";
+import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
-
-function joinRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
-	let set = rooms.get(roomId);
-	if (!set) {
-		set = new Set();
-		rooms.set(roomId, set);
-	}
-	set.add(ws);
-}
 
 function leaveAll(ws: WebSocket.WebSocket) {
 	for (const set of rooms.values()) set.delete(ws);
@@ -35,63 +30,106 @@ function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 }
 
 export type WebSocketContext = {
-	authedUser: UserId | null;
+	authedUser: UserId;
 	joinedRoom: RoomId | null;
 };
 
 export async function registerWebSocket(app: FastifyInstance) {
-	app.get("/wss", { websocket: true }, (connection: WebSocket.WebSocket) => {
-		const ws = connection;
-
-		const roomRepository = new TypeOrmRoomRepository(
-			AppDataSource.getRepository("RoomEntity"),
-		);
-		const roomService = new RoomService(roomRepository);
-
-		const tournamentRepository = new TypeORMTournamentRepository(
-			AppDataSource.getRepository("TournamentEntity"),
-		);
-		const matchRepository = new TypeORMMatchRepository(
-			AppDataSource.getRepository("MatchEntity"),
-		);
-
-		const context: WebSocketContext = { authedUser: null, joinedRoom: null };
-
-		ws.on("message", async (raw: any) => {
-			let data: WSIncomingMsg;
-			try {
-				data = JSON.parse(raw.toString());
-			} catch {
-				ws.send(
-					JSON.stringify({
-						status: "error",
-						msg: "invalid json",
-					} satisfies WSOutgoingMsg),
-				);
+	app.get(
+		"/wss",
+		{ websocket: true },
+		(connection: WebSocket.WebSocket, req) => {
+			const ws = connection;
+			const authHeader = req.headers["authorization"];
+			if (!authHeader) {
+				console.log("[WebSocket] Connection attempt without token.");
+				ws.close(4001, "Token is required");
 				return;
 			}
-			try {
-				switch (data.status) {
-					case "Room": {
-						const resultmsg = await RoomWSHandler(
-							data.action,
-							roomService,
-							context,
-						);
-						if (resultmsg.status === "error")
-							ws.send(JSON.stringify(resultmsg));
-						else broadcast(context.joinedRoom!, resultmsg);
-					}
-					case "User": {
-					}
-					case "Match": {
-					}
-				}
-			} catch {}
-		});
 
-		ws.on("close", () => {
-			leaveAll(ws);
-		});
-	});
+			let userId: string;
+			try {
+				const decoded = (fastify as any).jwt.verify(authHeader) as {
+					id: string;
+				};
+				console.log("Decoded JWT payload from token:", decoded);
+				userId = decoded.id;
+			} catch (err) {
+				console.error("[WebSocket] Authentication failed:", err);
+				ws.close(4001, "Invalid or expired token");
+				return;
+			}
+
+			const roomRepository = new TypeOrmRoomRepository(
+				AppDataSource.getRepository("RoomEntity"),
+			);
+			const userRepository = new TypeOrmUserRepository(
+				AppDataSource.getRepository("UserEntity"),
+			);
+			const tournamentRepository = new TypeORMTournamentRepository(
+				AppDataSource.getRepository("TournamentEntity"),
+			);
+			const matchRepository = new TypeORMMatchRepository(
+				AppDataSource.getRepository("MatchEntity"),
+			);
+			const roomService = new RoomService(roomRepository);
+			const roomUserService = new RoomUserService(
+				userRepository,
+				roomRepository,
+			);
+
+			const context: WebSocketContext = {
+				authedUser: userId,
+				joinedRoom: null,
+			};
+
+			ws.on("message", async (raw: any) => {
+				let data: WSIncomingMsg;
+				try {
+					data = JSON.parse(raw.toString());
+				} catch {
+					ws.send(
+						JSON.stringify({
+							status: "error",
+							msg: "invalid json",
+						} satisfies WSOutgoingMsg),
+					);
+					return;
+				}
+				try {
+					switch (data.status) {
+						case "Room": {
+							const resultmsg = await RoomWSHandler(
+								data.action,
+								roomService,
+								context,
+							);
+							if (resultmsg.status === "error")
+								ws.send(JSON.stringify(resultmsg));
+							else broadcast(context.joinedRoom!, resultmsg);
+							break;
+						}
+						case "User": {
+							const resultmsg = await RoomUserWSHandler(
+								data.action,
+								roomUserService,
+								data.room,
+								context,
+							);
+							if (resultmsg.status === "error")
+								ws.send(JSON.stringify(resultmsg));
+							else broadcast(context.joinedRoom!, resultmsg);
+							break;
+						}
+						case "Match": {
+						}
+					}
+				} catch {}
+			});
+
+			ws.on("close", () => {
+				leaveAll(ws);
+			});
+		},
+	);
 }

@@ -9,6 +9,7 @@ import {
 	ManyToOne,
 	OneToMany,
 	PrimaryColumn,
+	type Relation,
 	UpdateDateColumn,
 } from "typeorm";
 import { RoomEntity } from "../rooms/RoomEntity.js";
@@ -33,9 +34,9 @@ export class UserEntity {
 	@ManyToOne(
 		() => RoomEntity,
 		(room) => room.participants,
-		{ cascade: true, nullable: true },
+		// { cascade: true, nullable: true },
 	)
-	room?: RoomEntity;
+	room?: Relation<RoomEntity>;
 
 	@CreateDateColumn()
 	created_at!: Date;
