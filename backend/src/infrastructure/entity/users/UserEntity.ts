@@ -34,9 +34,9 @@ export class UserEntity {
 	@ManyToOne(
 		() => RoomEntity,
 		(room) => room.participants,
-		// { cascade: true, nullable: true },
+		{ nullable: true, onDelete: "SET NULL" },
 	)
-	room?: Relation<RoomEntity>;
+	room!: Relation<RoomEntity | null>;
 
 	@CreateDateColumn()
 	created_at!: Date;

@@ -10,6 +10,7 @@ import type { WSTournamentData } from "@domain/model/value-object/tournament/Tou
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import type { FastifyInstance } from "fastify";
+import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
 
@@ -20,28 +21,28 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 	const roomService = new RoomService(roomRepository);
 
 	// POST /rooms: ルーム作成
-	app.post<{ Body: { owner_id: string; mode?: string } }>(
-		"/rooms",
-		async (request, reply) => {
-			try {
-				const { owner_id, mode } = request.body;
-				if (!owner_id) {
-					return reply
-						.status(400)
-						.send({ error: "room and password are required" });
-				}
-				const room = await roomService.createRoom(owner_id);
-				return reply.status(201).send({
-					id: room.id,
-					mode: room.mode,
-					status: room.status,
-					createdAt: room.createdAt,
-				});
-			} catch (error: any) {
-				return reply.status(500).send({ error: error.message });
+	app.post<{ Body: { mode?: string } }>("/rooms", async (request, reply) => {
+		const token = request.headers.authorization?.replace("Bearer ", "");
+		try {
+			if (!token) throw Error("no JWT included");
+			const owner_id = decodeJWT(app, token);
+			if (!owner_id) {
+				return reply
+					.status(400)
+					.send({ error: "room and password are required" });
 			}
-		},
-	);
+			const { mode } = request.body;
+			const room = await roomService.createRoom(owner_id);
+			return reply.status(201).send({
+				id: room.id,
+				mode: room.mode,
+				status: room.status,
+				createdAt: room.createdAt,
+			});
+		} catch (error: any) {
+			return reply.status(500).send({ error: error.message });
+		}
+	});
 
 	// GET /rooms/:id: ルーム取得
 	app.get<{ Params: { id: string } }>("/rooms/:id", async (request, reply) => {
@@ -113,7 +114,10 @@ export async function RoomWSHandler(
 			}
 		}
 		case "DELETE": {
-			if (await room_service.deleteRoom(context.joinedRoom)) {
+			console.log(context.joinedRoom);
+			if (
+				await room_service.deleteRoom(context.joinedRoom, context.authedUser)
+			) {
 				return {
 					status: "Room",
 					data: {
@@ -141,6 +145,7 @@ export async function RoomUserWSHandler(
 		case "ADD": {
 			if (room_id === null) throw Error("no room to join specified");
 			if (await room_user_service.joinRoom(context.authedUser, room_id)) {
+				context.joinedRoom = room_id;
 				return {
 					status: "Room",
 					data: {

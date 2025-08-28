@@ -11,6 +11,7 @@ import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMR
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import { type FastifyInstance, fastify } from "fastify";
+import { decodeJWT } from "../auth/authRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
@@ -47,16 +48,9 @@ export async function registerWebSocket(app: FastifyInstance) {
 				return;
 			}
 
-			let userId: string;
-			try {
-				const decoded = (fastify as any).jwt.verify(authHeader) as {
-					id: string;
-				};
-				console.log("Decoded JWT payload from token:", decoded);
-				userId = decoded.id;
-			} catch (err) {
-				console.error("[WebSocket] Authentication failed:", err);
-				ws.close(4001, "Invalid or expired token");
+			const userId = decodeJWT(app, authHeader);
+			if (!userId) {
+				ws.close(4001, "Token is required");
 				return;
 			}
 

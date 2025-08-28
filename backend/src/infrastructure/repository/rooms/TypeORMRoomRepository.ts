@@ -36,7 +36,7 @@ export class TypeOrmRoomRepository implements RoomRepository {
 	}
 
 	async delete(id: RoomId): Promise<boolean> {
-		const result: DeleteResult = await this.repository.delete(id);
+		const result: DeleteResult = await this.repository.delete({ id: id });
 		return (
 			result.affected !== undefined &&
 			result.affected !== null &&
