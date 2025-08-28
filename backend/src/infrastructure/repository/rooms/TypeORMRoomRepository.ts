@@ -92,7 +92,9 @@ export class TypeOrmRoomRepository implements RoomRepository {
 		if (!target_room) throw Error("no room found");
 		const participants = target_room.participants;
 		if (participants.length !== 0)
-			participants.forEach((p) => userids.push(this.extractRoomUser(p)));
+			participants.forEach((p) => {
+				userids.push(this.extractRoomUser(p));
+			});
 		return userids;
 	}
 

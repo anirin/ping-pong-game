@@ -21,7 +21,9 @@ export class Room {
 		public readonly createdAt: Date = new Date(),
 	) {
 		this.max_player = this.roomType === "1on1" ? 2 : 4;
-		participants.forEach((p) => this._participants.push(p.id));
+		participants.forEach((p) => {
+			this._participants.push(p.id);
+		});
 	}
 
 	get allParticipants() {
