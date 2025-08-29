@@ -1,16 +1,23 @@
-import type { UserStatus } from "@domain/model/value-object/user/User.js";
+import type {
+	UserId,
+	UserStatus,
+} from "@domain/model/value-object/user/User.js";
 import {
 	Column,
 	CreateDateColumn,
 	Entity,
+	ManyToOne,
+	OneToMany,
 	PrimaryColumn,
+	type Relation,
 	UpdateDateColumn,
 } from "typeorm";
+import { RoomEntity } from "../rooms/RoomEntity.js";
 
 @Entity("users")
 export class UserEntity {
 	@PrimaryColumn("text")
-	id!: string;
+	id!: UserId;
 
 	@Column("text", { unique: true })
 	username!: string;
@@ -23,6 +30,13 @@ export class UserEntity {
 
 	@Column("text")
 	password_hash!: string;
+
+	@ManyToOne(
+		() => RoomEntity,
+		(room) => room.participants,
+		{ nullable: true, onDelete: "SET NULL" },
+	)
+	room!: Relation<RoomEntity | null>;
 
 	@CreateDateColumn()
 	created_at!: Date;

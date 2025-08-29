@@ -2,41 +2,64 @@
  * このファイルは、IGameNotifierインターフェースのWebSocket実装を提供します。
  * FastifyのWebSocket接続を管理し、ゲームの状態をクライアントにリアルタイムで通知します。
  */
-
+import type { GameService } from "@application/services/game/GameService.js";
 import type { IGameNotifier } from "@application/services/game/IGameNotifier.js";
-import type {
-	MatchFinishDto,
-	RealtimeMatchStateDto,
-} from "@application/services/game/MatchData.js";
+import type { RealtimeMatchStateDto } from "@application/services/game/MatchData.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 import { WebSocket } from "ws";
 
 export class WebSocketNotifier implements IGameNotifier {
 	private matchRooms: Map<MatchId, Set<WebSocket>> = new Map();
-
-	public addConnection(matchId: MatchId, socket: WebSocket): void {
+	private socketToUserMap: Map<
+		WebSocket,
+		{ matchId: MatchId; userId: UserId }
+	> = new Map();
+	private gameService: GameService | null = null;
+	public setGameService(service: GameService): void {
+		this.gameService = service;
+	}
+	public addConnection(
+		matchId: MatchId,
+		userId: UserId,
+		socket: WebSocket,
+	): void {
 		if (!this.matchRooms.has(matchId)) {
 			this.matchRooms.set(matchId, new Set());
 		}
 		this.matchRooms.get(matchId)!.add(socket);
-		console.log(`[WebSocket] Connection added to match room: ${matchId}`);
+		// 新しいMapにも情報を登録
+		this.socketToUserMap.set(socket, { matchId, userId });
+
+		console.log(
+			`[WebSocket] Connection added for user ${userId} to match room ${matchId}`,
+		);
 
 		socket.on("close", () => {
-			this.removeConnection(matchId, socket);
+			this.removeConnection(socket);
 		});
 	}
+	public removeConnection(socket: WebSocket): void {
+		const userInfo = this.socketToUserMap.get(socket);
+		if (!userInfo) return;
 
-	public removeConnection(matchId: MatchId, socket: WebSocket): void {
+		const { matchId, userId } = userInfo;
 		const room = this.matchRooms.get(matchId);
+
 		if (room) {
 			room.delete(socket);
-			console.log(`[WebSocket] Connection removed from match room: ${matchId}`);
 			if (room.size === 0) {
 				this.matchRooms.delete(matchId);
-				console.log(
-					`[WebSocket] Match room ${matchId} is now empty and has been deleted.`,
-				);
 			}
+		}
+
+		this.socketToUserMap.delete(socket);
+		console.log(
+			`[WebSocket] Connection removed for user ${userId} from match room ${matchId}`,
+		);
+
+		if (this.gameService) {
+			this.gameService.handleDisconnection(matchId, userId);
 		}
 	}
 
@@ -62,7 +85,10 @@ export class WebSocketNotifier implements IGameNotifier {
 		}
 	}
 
-	public notifyMatchFinish(matchId: MatchId, result: MatchFinishDto): void {
+	public notifyMatchFinish(
+		matchId: MatchId,
+		finalState: RealtimeMatchStateDto,
+	): void {
 		const room = this.matchRooms.get(matchId);
 		if (!room) return;
 
@@ -70,7 +96,7 @@ export class WebSocketNotifier implements IGameNotifier {
 			status: "Match",
 			data: {
 				action: "Finish",
-				...result,
+				...finalState,
 			},
 		});
 

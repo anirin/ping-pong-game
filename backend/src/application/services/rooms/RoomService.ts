@@ -1,16 +1,15 @@
 import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepository.js";
 import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { Room } from "@domain/model/entity/room/Room.js";
-import { User } from "@domain/model/entity/user/User.js";
-import { Username } from "@domain/model/value-object/user/User.js";
-import * as bcrypt from "bcrypt";
+import type { RoomId, RoomUser } from "@domain/model/value-object/room/Room.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 import { v4 as uuidv4 } from "uuid";
 
 export class RoomService {
 	constructor(private readonly roomRepository: RoomRepository) {}
 
 	async createRoom(owner_id: string): Promise<Room> {
-		const room = new Room(uuidv4(), owner_id);
+		const room = new Room(uuidv4(), owner_id, []);
 		await this.roomRepository.save(room);
 		return room;
 	}
@@ -19,11 +18,52 @@ export class RoomService {
 		return this.roomRepository.findById(id);
 	}
 
-	async updateStatus(id: string, status: string): Promise<Room | null> {
-		const user = await this.roomRepository.findById(id);
-		if (!user) throw new Error("User not found");
-		user.setStatus(status as any);
-		await this.roomRepository.save(user);
-		return user;
+	async startRoom(id: string, userid: UserId): Promise<boolean> {
+		const room = await this.roomRepository.findById(id);
+		if (room === null) return false;
+		if (room.ownerId === userid && room.status === "waiting")
+			return this.roomRepository.start(id);
+		return false;
+	}
+
+	async deleteRoom(id: string, userid: UserId): Promise<boolean> {
+		const room = await this.roomRepository.findById(id);
+		if (room === null) return false;
+		if (room.ownerId === userid && room.status === "waiting")
+			return this.roomRepository.delete(id);
+		return false;
+	}
+
+	async getAllParticipants(id: string): Promise<RoomUser[]> {
+		return this.roomRepository.findAllParticipants(id);
+	}
+
+	async checkOwner(id: string): Promise<boolean> {
+		const room = await this.roomRepository.findById(id);
+		if (room === null) return false;
+		return room.ownerId === id;
+	}
+}
+
+export class RoomUserService {
+	constructor(
+		private readonly userRepository: UserRepository,
+		private readonly roomRepository: RoomRepository,
+	) {}
+
+	async joinRoom(userid: UserId, roomid: RoomId): Promise<boolean> {
+		const user = await this.userRepository.findById(userid);
+		if (user == null) throw Error("no user found");
+		return await this.roomRepository.join(roomid, user);
+	}
+
+	async leaveRoom(userid: UserId): Promise<boolean> {
+		const user = await this.userRepository.findById(userid);
+		if (user == null) throw Error("no user found");
+		return await this.roomRepository.leave(user);
+	}
+
+	async getAllParticipants(id: string): Promise<RoomUser[]> {
+		return this.roomRepository.findAllParticipants(id);
 	}
 }
