@@ -1,11 +1,12 @@
 import sidebarHtml from "../../widgets/sidebar/ui/sidebar.html?raw";
 import settingsHtml from "./change_username.html?raw";
 import "../../widgets/sidebar/ui/sidebar.css";
-
-import headerHtml from "../../widgets/header/ui/header.html?raw";
+import { HeaderWidget } from "@widgets/header";
+// import headerHtml from "../../widgets/header/ui/header.html?raw";
 import "../../widgets/header/ui/header.css";
 import { renderChangeAvatarWidget } from "../change_avatar/index";
 
+// import { HeaderWidget } from "../../widgets/header";
 // JWTトークンからペイロードをデコードするヘルパー関数 (変更なし)
 function decodeJwt(token: string): any {
 	try {
@@ -134,8 +135,15 @@ export function renderChangeUsernamePage(): void {
     `;
 
 	const headerContainer = document.getElementById("header-container");
-	if (headerContainer) headerContainer.innerHTML = headerHtml;
-
+	if (headerContainer) {
+		headerContainer.innerHTML = `<div id="header-widget"></div>`;
+		const headerHost = headerContainer.querySelector(
+			"#header-widget",
+		) as HTMLElement;
+		if (headerHost) {
+			HeaderWidget(headerHost);
+		}
+	}
 	const sidebarContainer = document.getElementById("sidebar-container");
 	if (sidebarContainer) sidebarContainer.innerHTML = sidebarHtml;
 

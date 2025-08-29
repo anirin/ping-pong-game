@@ -1,7 +1,11 @@
 import "dotenv/config";
+
+import { GameService } from "@application/services/game/GameService.js";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
+import { InMemoryMatchRepository } from "@infrastructure/repository/match/InMemoryMatchRepository.js";
+import { WebSocketNotifier } from "@infrastructure/repository/websocket/WebSocketNotifier.js";
 import gameRoutes from "@presentation/route/game/gameRoutes.js";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
@@ -28,7 +32,10 @@ export async function buildServer() {
 			cert: fs.readFileSync(process.env.HTTPS_CERT),
 		},
 	});
-
+	const matchRepository = new InMemoryMatchRepository();
+	const webSocketNotifier = new WebSocketNotifier();
+	const gameService = new GameService(matchRepository, webSocketNotifier);
+	webSocketNotifier.setGameService(gameService);
 	// corsの設定
 	await app.register(cors, {
 		origin: true,
@@ -59,7 +66,10 @@ export async function buildServer() {
 	await registerTournamentWs(app);
 	await registerWebSocket(app);
 	await app.register(authRoutes, { prefix: "/auth" });
-	await app.register(gameRoutes);
-
+	await app.register(gameRoutes, {
+		gameService,
+		webSocketNotifier,
+		matchRepository,
+	});
 	return app;
 }

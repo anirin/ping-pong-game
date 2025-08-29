@@ -30,7 +30,6 @@ export class TypeORMMatchRepository implements MatchRepository {
 
 	async update(match: Match): Promise<void> {
 		const entity = this.toEntity(match);
-		// TypeORMのupdateは第一引数にID、第二引数に更新内容を渡す
 		await this.repository.update(match.id, entity);
 	}
 
