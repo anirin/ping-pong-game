@@ -98,16 +98,19 @@ export async function registerTournamentWs(app: FastifyInstance) {
 		{ websocket: true },
 		(connection: any /*, req */) => {
 			const ws = connection;
+			console.log("WebSocket接続が確立されました: /ws/tournament");
 
 			// このコネクション専用の状態
 			let authedUser: UserId | null = null;
 			let joinedRoom: RoomId | null = null;
 
 			ws.on("message", async (raw: any) => {
+				console.log("WebSocketメッセージを受信:", raw.toString());
 				let data: IncomingMsg;
 				try {
 					data = JSON.parse(raw.toString());
 				} catch {
+					console.error("JSON解析エラー:", raw.toString());
 					ws.send(
 						JSON.stringify({
 							type: "error",

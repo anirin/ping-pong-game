@@ -33,16 +33,27 @@ export class TournamentWebSocketAPI {
 
 	// WebSocket接続を確立
 	connect(roomId: string, userId: string): Promise<void> {
-				return new Promise((resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			try {
-						// HTTPS接続を試す（バックエンドがHTTPSで動作しているため）
-		const wsUrl = `wss://localhost:8080/ws/tournament`;
+				// バックエンドがHTTPSで動作しているため、WSSを使用
+				const wsUrl = `wss://localhost:8080/ws/tournament`;
 				console.log("WebSocket接続を試行中:", wsUrl);
+				
 				// WebSocket接続を確立（バックエンドのエンドポイントに合わせる）
 				this.ws = new WebSocket(wsUrl);
 				
+				// 接続タイムアウトを設定
+				const connectionTimeout = setTimeout(() => {
+					if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+						console.error("WebSocket接続タイムアウト");
+						this.ws.close();
+						reject(new Error("WebSocket接続タイムアウト"));
+					}
+				}, 10000); // 10秒
+				
 				this.ws.onopen = () => {
 					console.log("WebSocket接続が確立されました");
+					clearTimeout(connectionTimeout);
 					this.updateState({ 
 						isConnected: true, 
 						roomId, 
@@ -73,6 +84,8 @@ export class TournamentWebSocketAPI {
 				this.ws.onerror = (error) => {
 					console.error("WebSocketエラー:", error);
 					console.error("WebSocket接続URL:", `wss://localhost:8080/ws/tournament`);
+					console.error("WebSocket readyState:", this.ws?.readyState);
+					clearTimeout(connectionTimeout);
 					this.updateState({ 
 						isConnected: false, 
 						error: "WebSocket接続エラー - バックエンドが起動しているか確認してください" 

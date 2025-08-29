@@ -81,3 +81,99 @@ export const initialTournamentState: TournamentState = {
 	isLoading: false,
 	error: null,
 };
+
+// TournamentModel - APIとの通信と状態管理を担当
+export class TournamentModel {
+	private state: TournamentState;
+	private onStateChange: ((state: TournamentState) => void) | null = null;
+	private api: any; // TournamentWebSocketAPIのインスタンス
+
+	constructor(api: any) {
+		this.state = { ...initialTournamentState };
+		this.api = api;
+		this.setupApiCallbacks();
+	}
+
+	// 状態変更のコールバックを設定
+	setStateChangeCallback(callback: (state: TournamentState) => void) {
+		this.onStateChange = callback;
+	}
+
+	// 現在の状態を取得
+	getState(): TournamentState {
+		return { ...this.state };
+	}
+
+	// 状態を更新
+	private updateState(updates: Partial<TournamentState>) {
+		this.state = { ...this.state, ...updates };
+		if (this.onStateChange) {
+			this.onStateChange(this.state);
+		}
+	}
+
+	// APIのコールバックを設定
+	private setupApiCallbacks() {
+		this.api.setStateChangeCallback((apiState: TournamentState) => {
+			this.updateState(apiState);
+		});
+	}
+
+	// トーナメント開始（subscribe → tournament start の流れ）
+	async startTournament(participants: UserId[], roomId: RoomId, userId: UserId): Promise<void> {
+		try {
+			this.updateState({ 
+				isLoading: true, 
+				error: null,
+				participants,
+				roomId,
+				userId
+			});
+
+			// 1. WebSocket接続を確立
+			await this.api.connect(roomId, userId);
+			
+			// 2. 接続が確立されたら、トーナメント開始メッセージを送信
+			// APIのconnectメソッド内でsubscribeが自動的に送信される
+			// その後、tournament startメッセージを送信
+			this.api.startTournament(participants, userId);
+			
+		} catch (error) {
+			this.updateState({ 
+				isLoading: false, 
+				error: error instanceof Error ? error.message : "トーナメント開始に失敗しました" 
+			});
+			throw error;
+		}
+	}
+
+	// 接続状態を取得
+	isConnected(): boolean {
+		return this.state.isConnected;
+	}
+
+	// エラー状態を取得
+	getError(): string | null {
+		return this.state.error;
+	}
+
+	// 現在のマッチを取得
+	getCurrentMatch(): MatchDTO | null {
+		return this.state.currentMatch;
+	}
+
+	// トーナメント情報を取得
+	getTournament(): TournamentDTO | null {
+		return this.state.tournament;
+	}
+
+	// 参加者リストを取得
+	getParticipants(): UserId[] {
+		return this.state.participants;
+	}
+
+	// ローディング状態を取得
+	isLoading(): boolean {
+		return this.state.isLoading;
+	}
+}

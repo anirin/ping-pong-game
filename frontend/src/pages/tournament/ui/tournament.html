@@ -1,6 +1,7 @@
 <div id="tournament">
     <div id="tournament-header">
         <h1>Tournament</h1>
+        <button id="start-tournament-btn" class="start-tournament-btn">トーナメント開始</button>
     </div>
 
 	<div class="main">
@@ -54,6 +55,15 @@
 				</div>
 				<button class="start-match-btn">対戦開始</button>
 			</div>
+			
+		<!-- Next Match表示エリア -->
+		<div id="next-match-section" class="next-match-section" style="display: none;">
+			<h3>次のマッチ</h3>
+			<div id="next-match-info">
+				<span id="next-match-round"></span>
+				<span id="next-match-players"></span>
+			</div>
+		</div>
 			
 	</div>
 </div>

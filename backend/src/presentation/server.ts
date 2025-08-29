@@ -33,6 +33,7 @@ export async function buildServer() {
 		origin: true,
 		methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization"],
+		credentials: true,
 	});
 
 	// jwtの設定
@@ -50,7 +51,11 @@ export async function buildServer() {
 	});
 
 	// webSocketの設定
-	await app.register(fastifyWebSocket);
+	await app.register(fastifyWebSocket, {
+		options: {
+			clientTracking: true,
+		},
+	});
 
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);

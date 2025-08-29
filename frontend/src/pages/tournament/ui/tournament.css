@@ -48,3 +48,50 @@
   cursor: pointer;
   border-radius: 10px;
 }
+
+/* トーナメント開始ボタン */
+.start-tournament-btn {
+  background-color: #2196F3;
+  border: none;
+  color: white;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-left: 20px;
+}
+
+.start-tournament-btn:hover {
+  background-color: #1976D2;
+}
+
+/* Next Match表示エリア */
+.next-match-section {
+  margin-top: 30px;
+  padding: 20px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+.next-match-section h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+#next-match-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#next-match-round {
+  font-weight: bold;
+  color: #2196F3;
+}
+
+#next-match-players {
+  font-size: 18px;
+  color: #555;
+}
