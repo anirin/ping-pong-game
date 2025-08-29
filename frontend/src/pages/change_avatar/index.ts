@@ -1,6 +1,6 @@
 import avatarHtml from "./change_avatar.html?raw";
 
-// (このファイル内でJWTデコード関数が必要なので定義します)
+// JWTトークンをデコードする関数
 function decodeJwt(token: string): any {
 	try {
 		const base64Url = token.split(".")[1];
@@ -19,6 +19,37 @@ function decodeJwt(token: string): any {
 
 // 選択された画像のBase64データを保持する変数
 let selectedAvatarBase64: string | null = null;
+
+// サーバーから最新ユーザー情報を取得して avatar を更新
+async function loadCurrentUserAvatar(previewImage: HTMLImageElement) {
+	const token = localStorage.getItem("accessToken");
+	if (!token) {
+		previewImage.src = "/default.png";
+		return;
+	}
+
+	const decoded = decodeJwt(token);
+	const userId = decoded?.id || decoded?.sub;
+	if (!userId) {
+		previewImage.src = "/default.png";
+		return;
+	}
+
+	try {
+		const res = await fetch(`https://localhost:8080/users/${userId}`, {
+			headers: { Authorization: `Bearer ${token}` },
+		});
+		if (res.ok) {
+			const data = await res.json();
+			localStorage.setItem("user", JSON.stringify(data)); // 最新情報で上書き
+			previewImage.src = data.avatar ?? "/default.png";
+		} else {
+			previewImage.src = "/default.png";
+		}
+	} catch {
+		previewImage.src = "/default.png";
+	}
+}
 
 // アバター保存フォームが送信されたときの処理
 async function handleUpdateAvatarSubmit(event: SubmitEvent) {
@@ -66,10 +97,7 @@ async function handleUpdateAvatarSubmit(event: SubmitEvent) {
 			}
 			localStorage.setItem("user", JSON.stringify(data));
 
-			// もし他のページで <img id="current-avatar"> を表示しているなら即時更新
-			localStorage.setItem("user", JSON.stringify(data));
-
-			// もしページ上に現在の avatar を表示する img があれば更新
+			// 他ページの #current-avatar があれば即時更新
 			const currentAvatar = document.getElementById(
 				"current-avatar",
 			) as HTMLImageElement;
@@ -107,9 +135,10 @@ export function renderChangeAvatarWidget(containerId: string): void {
 	const previewImage = document.getElementById(
 		"avatar-preview",
 	) as HTMLImageElement;
-	const user = JSON.parse(localStorage.getItem("user") || "{}");
-	const avatarUrl = user.avatar ?? "/default.png";
-	if (previewImage) previewImage.src = avatarUrl;
+
+	// ★サーバーから最新のユーザー情報を取得してプレビュー表示
+	loadCurrentUserAvatar(previewImage);
+
 	const form = document.getElementById("update-avatar-form");
 	const fileInput = document.getElementById(
 		"avatar-upload",
