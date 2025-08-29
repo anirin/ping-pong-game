@@ -54,10 +54,17 @@ export class TournamentController {
 
 	private async handleStartTournament(): Promise<void> {
 		try {
-			// サンプル参加者（実際の実装では動的に取得）
+			// 実際の参加者データを取得（例：ルームから取得）
+			// 現在はサンプルデータを使用
 			const participants = ["user1", "user2", "user3", "user4"];
 			const roomId = "room1"; // 実際の実装では動的に取得
 			const userId = "user1"; // 実際の実装では動的に取得
+
+			console.log("トーナメント開始を試行中...", {
+				participants,
+				roomId,
+				userId,
+			});
 
 			// Modelを通じてトーナメントを開始
 			await this.model.startTournament(participants, roomId, userId);
@@ -149,18 +156,29 @@ export class TournamentController {
 	private updateSpanValuesFromBackend(tournament: any): void {
 		console.log("Updating span values from backend tournament data...");
 
-		// 最初の4つのマッチからデータを取得
+		// 最初の2つのマッチからデータを取得
 		const matches = tournament.matches || [];
 		const userData: { [key: string]: { username: string; score: number } } = {};
 
 		// マッチデータからユーザー情報を抽出
-		matches.slice(0, 4).forEach((match: any, index: number) => {
-			const spanId = `user-${String.fromCharCode(97 + index)}-span`; // a, b, c, d
+		matches.slice(0, 2).forEach((match: any, index: number) => {
+			// 各マッチのplayer1とplayer2を処理
+			const player1SpanId = `user-${String.fromCharCode(97 + index * 2)}-span`; // a, c
+			const player2SpanId = `user-${String.fromCharCode(98 + index * 2)}-span`; // b, d
 
+			// player1の情報を設定
 			if (match.player1_name && match.score1 !== undefined) {
-				userData[spanId] = {
+				userData[player1SpanId] = {
 					username: match.player1_name,
 					score: match.score1,
+				};
+			}
+
+			// player2の情報を設定
+			if (match.player2_name && match.score2 !== undefined) {
+				userData[player2SpanId] = {
+					username: match.player2_name,
+					score: match.score2,
 				};
 			}
 		});
