@@ -16,9 +16,6 @@ export class TournamentController {
 		this.initializeElements();
 		this.setupEventListeners();
 		this.setupStateChangeCallback();
-		
-		// 初期化時にspanタグの値をダミーデータで更新
-		this.updateSpanValues();
 	}
 
 	private initializeElements(): void {
@@ -41,6 +38,11 @@ export class TournamentController {
 	private setupStateChangeCallback(): void {
 		this.model.setStateChangeCallback((state) => {
 			this.updateUI(state);
+			
+			// tournament_startedメッセージを受け取った時にspanタグを更新
+			if (state.tournament && state.currentMatch) {
+				this.updateSpanValuesFromBackend(state.tournament);
+			}
 		});
 	}
 
@@ -210,6 +212,68 @@ export class TournamentController {
 				}
 			} else {
 				console.log(`Tie between ${match.user1} and ${match.user2}`);
+			}
+		});
+	}
+
+	// backendから受け取ったデータでspanタグを更新するメソッド
+	private updateSpanValuesFromBackend(tournament: any): void {
+		console.log('Updating span values from backend tournament data...');
+		
+		// 最初の4つのマッチからデータを取得
+		const matches = tournament.matches || [];
+		const userData: { [key: string]: { username: string; score: number } } = {};
+		
+		// マッチデータからユーザー情報を抽出
+		matches.slice(0, 4).forEach((match: any, index: number) => {
+			const spanId = `user-${String.fromCharCode(97 + index)}-span`; // a, b, c, d
+			
+			if (match.player1_name && match.score1 !== undefined) {
+				userData[spanId] = { 
+					username: match.player1_name, 
+					score: match.score1 
+				};
+			}
+		});
+		
+		// spanタグを更新
+		Object.keys(userData).forEach(spanId => {
+			const data = userData[spanId];
+			const span = document.getElementById(spanId);
+			if (span) {
+				span.textContent = `${data.username} (Score: ${data.score})`;
+				console.log(`Updated ${spanId}: ${data.username} (Score: ${data.score})`);
+			}
+		});
+		
+		// pathの色を更新
+		this.updatePathColorsFromBackend(matches);
+	}
+
+	// backendデータからpathの色を更新するメソッド
+	private updatePathColorsFromBackend(matches: any[]): void {
+		console.log('Updating path colors from backend match data...');
+		
+		// 全てのpathをグレーにリセット
+		['path-1', 'path-2', 'path-3', 'path-4'].forEach(pathId => {
+			const path = document.getElementById(pathId) as unknown as SVGPathElement;
+			if (path) path.setAttribute('stroke', 'gray');
+		});
+		
+		// マッチごとに勝者のpathを赤くする
+		matches.slice(0, 2).forEach((match: any, index: number) => {
+			const path1Id = `path-${index * 2 + 1}`;
+			const path2Id = `path-${index * 2 + 2}`;
+			
+			const path1 = document.getElementById(path1Id) as unknown as SVGPathElement;
+			const path2 = document.getElementById(path2Id) as unknown as SVGPathElement;
+			
+			if (match.score1 > match.score2 && path1) {
+				path1.setAttribute('stroke', 'red');
+				console.log(`Winner: ${match.player1_name} (${match.score1}) - ${path1Id} colored red`);
+			} else if (match.score2 > match.score1 && path2) {
+				path2.setAttribute('stroke', 'red');
+				console.log(`Winner: ${match.player2_name} (${match.score2}) - ${path2Id} colored red`);
 			}
 		});
 	}
