@@ -77,13 +77,25 @@ function toTournamentDTO(t: any) {
 function toMatchDTO(m: any) {
 	return {
 		id: m.id,
-		player1_id: m.player1_id ?? m._player1?.id,
-		player2_id: m.player2_id ?? m._player2?.id,
+		player1_id: m.player1Id ?? m.player1_id ?? m._player1?.id,
+		player2_id: m.player2Id ?? m.player2_id ?? m._player2?.id,
+		player1_name:
+			m.player1_name ??
+			m._player1?.name ??
+			m.player1Id ??
+			m.player1_id ??
+			m._player1?.id,
+		player2_name:
+			m.player2_name ??
+			m._player2?.name ??
+			m.player2Id ??
+			m.player2_id ??
+			m._player2?.id,
 		score1: m.score1 ?? m._score1 ?? 0,
 		score2: m.score2 ?? m._score2 ?? 0,
 		status: m.status ?? m._status,
 		round: m.round ?? 1,
-		winner_id: m.winner_id ?? null,
+		winner_id: m.winner_id ?? m.winnerId ?? null,
 	};
 }
 
@@ -96,16 +108,19 @@ export async function registerTournamentWs(app: FastifyInstance) {
 		{ websocket: true },
 		(connection: any /*, req */) => {
 			const ws = connection;
+			console.log("WebSocket接続が確立されました: /ws/tournament");
 
 			// このコネクション専用の状態
 			let authedUser: UserId | null = null;
 			let joinedRoom: RoomId | null = null;
 
 			ws.on("message", async (raw: any) => {
+				console.log("WebSocketメッセージを受信:", raw.toString());
 				let data: IncomingMsg;
 				try {
 					data = JSON.parse(raw.toString());
 				} catch {
+					console.error("JSON解析エラー:", raw.toString());
 					ws.send(
 						JSON.stringify({
 							type: "error",

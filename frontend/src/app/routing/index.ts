@@ -6,6 +6,7 @@ import { renderLoginPage } from "@pages/login/index";
 import { renderRegisterPage } from "@pages/register/index";
 import { renderRoomEntrancePage } from "@pages/room-entrance/index";
 import { renderSetupPage } from "@pages/setup/index";
+import { renderTournamentPage } from "@pages/tournament";
 
 interface Route {
 	path: string;
@@ -49,6 +50,10 @@ const routes: Route[] = [
 	{
 		path: "/game/:matchId",
 		handler: renderGamePage,
+	},
+	{
+		path: "/tournament", // id が必要かも
+		handler: renderTournamentPage,
 	},
 
 	// {
