@@ -12,7 +12,7 @@ export function renderTournamentPage() {
 	const api = new TournamentWebSocketAPI();
 	const model = new TournamentModel(api);
 	const controller = new TournamentController(model);
-	
+
 	// コントローラーを初期化（イベントリスナーを設定）
 	return controller;
 }
