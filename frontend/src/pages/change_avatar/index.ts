@@ -64,6 +64,26 @@ async function handleUpdateAvatarSubmit(event: SubmitEvent) {
 				messageElement.style.color = "green";
 				messageElement.textContent = "アバターが正常に変更されました！";
 			}
+			localStorage.setItem("user", JSON.stringify(data));
+
+			// もし他のページで <img id="current-avatar"> を表示しているなら即時更新
+			localStorage.setItem("user", JSON.stringify(data));
+
+			// もしページ上に現在の avatar を表示する img があれば更新
+			const currentAvatar = document.getElementById(
+				"current-avatar",
+			) as HTMLImageElement;
+			if (currentAvatar) {
+				currentAvatar.src = data.avatar;
+			}
+
+			// プレビューも更新
+			const previewImage = document.getElementById(
+				"avatar-preview",
+			) as HTMLImageElement;
+			if (previewImage) {
+				previewImage.src = data.avatar;
+			}
 		} else {
 			if (messageElement) {
 				messageElement.style.color = "red";
@@ -84,13 +104,16 @@ export function renderChangeAvatarWidget(containerId: string): void {
 	if (!container) return;
 	container.innerHTML = avatarHtml;
 
+	const previewImage = document.getElementById(
+		"avatar-preview",
+	) as HTMLImageElement;
+	const user = JSON.parse(localStorage.getItem("user") || "{}");
+	const avatarUrl = user.avatar ?? "/default.png";
+	if (previewImage) previewImage.src = avatarUrl;
 	const form = document.getElementById("update-avatar-form");
 	const fileInput = document.getElementById(
 		"avatar-upload",
 	) as HTMLInputElement;
-	const previewImage = document.getElementById(
-		"avatar-preview",
-	) as HTMLImageElement;
 
 	fileInput.addEventListener("change", () => {
 		const file = fileInput.files?.[0];
