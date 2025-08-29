@@ -29,8 +29,16 @@ export type IncomingMsg =
 // 受信メッセージの型定義
 export type OutgoingMsg =
 	| { type: "subscribed"; room_id: RoomId; user_id: UserId }
-	| { type: "tournament_started"; tournament: TournamentDTO; next_match: MatchDTO | null }
-	| { type: "round_generated"; tournament: TournamentDTO; next_match: MatchDTO | null }
+	| {
+			type: "tournament_started";
+			tournament: TournamentDTO;
+			next_match: MatchDTO | null;
+	  }
+	| {
+			type: "round_generated";
+			tournament: TournamentDTO;
+			next_match: MatchDTO | null;
+	  }
 	| { type: "tournament_finished"; tournament: TournamentDTO }
 	| { type: "error"; message: string }
 	| { type: "next_match"; next_match: MatchDTO | null };
@@ -120,28 +128,34 @@ export class TournamentModel {
 	}
 
 	// トーナメント開始（subscribe → tournament start の流れ）
-	async startTournament(participants: UserId[], roomId: RoomId, userId: UserId): Promise<void> {
+	async startTournament(
+		participants: UserId[],
+		roomId: RoomId,
+		userId: UserId,
+	): Promise<void> {
 		try {
-			this.updateState({ 
-				isLoading: true, 
+			this.updateState({
+				isLoading: true,
 				error: null,
 				participants,
 				roomId,
-				userId
+				userId,
 			});
 
 			// 1. WebSocket接続を確立
 			await this.api.connect(roomId, userId);
-			
+
 			// 2. 接続が確立されたら、トーナメント開始メッセージを送信
 			// APIのconnectメソッド内でsubscribeが自動的に送信される
 			// その後、tournament startメッセージを送信
 			this.api.startTournament(participants, userId);
-			
 		} catch (error) {
-			this.updateState({ 
-				isLoading: false, 
-				error: error instanceof Error ? error.message : "トーナメント開始に失敗しました" 
+			this.updateState({
+				isLoading: false,
+				error:
+					error instanceof Error
+						? error.message
+						: "トーナメント開始に失敗しました",
 			});
 			throw error;
 		}

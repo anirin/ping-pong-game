@@ -1,4 +1,8 @@
-import type { IncomingMsg, OutgoingMsg, TournamentState } from "../model/model.js";
+import type {
+	IncomingMsg,
+	OutgoingMsg,
+	TournamentState,
+} from "../model/model.js";
 
 export class TournamentWebSocketAPI {
 	private ws: WebSocket | null = null;
@@ -38,10 +42,10 @@ export class TournamentWebSocketAPI {
 				// バックエンドがHTTPSで動作しているため、WSSを使用
 				const wsUrl = `wss://localhost:8080/ws/tournament`;
 				console.log("WebSocket接続を試行中:", wsUrl);
-				
+
 				// WebSocket接続を確立（バックエンドのエンドポイントに合わせる）
 				this.ws = new WebSocket(wsUrl);
-				
+
 				// 接続タイムアウトを設定
 				const connectionTimeout = setTimeout(() => {
 					if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
@@ -50,24 +54,24 @@ export class TournamentWebSocketAPI {
 						reject(new Error("WebSocket接続タイムアウト"));
 					}
 				}, 10000); // 10秒
-				
+
 				this.ws.onopen = () => {
 					console.log("WebSocket接続が確立されました");
 					clearTimeout(connectionTimeout);
-					this.updateState({ 
-						isConnected: true, 
-						roomId, 
+					this.updateState({
+						isConnected: true,
+						roomId,
 						userId,
-						error: null 
+						error: null,
 					});
-					
+
 					// ルームにサブスクライブ
 					this.sendMessage({
 						action: "subscribe",
 						room_id: roomId,
-						user_id: userId
+						user_id: userId,
 					});
-					
+
 					resolve();
 				};
 
@@ -83,12 +87,16 @@ export class TournamentWebSocketAPI {
 
 				this.ws.onerror = (error) => {
 					console.error("WebSocketエラー:", error);
-					console.error("WebSocket接続URL:", `wss://localhost:8080/ws/tournament`);
+					console.error(
+						"WebSocket接続URL:",
+						`wss://localhost:8080/ws/tournament`,
+					);
 					console.error("WebSocket readyState:", this.ws?.readyState);
 					clearTimeout(connectionTimeout);
-					this.updateState({ 
-						isConnected: false, 
-						error: "WebSocket接続エラー - バックエンドが起動しているか確認してください" 
+					this.updateState({
+						isConnected: false,
+						error:
+							"WebSocket接続エラー - バックエンドが起動しているか確認してください",
 					});
 					reject(error);
 				};
@@ -97,12 +105,11 @@ export class TournamentWebSocketAPI {
 					console.log("WebSocket接続が閉じられました");
 					this.updateState({ isConnected: false });
 				};
-
 			} catch (error) {
 				console.error("WebSocket接続の確立に失敗しました:", error);
-				this.updateState({ 
-					isConnected: false, 
-					error: "WebSocket接続の確立に失敗しました" 
+				this.updateState({
+					isConnected: false,
+					error: "WebSocket接続の確立に失敗しました",
 				});
 				reject(error);
 			}
@@ -132,7 +139,7 @@ export class TournamentWebSocketAPI {
 					tournament: message.tournament,
 					currentMatch: message.next_match,
 					isLoading: false,
-					error: null
+					error: null,
 				});
 				break;
 
@@ -142,7 +149,7 @@ export class TournamentWebSocketAPI {
 					tournament: message.tournament,
 					currentMatch: message.next_match,
 					isLoading: false,
-					error: null
+					error: null,
 				});
 				break;
 
@@ -152,7 +159,7 @@ export class TournamentWebSocketAPI {
 					tournament: message.tournament,
 					currentMatch: null,
 					isLoading: false,
-					error: null
+					error: null,
 				});
 				break;
 
@@ -161,15 +168,15 @@ export class TournamentWebSocketAPI {
 				this.updateState({
 					currentMatch: message.next_match,
 					isLoading: false,
-					error: null
+					error: null,
 				});
 				break;
 
 			case "error":
 				console.error("サーバーエラー:", message.message);
-				this.updateState({ 
+				this.updateState({
 					error: message.message,
-					isLoading: false 
+					isLoading: false,
 				});
 				break;
 
@@ -186,12 +193,12 @@ export class TournamentWebSocketAPI {
 		}
 
 		this.updateState({ isLoading: true, participants });
-		
+
 		this.sendMessage({
 			action: "start_tournament",
 			room_id: this.state.roomId,
 			created_by: createdBy,
-			participants
+			participants,
 		});
 	}
 
@@ -203,11 +210,11 @@ export class TournamentWebSocketAPI {
 		}
 
 		this.updateState({ isLoading: true });
-		
+
 		this.sendMessage({
 			action: "next_round",
 			tournament_id: tournamentId,
-			room_id: this.state.roomId
+			room_id: this.state.roomId,
 		});
 	}
 
@@ -219,11 +226,11 @@ export class TournamentWebSocketAPI {
 		}
 
 		this.updateState({ isLoading: true });
-		
+
 		this.sendMessage({
 			action: "get_next_match",
 			tournament_id: tournamentId,
-			room_id: this.state.roomId
+			room_id: this.state.roomId,
 		});
 	}
 
@@ -235,12 +242,12 @@ export class TournamentWebSocketAPI {
 		}
 
 		this.updateState({ isLoading: true });
-		
+
 		this.sendMessage({
 			action: "finish_tournament",
 			tournament_id: tournamentId,
 			room_id: this.state.roomId,
-			winner_id: winnerId
+			winner_id: winnerId,
 		});
 	}
 
@@ -250,10 +257,10 @@ export class TournamentWebSocketAPI {
 			this.ws.close();
 			this.ws = null;
 		}
-		this.updateState({ 
-			isConnected: false, 
-			tournament: null, 
-			currentMatch: null 
+		this.updateState({
+			isConnected: false,
+			tournament: null,
+			currentMatch: null,
 		});
 	}
 
