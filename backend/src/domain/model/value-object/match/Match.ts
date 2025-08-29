@@ -1,6 +1,7 @@
-import type { UserId } from "../user/User.js";
+import type { AvatarUrl, UserId, Username } from "../user/User.js";
 export type MatchId = string;
 export type MatchStatus = "scheduled" | "playing" | "finished" | "canceled";
+export type MatchPosition = [number, number];
 
 export type BallState = {
 	x: number;
@@ -114,3 +115,17 @@ export class MatchRule {
 		return { nextBallState: nextBall };
 	}
 }
+
+type MatchUser = {
+	name: Username;
+	avatar: AvatarUrl;
+	Position: MatchPosition;
+	point: number;
+};
+
+export type WSMatchData = {
+	action: "START" | "MOVE" | "FINISH";
+	user1: MatchUser;
+	user2: MatchUser;
+	ball: MatchPosition;
+};

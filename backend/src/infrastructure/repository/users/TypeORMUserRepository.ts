@@ -13,19 +13,28 @@ export class TypeOrmUserRepository implements UserRepository {
 	constructor(private readonly repository: Repository<UserEntity>) {}
 
 	async findById(id: UserId): Promise<User | null> {
-		const entity = await this.repository.findOne({ where: { id } });
+		const entity = await this.repository.findOne({
+			where: { id },
+			relations: ["room"],
+		});
 		if (!entity) return null;
 		return this.toDomain(entity);
 	}
 
 	async findByUsername(username: string): Promise<User | null> {
-		const entity = await this.repository.findOne({ where: { username } });
+		const entity = await this.repository.findOne({
+			where: { username },
+			relations: ["room"],
+		});
 		if (!entity) return null;
 		return this.toDomain(entity);
 	}
 
 	async findByEmail(email: string): Promise<User | null> {
-		const entity = await this.repository.findOne({ where: { email } });
+		const entity = await this.repository.findOne({
+			where: { email },
+			relations: ["room"],
+		});
 		if (!entity) return null;
 		return this.toDomain(entity);
 	}
@@ -58,10 +67,10 @@ export class TypeOrmUserRepository implements UserRepository {
 			entity.status as UserStatus,
 			entity.created_at,
 			entity.avatar_url ? new AvatarUrl(entity.avatar_url) : null,
+			entity.room ? entity.room.id : null,
 			entity.twoFAEnabled ?? false,
 			entity.twoFASecret ?? null,
 		);
-
 		return user;
 	}
 

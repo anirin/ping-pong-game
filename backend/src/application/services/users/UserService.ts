@@ -18,6 +18,7 @@ export class UserService {
 			"offline", // status
 			new Date(), // createdAt
 			null, // avatar
+			null, // roomid
 			false, // twoFAEnabled
 			null, // twoFASecret
 		);
