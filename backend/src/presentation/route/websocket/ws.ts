@@ -159,6 +159,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				} else {
 					resultmsg = await LeaveRoomWS(roomUserService, context);
 					if (resultmsg.status !== "error") {
+						rooms.get(context.joinedRoom)?.delete(ws);
 						broadcast(context.joinedRoom, resultmsg);
 						return;
 					}

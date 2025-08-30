@@ -50,10 +50,6 @@ export class RoomService {
 		return false;
 	}
 
-	// async getAllParticipants(roomid: string): RoomUser[] {
-	// 	return (await this.roomRepository.findParticipants(roomid)).map(p => );
-	// }
-
 	async checkOwner(id: string, userid: UserId): Promise<boolean> {
 		const room = await this.roomRepository.findById(id);
 		if (room === null) throw Error("no room found");
@@ -97,9 +93,7 @@ export class RoomUserService {
 		if (room.isEmpty()) throw Error("no one is in the room");
 		if (room.checkOwner(userid))
 			throw Error("owner cannot leave without deleting the room");
-		const newParticipants = room.allParticipants.filter((p) => {
-			p.id !== userid;
-		});
+		const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
 		return this.roomRepository.storeParticipants(roomid, newParticipants);
 	}
 
