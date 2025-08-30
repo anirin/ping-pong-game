@@ -120,6 +120,21 @@ export async function registerWebSocket(app: FastifyInstance) {
 							break;
 						}
 						case "Match": {
+							// front -> back match start が押されたら
+								// 処理内容
+								// game 画面に render する処理 + match を開始する処理
+							// front -> back match finish が押されたら
+								// 処理内容
+								// match を終了する処理
+								// tournament 画面を render する処理 （通常と同じなので tournament case で処理を行う **
+								// 全ての試合が終了している場合は次戦の生成を行うので毎回呼び出してももんだいない 全ての match 情報をどのみち　frontend に渡すことになる
+								// tournament finish もこの段階でわかると思うのでそのロジックも追加すべき
+							// game 処理はこちらに含めるように構成を変更する
+								// 今回の pr　は tourmanet に絞り込むので簡易的なものにしてテストだけを行うようにする（統合はおそらく最後で良い）
+						}
+						case "Tournament": {
+							// front -> back tournament start が押されたら tournament 画面に render する処理 + tournament を開始する処理 （これは room 画面で button が押される想定）
+							// back -> front tournament finish になったら home 画面に render する処理
 						}
 					}
 				} catch (e) {

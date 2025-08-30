@@ -6,36 +6,8 @@ import type { TournamentId } from "@domain/model/value-object/tournament/Tournam
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "ws";
-
-// 送受信用の最小DTO。必要なら拡張してOK
-type IncomingMsg =
-	| { action: "subscribe"; room_id: RoomId; user_id: UserId }
-	| {
-			action: "start_tournament";
-			room_id: RoomId;
-			created_by: UserId;
-			participants: UserId[];
-	  }
-	| { action: "next_round"; tournament_id: TournamentId; room_id: RoomId }
-	| {
-			action: "finish_tournament";
-			tournament_id: TournamentId;
-			room_id: RoomId;
-			winner_id: UserId;
-	  }
-	| {
-			action: "get_next_match";
-			tournament_id: TournamentId;
-			room_id: RoomId;
-	  };
-
-type OutgoingMsg =
-	| { type: "subscribed"; room_id: RoomId; user_id: UserId }
-	| { type: "tournament_started"; tournament: any; next_match: any | null }
-	| { type: "round_generated"; tournament: any; next_match: any | null }
-	| { type: "tournament_finished"; tournament: any }
-	| { type: "error"; message: string }
-	| { type: "next_match"; next_match: any | null };
+import type { IncomingMsg, OutgoingMsg } from "./mapper.js";
+import { toTournamentDTO, toMatchDTO } from "./mapper.js";
 
 const rooms = new Map<RoomId, Set<WebSocket>>();
 
@@ -60,43 +32,6 @@ function broadcast(roomId: RoomId, payload: OutgoingMsg) {
 		// sock は ws のインスタンス
 		if ((sock as any).readyState === (sock as any).OPEN) sock.send(msg);
 	}
-}
-
-// class直送しないための最低限の整形
-function toTournamentDTO(t: any) {
-	return {
-		id: t.id,
-		status: t.status ?? t._status,
-		currentRound: t.currentRound,
-		winner_id: t.winner_id ?? null,
-		participants: t.participants,
-		matches: (t.matches ?? []).map(toMatchDTO),
-	};
-}
-
-function toMatchDTO(m: any) {
-	return {
-		id: m.id,
-		player1_id: m.player1Id ?? m.player1_id ?? m._player1?.id,
-		player2_id: m.player2Id ?? m.player2_id ?? m._player2?.id,
-		player1_name:
-			m.player1_name ??
-			m._player1?.name ??
-			m.player1Id ??
-			m.player1_id ??
-			m._player1?.id,
-		player2_name:
-			m.player2_name ??
-			m._player2?.name ??
-			m.player2Id ??
-			m.player2_id ??
-			m._player2?.id,
-		score1: m.score1 ?? m._score1 ?? 0,
-		score2: m.score2 ?? m._score2 ?? 0,
-		status: m.status ?? m._status,
-		round: m.round ?? 1,
-		winner_id: m.winner_id ?? m.winnerId ?? null,
-	};
 }
 
 export async function registerTournamentWs(app: FastifyInstance) {
