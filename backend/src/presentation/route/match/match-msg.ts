@@ -1,0 +1,49 @@
+import type { MatchStatus } from "@domain/model/value-object/match/Match.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+
+// Game state types
+export type PaddleStateDto = {
+	id: UserId;
+	y: number;
+};
+
+export type RealtimeMatchStateDto = {
+	status: MatchStatus;
+	ball: {
+		x: number;
+		y: number;
+	};
+	paddles: {
+		player1: PaddleStateDto;
+		player2: PaddleStateDto;
+	};
+	scores: {
+		player1: number;
+		player2: number;
+	};
+};
+
+// Position types
+export type MatchPosition = {
+	y: number;
+};
+
+// Incoming messages from client
+export type MatchIncomingMsg =
+	| {
+			status: "Match";
+			action: "start";
+	  }
+	| {
+			status: "Match";
+			action: "move";
+			data: MatchPosition;
+	  };
+
+// Outgoing messages to client
+export type MatchOutgoingMsg = {
+	status: "Match";
+	data: {
+		type: "match_status";
+	};
+};

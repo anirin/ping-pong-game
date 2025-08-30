@@ -105,18 +105,20 @@ export class TournamentService {
 		};
 	}
 
-	async getNextMatch(tournamentId: TournamentId) {
+	// broadcast 用
+	async sendTournamentState(tournamentId: TournamentId) {
+		// generateNextRound を呼び出す （ 適宜呼び出す ）
+		await this.generateNextRound(tournamentId);
+
 		const tournament = await this.tournamentRepository.findById(tournamentId);
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		if (!tournamentMatches) {
-			throw new Error("Tournament matches not found");
-		}
-		tournament.matches = tournamentMatches;
-		return tournament.getNextMatch();
+		return {
+			// tournament 画面を render する broadcast を行う
+			tournament, // 現状の match を全て出す
+			nextMatch: tournament.getNextMatch(),
+		};
 	}
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
@@ -126,5 +128,7 @@ export class TournamentService {
 		}
 		tournament.finish(winnerId);
 		await this.tournamentRepository.save(tournament);
+
+		// home に戻すイベントを発火させる or レンダリングする
 	}
 }

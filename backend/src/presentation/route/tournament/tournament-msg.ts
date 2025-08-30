@@ -5,14 +5,13 @@ import type {
 } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 
-export type TournamentIncomingMsg =
-	| {
-			status: "Tournament";
-			action: "start_tournament";
-			room_id: RoomId; // context にある
-			created_by: UserId; // context にある
-			participants: UserId[];
-	  }
+export type TournamentIncomingMsg = {
+	status: "Tournament";
+	action: "start_tournament";
+	room_id: RoomId; // context にある
+	created_by: UserId; // context にある
+	participants: UserId[];
+};
 
 export type TournamentOutgoingMsg = {
 	status: "Tournament";

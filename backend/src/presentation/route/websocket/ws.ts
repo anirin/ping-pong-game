@@ -129,16 +129,13 @@ export async function registerWebSocket(app: FastifyInstance) {
 						}
 						case "Match": {
 							// front -> back match start が押されたら
-								// 操作は player 1 と player 2 のみで行う
-								// game 画面に render する処理 + match を開始する処理
-
+							// 操作は player 1 と player 2 のみで行う
+							// game 画面に render する処理 + match を開始する処理
 							// front -> back match finish が押されたら
-								// 処理内容
-
+							// 処理内容
 							// game の内容
-								// game start
-								// game finish
-
+							// game start
+							// game finish
 							// match を終了する処理
 							// tournament 画面を render する処理 （通常と同じなので tournament case で処理を行う **
 							// 全ての試合が終了している場合は次戦の生成を行うので毎回呼び出してももんだいない 全ての match 情報をどのみち　frontend に渡すことになる
