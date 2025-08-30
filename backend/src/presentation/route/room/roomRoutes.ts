@@ -123,7 +123,10 @@ export async function JoinRoomWS(
 				msg: error.message,
 			} satisfies WSOutgoingMsg;
 		}
-		throw Error("unexpected error");
+		return {
+			status: "error",
+			msg: "unexpected error",
+		};
 	}
 }
 

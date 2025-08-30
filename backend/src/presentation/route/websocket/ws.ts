@@ -54,8 +54,6 @@ function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 export type WebSocketContext = {
 	authedUser: UserId;
 	joinedRoom: RoomId;
-	websocket: WebSocket.WebSocket;
-	roomSockets: Map<RoomId, Set<WebSocket.WebSocket>>;
 };
 
 export async function registerWSRoutes(app: FastifyInstance) {
@@ -96,8 +94,6 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const context: WebSocketContext = {
 				authedUser: authedUser,
 				joinedRoom: joinedRoom,
-				websocket: ws,
-				roomSockets: rooms,
 			};
 
 			const joinResultMsg = await JoinRoomWS(roomUserService, context);
@@ -148,26 +144,30 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			});
 
 			ws.on("close", async () => {
-				let resultmsg: WSOutgoingMsg;
-				if (
-					await roomService.checkOwner(context.joinedRoom, context.authedUser)
-				) {
-					resultmsg = await RoomWSHandler("DELETE", roomService, context);
-					if (resultmsg.status !== "error") {
-						broadcast(context.joinedRoom, resultmsg);
-						leaveAllfromRoom(context.joinedRoom);
-						return;
+				try {
+					let resultmsg: WSOutgoingMsg;
+					if (
+						await roomService.checkOwner(context.joinedRoom, context.authedUser)
+					) {
+						resultmsg = await RoomWSHandler("DELETE", roomService, context);
+						if (resultmsg.status !== "error") {
+							broadcast(context.joinedRoom, resultmsg);
+							leaveAllfromRoom(context.joinedRoom);
+							return;
+						}
+					} else {
+						resultmsg = await LeaveRoomWS(roomUserService, context);
+						if (resultmsg.status !== "error") {
+							rooms.get(context.joinedRoom)?.delete(ws);
+							broadcast(context.joinedRoom, resultmsg);
+							return;
+						}
 					}
-				} else {
-					resultmsg = await LeaveRoomWS(roomUserService, context);
-					if (resultmsg.status !== "error") {
-						rooms.get(context.joinedRoom)?.delete(ws);
-						broadcast(context.joinedRoom, resultmsg);
-						return;
-					}
+					ws.send(JSON.stringify(resultmsg));
+					return;
+				} catch (error) {
+					console.error(error);
 				}
-				ws.send(JSON.stringify(resultmsg));
-				return;
 			});
 		},
 	);
