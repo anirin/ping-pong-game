@@ -35,7 +35,9 @@ function specifyRoom(url: URL): RoomId | null {
 function leaveAllfromRoom(roomId: RoomId): boolean {
 	const set = rooms.get(roomId);
 	if (!set) return false;
-	set.forEach((ws) => ws.close());
+	set.forEach((ws) => {
+		ws.close();
+	});
 	rooms.delete(roomId);
 	return true;
 }
