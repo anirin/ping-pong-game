@@ -7,7 +7,13 @@ import type {
 	WSRoomData,
 } from "@domain/model/value-object/room/Room.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
+import type {
+	TournamentIncomingMsg,
+	TournamentOutgoingMsg,
+} from "../tournament/tournament-msg.js";
 
+// todo incoming はそれぞれの route/xxx に 持たせる方が良い
 export type WSIncomingMsg =
 	| {
 			status: "Room";
@@ -22,7 +28,8 @@ export type WSIncomingMsg =
 			status: "Match";
 			action: "Move";
 			msg: MatchPosition;
-	  };
+	  }
+	| TournamentIncomingMsg;
 
 export type WSOutgoingMsg =
 	| {
@@ -34,10 +41,11 @@ export type WSOutgoingMsg =
 			data: WSRoomData;
 	  }
 	| {
+			status: "Match";
+			data: WSMatchData;
+	  }
+	| {
 			status: "Tournament";
 			data: WSTournamentData;
 	  }
-	| {
-			status: "Match";
-			data: WSMatchData;
-	  };
+	| TournamentOutgoingMsg;

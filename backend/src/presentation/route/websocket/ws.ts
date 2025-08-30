@@ -13,6 +13,11 @@ import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMU
 import { type FastifyInstance, fastify } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
+import type {
+	TournamentIncomingMsg,
+	TournamentOutgoingMsg,
+} from "../tournament/tournament-msg.js";
+import { TournamentWSHandler } from "../tournament/tournamentRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
@@ -43,6 +48,8 @@ export async function registerWebSocket(app: FastifyInstance) {
 		{ websocket: true },
 		(connection: WebSocket.WebSocket, req) => {
 			const ws = connection;
+
+			// todo auth 処理は共通なので ws 共通の middleware にまとめる
 			const authHeader = req.headers["authorization"];
 			if (!authHeader) {
 				console.log("[WebSocket] Connection attempt without token.");
@@ -56,6 +63,7 @@ export async function registerWebSocket(app: FastifyInstance) {
 				return;
 			}
 
+			// todo service と repository それぞれ責務があるとこに押し込める
 			const roomRepository = new TypeOrmRoomRepository(
 				AppDataSource.getRepository("RoomEntity"),
 			);
@@ -121,20 +129,30 @@ export async function registerWebSocket(app: FastifyInstance) {
 						}
 						case "Match": {
 							// front -> back match start が押されたら
-								// 処理内容
+								// 操作は player 1 と player 2 のみで行う
 								// game 画面に render する処理 + match を開始する処理
+
 							// front -> back match finish が押されたら
 								// 処理内容
-								// match を終了する処理
-								// tournament 画面を render する処理 （通常と同じなので tournament case で処理を行う **
-								// 全ての試合が終了している場合は次戦の生成を行うので毎回呼び出してももんだいない 全ての match 情報をどのみち　frontend に渡すことになる
-								// tournament finish もこの段階でわかると思うのでそのロジックも追加すべき
+
+							// game の内容
+								// game start
+								// game finish
+
+							// match を終了する処理
+							// tournament 画面を render する処理 （通常と同じなので tournament case で処理を行う **
+							// 全ての試合が終了している場合は次戦の生成を行うので毎回呼び出してももんだいない 全ての match 情報をどのみち　frontend に渡すことになる
+							// tournament finish もこの段階でわかると思うのでそのロジックも追加すべき
 							// game 処理はこちらに含めるように構成を変更する
-								// 今回の pr　は tourmanet に絞り込むので簡易的なものにしてテストだけを行うようにする（統合はおそらく最後で良い）
+							// 今回の pr　は tourmanet に絞り込むので簡易的なものにしてテストだけを行うようにする（統合はおそらく最後で良い）
 						}
 						case "Tournament": {
-							// front -> back tournament start が押されたら tournament 画面に render する処理 + tournament を開始する処理 （これは room 画面で button が押される想定）
-							// back -> front tournament finish になったら home 画面に render する処理
+							const resultmsg = await TournamentWSHandler(
+								data as TournamentIncomingMsg,
+								context,
+							);
+							broadcast(context.joinedRoom!, resultmsg);
+							break;
 						}
 					}
 				} catch (e) {

@@ -6,7 +6,6 @@ import type { UserId } from "@domain/model/value-object/user/User.js";
 
 // 送受信用の最小DTO。必要なら拡張してOK
 export type IncomingMsg =
-	| { action: "subscribe"; room_id: RoomId; user_id: UserId }
 	| {
 			action: "start_tournament";
 			room_id: RoomId;
@@ -28,9 +27,20 @@ export type IncomingMsg =
 
 export type OutgoingMsg =
 	| { type: "subscribed"; room_id: RoomId; user_id: UserId }
-	| { type: "tournament_started"; tournament: TournamentDTO; next_match: MatchDTO | null }
-	| { type: "round_generated"; tournament: TournamentDTO; next_match: MatchDTO | null }
-	| { type: "tournament_finished"; tournament: { id: TournamentId; winner_id: UserId } }
+	| {
+			type: "tournament_started";
+			tournament: TournamentDTO;
+			next_match: MatchDTO | null;
+	  }
+	| {
+			type: "round_generated";
+			tournament: TournamentDTO;
+			next_match: MatchDTO | null;
+	  }
+	| {
+			type: "tournament_finished";
+			tournament: { id: TournamentId; winner_id: UserId };
+	  }
 	| { type: "error"; message: string }
 	| { type: "next_match"; next_match: MatchDTO | null };
 
