@@ -75,17 +75,41 @@
 	background-color: #218838;
 }
 
-.room-list-section h3 {
+.btn-join {
+	background-color: #007bff;
+}
+.btn-join:hover {
+	background-color: #0069d9;
+}
+
+.join-room-section h3 {
 	margin-top: 0;
-	padding-bottom: 15px;
-	border-bottom: 2px solid #f0f0f0;
 	margin-bottom: 15px;
 	font-size: 20px;
 	color: #333;
 }
 
-.room-list-empty {
-	text-align: center;
-	color: #888;
-	padding: 20px;
+.join-room-form {
+	display: flex;
+	gap: 10px;
+}
+
+.join-room-form input {
+	flex-grow: 1; /* 入力欄が可能な限り幅を取る */
+	padding: 12px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	font-size: 16px;
+	font-family: monospace; /* IDが見やすいように */
+}
+
+.join-room-form input:focus {
+	border-color: #007bff;
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.join-room-form button {
+	flex-shrink: 0; /* ボタンが縮まないようにする */
+	width: 120px; /* ボタンの幅を固定 */
 }

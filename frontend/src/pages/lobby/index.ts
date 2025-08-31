@@ -42,6 +42,23 @@ async function handleCreateRoom() {
 	}
 }
 
+function handleJoinRoom() {
+	const roomIdInput = document.getElementById(
+		"room-id-input",
+	) as HTMLInputElement;
+	if (!roomIdInput) return;
+
+	const roomId = roomIdInput.value.trim(); // .trim()で前後の空白を削除
+
+	if (!roomId) {
+		alert("Please enter a Room ID.");
+		return;
+	}
+
+	// 入力されたIDのルームページに遷移
+	navigate(`/rooms/${roomId}`);
+}
+
 export function renderLobbyPage() {
 	const container = document.getElementById("app");
 	if (!container) return;
@@ -63,6 +80,21 @@ export function renderLobbyPage() {
 	const createRoomButton = document.getElementById("create-room-btn");
 	if (createRoomButton) {
 		createRoomButton.addEventListener("click", handleCreateRoom);
+	}
+
+	const joinRoomButton = document.getElementById("join-room-btn");
+	if (joinRoomButton) {
+		joinRoomButton.addEventListener("click", handleJoinRoom);
+	}
+
+	// EnterキーでもJoinできるようにする
+	const roomIdInput = document.getElementById("room-id-input");
+	if (roomIdInput) {
+		roomIdInput.addEventListener("keypress", (event) => {
+			if (event.key === "Enter") {
+				handleJoinRoom();
+			}
+		});
 	}
 
 	// TODO: ここで利用可能なルーム一覧を取得して表示するロジックを追加
