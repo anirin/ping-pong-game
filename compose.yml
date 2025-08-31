@@ -7,6 +7,8 @@ services:
     volumes:
       - ./frontend:/app
       - frontend_modules:/app/node_modules
+    depends_on:
+      - backend
 
   backend:
     container_name: backend
@@ -16,8 +18,17 @@ services:
     volumes:
       - ./backend:/app
       - backend_modules:/app/node_modules
+    secrets:
+      - server_certificate
+      - server_key
 
 
 volumes:
   frontend_modules:
   backend_modules:
+
+secrets:
+  server_certificate:
+    file: ./backend/secrets/cert.pem
+  server_key:
+    file: ./backend/secrets/key.pem
