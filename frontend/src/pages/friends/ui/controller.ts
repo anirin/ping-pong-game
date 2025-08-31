@@ -1,4 +1,3 @@
-import type { Friend } from "../model/friend_list";
 import { fetchFriends } from "../model/friend_list";
 
 export async function mountFriendProfile(
