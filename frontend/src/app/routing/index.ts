@@ -7,6 +7,7 @@ import { renderRegisterPage } from "@pages/register/index";
 import { renderRoomEntrancePage } from "@pages/room-entrance/index";
 import { renderSetupPage } from "@pages/setup/index";
 import { renderTournamentPage } from "@pages/tournament";
+import { renderFriendListPage } from "@/pages/friends";
 
 interface Route {
 	path: string;
@@ -55,7 +56,10 @@ const routes: Route[] = [
 		path: "/tournament", // id が必要かも
 		handler: renderTournamentPage,
 	},
-
+	{
+		path: "/friends",
+		handler: renderFriendListPage,
+	},
 	// {
 	// 	path: "/online/room/:id",
 	// 	handler: renderOnlineRoomPage,

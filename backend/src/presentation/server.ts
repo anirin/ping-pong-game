@@ -11,10 +11,12 @@ import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
 import authRoutes from "./route/auth/authRoutes.js";
+import { registerFriendRoutes } from "./route/friends/friendRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerTournamentWs } from "./route/tournament/ws.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
-import { registerWSRoutes } from "./route/websocket/ws.js";
+//エラーが出るのでコメントアウトしています
+// import { registerWebSocket } from "./route/websocket/ws.js";
 
 export async function buildServer() {
 	if (
@@ -64,7 +66,8 @@ export async function buildServer() {
 	await registerRoomRoutes(app);
 	await registerUserChange(app);
 	await registerTournamentWs(app);
-	await registerWSRoutes(app);
+	// await registerWebSocket(app);
+	await registerFriendRoutes(app);
 	await app.register(authRoutes, { prefix: "/auth" });
 	await app.register(gameRoutes, {
 		gameService,
