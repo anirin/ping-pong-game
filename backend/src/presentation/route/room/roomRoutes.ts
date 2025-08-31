@@ -15,6 +15,8 @@ import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
 
+// todo room にも eventEmitter を追加する
+
 export async function registerRoomRoutes(app: FastifyInstance) {
 	const roomRepository = new TypeOrmRoomRepository(
 		AppDataSource.getRepository("RoomEntity"),

@@ -1,3 +1,4 @@
+// todo websocket の routing に等しいので一個上の階層にまとめる
 import {
 	RoomService,
 	RoomUserService,
@@ -10,8 +11,10 @@ import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORM
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
+import { EventEmitter } from "events";
 import { type FastifyInstance, fastify } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
+import { MatchWSHandler } from "../match/matchRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
 import type {
 	TournamentIncomingMsg,
@@ -21,6 +24,7 @@ import { TournamentWSHandler } from "../tournament/tournamentRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
+const eventEmitter = new EventEmitter();
 
 function leaveAll(ws: WebSocket.WebSocket) {
 	for (const set of rooms.values()) set.delete(ws);
@@ -128,32 +132,46 @@ export async function registerWebSocket(app: FastifyInstance) {
 							break;
 						}
 						case "Match": {
-							// front -> back match start が押されたら
-							// 操作は player 1 と player 2 のみで行う
-							// game 画面に render する処理 + match を開始する処理
-							// front -> back match finish が押されたら
-							// 処理内容
-							// game の内容
-							// game start
-							// game finish
-							// match を終了する処理
-							// tournament 画面を render する処理 （通常と同じなので tournament case で処理を行う **
-							// 全ての試合が終了している場合は次戦の生成を行うので毎回呼び出してももんだいない 全ての match 情報をどのみち　frontend に渡すことになる
-							// tournament finish もこの段階でわかると思うのでそのロジックも追加すべき
-							// game 処理はこちらに含めるように構成を変更する
-							// 今回の pr　は tourmanet に絞り込むので簡易的なものにしてテストだけを行うようにする（統合はおそらく最後で良い）
+							const resultmsg = await MatchWSHandler(
+								data,
+								context,
+								eventEmitter,
+							);
+							if (
+								resultmsg.status === "Match" &&
+								resultmsg.data.type === "error"
+							) {
+								ws.send(JSON.stringify(resultmsg));
+							} else if (resultmsg.status === "Match") {
+								broadcast(context.joinedRoom!, resultmsg);
+							}
+							break;
 						}
 						case "Tournament": {
 							const resultmsg = await TournamentWSHandler(
 								data as TournamentIncomingMsg,
 								context,
+								eventEmitter,
 							);
-							broadcast(context.joinedRoom!, resultmsg);
+							if (
+								resultmsg.status === "Tournament" &&
+								resultmsg.data.type === "error"
+							) {
+								ws.send(JSON.stringify(resultmsg));
+							} else if (resultmsg.status === "Tournament") {
+								broadcast(context.joinedRoom!, resultmsg);
+							}
 							break;
 						}
 					}
 				} catch (e) {
 					console.error(e);
+					ws.send(
+						JSON.stringify({
+							status: "error",
+							msg: "Internal server error",
+						} satisfies WSOutgoingMsg),
+					);
 				}
 			});
 

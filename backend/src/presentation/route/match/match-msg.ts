@@ -1,4 +1,7 @@
-import type { MatchStatus } from "@domain/model/value-object/match/Match.js";
+import type {
+	MatchId,
+	MatchStatus,
+} from "@domain/model/value-object/match/Match.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 
 // Game state types
@@ -33,17 +36,52 @@ export type MatchIncomingMsg =
 	| {
 			status: "Match";
 			action: "start";
+			matchId: MatchId;
 	  }
 	| {
 			status: "Match";
 			action: "move";
+			matchId: MatchId;
+			userId: UserId; // context にあるからいらないはず
 			data: MatchPosition;
 	  };
 
 // Outgoing messages to client
-export type MatchOutgoingMsg = {
-	status: "Match";
-	data: {
-		type: "match_status";
-	};
-};
+export type MatchOutgoingMsg =
+	| {
+			status: "Match";
+			data: {
+				type: "match_state";
+				matchId: MatchId;
+				state: RealtimeMatchStateDto;
+			};
+	  }
+	| {
+			status: "Match";
+			data: {
+				type: "match_started";
+				matchId: MatchId;
+			};
+	  }
+	| {
+			status: "Match";
+			data: {
+				type: "move_processed";
+				matchId: MatchId;
+			};
+	  }
+	| {
+			status: "Match";
+			data: {
+				type: "match_finished";
+				matchId: MatchId;
+				winnerId: UserId;
+			};
+	  }
+	| {
+			status: "Match";
+			data: {
+				type: "error";
+				message: string;
+			};
+	  };

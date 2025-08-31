@@ -1,3 +1,5 @@
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type { Match } from "@domain/model/entity/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type {
 	TournamentId,
@@ -8,22 +10,39 @@ import type { UserId } from "@domain/model/value-object/user/User.js";
 export type TournamentIncomingMsg = {
 	status: "Tournament";
 	action: "start_tournament";
-	room_id: RoomId; // context にある
-	created_by: UserId; // context にある
+	room_id: RoomId; // context にあるからいらないはず
+	created_by: UserId;
 	participants: UserId[];
 };
 
-export type TournamentOutgoingMsg = {
-	status: "Tournament";
-	data: {
-		type:
-			| "tournament_status" // 現状の match を束ねているだけ
-			// | "round_generated" next round は適宜 service 側で生成するだけ
-			| "tournament_finished"; // 画面遷移させる
-		room_id?: RoomId;
-		user_id?: UserId;
-		tournament?: any;
-		next_match?: any;
-		winner_id?: UserId;
-	};
-};
+export type TournamentOutgoingMsg =
+	| {
+			status: "Tournament";
+			action: "tournament_status";
+			data: {
+				type: "tournament_status";
+				tournament_id: TournamentId;
+				room_id: RoomId; // context にあるからいらないはず
+				participants: UserId[];
+				matches: Match[];
+				next_match_id: MatchId | null;
+				current_round: number;
+			};
+	  }
+	| {
+			status: "Tournament";
+			action: "tournament_finished";
+			data: {
+				type: "tournament_finished";
+				tournament_id: TournamentId;
+				winner_id: UserId;
+			};
+	  }
+	| {
+			status: "Tournament";
+			action: "error";
+			data: {
+				type: "error";
+				message: string;
+			};
+	  };

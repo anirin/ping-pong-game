@@ -8,6 +8,7 @@ import type {
 } from "@domain/model/value-object/room/Room.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import type { MatchIncomingMsg, MatchOutgoingMsg } from "../match/match-msg.js";
 import type {
 	TournamentIncomingMsg,
 	TournamentOutgoingMsg,
@@ -24,11 +25,7 @@ export type WSIncomingMsg =
 			action: "ADD" | "DELETE";
 			room: RoomId;
 	  }
-	| {
-			status: "Match";
-			action: "Move";
-			msg: MatchPosition;
-	  }
+	| MatchIncomingMsg
 	| TournamentIncomingMsg;
 
 export type WSOutgoingMsg =
@@ -40,12 +37,5 @@ export type WSOutgoingMsg =
 			status: "Room";
 			data: WSRoomData;
 	  }
-	| {
-			status: "Match";
-			data: WSMatchData;
-	  }
-	| {
-			status: "Tournament";
-			data: WSTournamentData;
-	  }
+	| MatchOutgoingMsg
 	| TournamentOutgoingMsg;

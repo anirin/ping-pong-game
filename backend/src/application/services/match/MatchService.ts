@@ -1,7 +1,12 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
-import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { Match } from "@domain/model/entity/match/Match.js";
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import { AppDataSource } from "@infrastructure/data-source.js";
+import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
+import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
+import type { RealtimeMatchStateDto } from "@presentation/route/match/match-msg.js"; // todo 依存してはいけない
+import type { EventEmitter } from "events";
 
 type Info = {
 	interval: NodeJS.Timeout;
@@ -10,59 +15,114 @@ type Info = {
 
 export class MatchService {
 	private intervals: Map<MatchId, Info> = new Map();
+	private readonly matchRepository: MatchRepository;
+	private readonly eventEmitter: EventEmitter;
+	private broadcastCallback?: (
+		matchId: MatchId,
+		state: RealtimeMatchStateDto,
+	) => void;
 
-	constructor(private readonly matchRepository: MatchRepository) {}
+	constructor(eventEmitter: EventEmitter) {
+		this.matchRepository = new TypeORMMatchRepository(
+			AppDataSource.getRepository(MatchEntity),
+		);
+		this.eventEmitter = eventEmitter;
+	}
 
-	async renderMatch(matchId: MatchId): Promise<void> {
-		const match = await this.matchRepository.findById(matchId);
-
-		// match 画面を render する broadcast を行う
-		this.startMatch(matchId); // running に status を変更する
+	setBroadcastCallback(
+		callback: (matchId: MatchId, state: RealtimeMatchStateDto) => void,
+	) {
+		this.broadcastCallback = callback;
 	}
 
 	async startMatch(matchId: MatchId): Promise<void> {
-		const match = await this.matchRepository.findById(matchId); // repository の match と domain の match 同じではないやろ
+		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
-			clearInterval(this.intervals.get(matchId)?.interval);
-			this.intervals.delete(matchId);
-			return;
+			throw new Error(`Match with id ${matchId} not found`);
 		}
-		// setInterval を用いて match の ball と paddles の位置を更新し続ける
+
+		// 既に実行中の場合は停止
+		if (this.intervals.has(matchId)) {
+			this.stopMatch(matchId);
+		}
+
+		match.start();
+		await this.matchRepository.save(match);
+
+		// 60fpsでゲームループを開始
 		const interval = setInterval(async () => {
 			match.advanceFrame();
-			
+
+			// リアルタイム状態をブロードキャスト
+			if (this.broadcastCallback) {
+				const state = this.createMatchStateDto(match);
+				this.broadcastCallback(matchId, state);
+			}
+
 			if (match.status === "finished") {
 				clearInterval(interval);
 				this.intervals.delete(matchId);
-				this.finishMatch(matchId, match.winnerId!);
+				await this.finishMatch(matchId, match.winnerId!);
 				return;
 			}
-
-			// broadcast を常に行う eventemitter を用いる
-		}, 1000 / 60); //60fps
+		}, 1000 / 60); // 60fps
 
 		this.intervals.set(matchId, { interval, match });
 	}
 
-	// todo 後回し（必要）
-	// async stopMatch(matchId: MatchId): Promise<void> {
-	// 	const match = await this.matchRepository.findById(matchId);
-	// 	match.stop();
-	// 	await this.matchRepository.save(match);
-	// }
-
-	async finishMatch(matchId: MatchId, winnerId: UserId): Promise<void> {
-		// match に score と winner を反映させ終了させる
-		const match = await this.matchRepository.findById(matchId);
-		if (!match) return;
-		
-		match.finish(winnerId);
-		await this.matchRepository.save(match);
-		// tournament event を発火する eventemitter を用いる
+	async stopMatch(matchId: MatchId): Promise<void> {
+		const info = this.intervals.get(matchId);
+		if (info) {
+			clearInterval(info.interval);
+			this.intervals.delete(matchId);
+		}
 	}
 
-	async handlePlayerInput(matchId: MatchId, userId: UserId, y: number): Promise<void> {
-		// 適切な user を元に handling を行う　（観戦者は操作できない）
+	async finishMatch(matchId: MatchId, winnerId: UserId): Promise<void> {
+		const match = await this.matchRepository.findById(matchId);
+		if (!match) return;
 
+		match.finish(winnerId);
+		await this.matchRepository.save(match);
+
+		// tournament event を発火
+		this.eventEmitter.emit("match.finished", { matchId, winnerId });
+	}
+
+	async handlePlayerInput(
+		matchId: MatchId,
+		userId: UserId,
+		y: number,
+	): Promise<void> {
+		const info = this.intervals.get(matchId);
+		if (!info) {
+			throw new Error(`Match ${matchId} is not active`);
+		}
+
+		// プレイヤーが試合に参加しているかチェック
+		if (info.match.player1Id !== userId && info.match.player2Id !== userId) {
+			throw new Error(`User ${userId} is not a player in match ${matchId}`);
+		}
+
+		// パドルの位置を更新
+		info.match.movePaddle(userId, y);
+	}
+
+	private createMatchStateDto(match: Match): RealtimeMatchStateDto {
+		return {
+			status: match.status,
+			ball: {
+				x: match.ballState.x,
+				y: match.ballState.y,
+			},
+			paddles: {
+				player1: { id: match.player1Id, y: match.paddle1State.y },
+				player2: { id: match.player2Id, y: match.paddle2State.y },
+			},
+			scores: {
+				player1: match.score1,
+				player2: match.score2,
+			},
+		};
 	}
 }

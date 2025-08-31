@@ -208,7 +208,8 @@ export class Match {
 			hit = true;
 		} else if (
 			nextBall.vx > 0 &&
-			nextBall.x + this.rule.BALL_RADIUS > this.rule.fieldSize.width - this.rule.PADDLE_WIDTH
+			nextBall.x + this.rule.BALL_RADIUS >
+				this.rule.fieldSize.width - this.rule.PADDLE_WIDTH
 		) {
 			if (
 				nextBall.y > player2Paddle.y - this.rule.PADDLE_HEIGHT / 2 &&

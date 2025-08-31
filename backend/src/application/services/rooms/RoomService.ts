@@ -3,10 +3,14 @@ import type { UserRepository } from "@domain/interface/repository/users/UserRepo
 import { Room } from "@domain/model/entity/room/Room.js";
 import type { RoomId, RoomUser } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import type { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 
 export class RoomService {
-	constructor(private readonly roomRepository: RoomRepository) {}
+	constructor(
+		private readonly roomRepository: RoomRepository,
+		private readonly eventEmitter: EventEmitter,
+	) {}
 
 	async createRoom(owner_id: string): Promise<Room> {
 		const room = new Room(uuidv4(), owner_id, []);
@@ -21,8 +25,14 @@ export class RoomService {
 	async startRoom(id: string, userid: UserId): Promise<boolean> {
 		const room = await this.roomRepository.findById(id);
 		if (room === null) return false;
-		if (room.ownerId === userid && room.status === "waiting")
-			return this.roomRepository.start(id);
+		if (room.ownerId === userid && room.status === "waiting") {
+			const result = await this.roomRepository.start(id);
+			if (result) {
+				// ルームが正常に開始された場合にイベントを発火
+				this.eventEmitter.emit("room.started", { roomId: id, participants: room.participants, createdBy: userid });
+			}
+			return result;
+		}
 		return false;
 	}
 
