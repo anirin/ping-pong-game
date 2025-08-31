@@ -1,16 +1,9 @@
 import type {
-	MatchPosition,
-	WSMatchData,
-} from "@domain/model/value-object/match/Match.js";
-import type {
 	RoomId,
 	WSRoomData,
 } from "@domain/model/value-object/room/Room.js";
-import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
-import type { UserId } from "@domain/model/value-object/user/User.js";
 import type { MatchIncomingMsg, MatchOutgoingMsg } from "../match/match-msg.js";
 import type {
-	TournamentIncomingMsg,
 	TournamentOutgoingMsg,
 } from "../tournament/tournament-msg.js";
 
@@ -25,8 +18,7 @@ export type WSIncomingMsg =
 			action: "ADD" | "DELETE";
 			room: RoomId;
 	  }
-	| MatchIncomingMsg
-	| TournamentIncomingMsg;
+	| MatchIncomingMsg;
 
 export type WSOutgoingMsg =
 	| {
@@ -36,6 +28,10 @@ export type WSOutgoingMsg =
 	| {
 			status: "Room";
 			data: WSRoomData;
+	  }
+	| {
+			status: "Room"; // tournament に渡すので意味のない action を書いている
+			msg: string;
 	  }
 	| MatchOutgoingMsg
 	| TournamentOutgoingMsg;

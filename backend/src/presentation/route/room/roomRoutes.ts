@@ -14,6 +14,7 @@ import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
+import { EventEmitter } from "events";
 
 // todo room にも eventEmitter を追加する
 
@@ -21,7 +22,8 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 	const roomRepository = new TypeOrmRoomRepository(
 		AppDataSource.getRepository("RoomEntity"),
 	);
-	const roomService = new RoomService(roomRepository);
+	const eventEmitter = new EventEmitter(); // api routing で eventEmitter は不要だが、ここでは使用している
+	const roomService = new RoomService(roomRepository, eventEmitter);
 
 	// POST /rooms: ルーム作成
 	app.post<{ Body: { mode?: string } }>("/rooms", async (request, reply) => {
@@ -96,20 +98,19 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 export async function RoomWSHandler(
 	action: "START" | "DELETE",
 	room_service: RoomService,
+	eventEmitter: EventEmitter,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
 	if (context.joinedRoom === null) throw Error("joined no room");
 	switch (action) {
+		// start は tournament を開始する 処理に変更が加わる
 		case "START": {
 			if (
 				await room_service.startRoom(context.joinedRoom, context.authedUser)
 			) {
 				return {
-					status: "Tournament",
-					data: {
-						next_match_id: "",
-						matches: [],
-					} satisfies WSTournamentData,
+					status: "Room",
+					msg: "room started",
 				} satisfies WSOutgoingMsg;
 			} else {
 				return {

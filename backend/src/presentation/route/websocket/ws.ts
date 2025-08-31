@@ -7,24 +7,17 @@ import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
 import { AppDataSource } from "@infrastructure/data-source.js";
-import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
-import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import { EventEmitter } from "events";
-import { type FastifyInstance, fastify } from "fastify";
+import { type FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import { MatchWSHandler } from "../match/matchRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
-import type {
-	TournamentIncomingMsg,
-	TournamentOutgoingMsg,
-} from "../tournament/tournament-msg.js";
-import { TournamentWSHandler } from "../tournament/tournamentRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
-const eventEmitter = new EventEmitter();
+const eventEmitter = new EventEmitter(); // 配置場所は要検討 少なくとも同じ websocket の中にいないといけない
 
 function leaveAll(ws: WebSocket.WebSocket) {
 	for (const set of rooms.values()) set.delete(ws);
@@ -74,13 +67,7 @@ export async function registerWebSocket(app: FastifyInstance) {
 			const userRepository = new TypeOrmUserRepository(
 				AppDataSource.getRepository("UserEntity"),
 			);
-			const tournamentRepository = new TypeORMTournamentRepository(
-				AppDataSource.getRepository("TournamentEntity"),
-			);
-			const matchRepository = new TypeORMMatchRepository(
-				AppDataSource.getRepository("MatchEntity"),
-			);
-			const roomService = new RoomService(roomRepository);
+			const roomService = new RoomService(roomRepository, eventEmitter);
 			const roomUserService = new RoomUserService(
 				userRepository,
 				roomRepository,
@@ -112,6 +99,7 @@ export async function registerWebSocket(app: FastifyInstance) {
 							const resultmsg = await RoomWSHandler(
 								data.action,
 								roomService,
+								eventEmitter,
 								context,
 							);
 							if (resultmsg.status === "error")
@@ -147,22 +135,8 @@ export async function registerWebSocket(app: FastifyInstance) {
 							}
 							break;
 						}
-						case "Tournament": {
-							const resultmsg = await TournamentWSHandler(
-								data as TournamentIncomingMsg,
-								context,
-								eventEmitter,
-							);
-							if (
-								resultmsg.status === "Tournament" &&
-								resultmsg.data.type === "error"
-							) {
-								ws.send(JSON.stringify(resultmsg));
-							} else if (resultmsg.status === "Tournament") {
-								broadcast(context.joinedRoom!, resultmsg);
-							}
-							break;
-						}
+						// case "Tournament"
+						// incoming はない （コメントを残しておく）
 					}
 				} catch (e) {
 					console.error(e);

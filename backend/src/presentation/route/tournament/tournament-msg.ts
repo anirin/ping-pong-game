@@ -3,17 +3,9 @@ import type { Match } from "@domain/model/entity/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type {
 	TournamentId,
-	WSTournamentData,
 } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 
-export type TournamentIncomingMsg = {
-	status: "Tournament";
-	action: "start_tournament";
-	room_id: RoomId; // context にあるからいらないはず
-	created_by: UserId;
-	participants: UserId[];
-};
 
 export type TournamentOutgoingMsg =
 	| {
