@@ -1,6 +1,5 @@
-// frontend/src/ws-types.ts (新規作成)
+// frontend/src/types/ws-types.ts (修正版)
 
-type RoomId = string;
 type MatchPosition = "UP" | "DOWN" | "STAY";
 
 // --- クライアント → サーバー ---
@@ -9,11 +8,11 @@ export type WSIncomingMsg =
 			status: "Room";
 			action: "START" | "DELETE";
 	  }
-	| {
-			status: "User";
-			action: "ADD" | "DELETE";
-			room: RoomId;
-	  }
+	// | {  // ← 'User'ステータスのメッセージは不要になったので削除
+	// 		status: "User";
+	// 		action: "ADD" | "DELETE";
+	// 		room: RoomId;
+	//   }
 	| {
 			status: "Match";
 			action: "Move";
@@ -21,14 +20,22 @@ export type WSIncomingMsg =
 	  };
 
 // --- サーバー → クライアント ---
-// RoomUserの型は `types.ts` からインポートすることを想定
-import type { RoomUser } from "./types";
+import type { RoomUser } from "./types"; // './types' は実際のパスに合わせてください
 
 export interface WSRoomData {
 	action: "USER" | "DELETE";
 	users: RoomUser[];
+	// ★ roomInfoプロパティをオプショナルで追加
+	roomInfo?: {
+		id: string;
+		ownerId: string;
+		status: string;
+	};
 }
-// TODO: WSTournamentData, WSMatchData の型もここに追加する
+
+// TODO: WSTournamentData, WSMatchData の型定義もここに追加する
+export type WSTournamentData = {};
+export type WSMatchData = {};
 
 export type WSOutgoingMsg =
 	| {
@@ -38,7 +45,12 @@ export type WSOutgoingMsg =
 	| {
 			status: "Room";
 			data: WSRoomData;
+	  }
+	| {
+			status: "Tournament";
+			data: WSTournamentData;
+	  }
+	| {
+			status: "Match";
+			data: WSMatchData;
 	  };
-// TODO: Tournament, Match の型もここに追加
-// | { status: "Tournament"; data: WSTournamentData; }
-// | { status: "Match"; data: WSMatchData; };

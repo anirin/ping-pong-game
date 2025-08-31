@@ -98,7 +98,13 @@ function matchRoute(
 	return null;
 }
 
-export function navigate() {
+export function navigate(to?: string) {
+	// 1. 引数 `to` が指定されていれば、ブラウザの履歴を更新する
+	if (to && to !== window.location.pathname) {
+		window.history.pushState({}, "", to);
+	}
+
+	// 2. 現在のパスを取得して、対応するページを描画する
 	const path = window.location.pathname;
 	console.log("Navigating to path:", path);
 
@@ -115,9 +121,16 @@ export function navigate() {
 }
 
 export function setupRouter(): void {
+	// イベントリスナーに渡すためのラッパー関数
+	const handleNavigationEvent = () => {
+		// navigate関数を引数なしで呼び出す
+		navigate();
+	};
+
 	// 初回ロードとpopstateイベントでルーティングを処理
-	window.addEventListener("popstate", navigate);
-	document.addEventListener("DOMContentLoaded", navigate);
+	// ★ navigateを直接渡すのではなく、ラッパー関数を渡す
+	window.addEventListener("popstate", handleNavigationEvent);
+	document.addEventListener("DOMContentLoaded", handleNavigationEvent);
 
 	// ナビゲーションリンクのクリックを処理
 	document.addEventListener("click", (e) => {
@@ -126,8 +139,8 @@ export function setupRouter(): void {
 			e.preventDefault();
 			const href = target.getAttribute("href");
 			if (href) {
-				window.history.pushState({}, "", href);
-				navigate();
+				// ★ ここは引数ありでnavigateを呼び出す
+				navigate(href);
 			}
 		}
 	});

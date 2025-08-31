@@ -2,8 +2,13 @@ import roomHtml from "./room.html?raw";
 import "./room.css";
 import { HeaderWidget } from "@widgets/header";
 import { SidebarWidget } from "@widgets/sidebar";
-import type { RoomUser } from "../../types/types"; // パスはあなたのプロジェクトに合わせてください
-import type { WSIncomingMsg, WSOutgoingMsg } from "../../types/ws-types"; // パスはあなたのプロジェクトに合わせてください
+import { navigate } from "../../app/routing";
+import type { RoomUser } from "../../types/types";
+import type {
+	WSIncomingMsg,
+	WSOutgoingMsg,
+	WSRoomData,
+} from "../../types/ws-types";
 
 // --- グローバル状態管理 ---
 const state = {
@@ -37,38 +42,28 @@ function decodeJwt(token: string): any {
 function renderParticipantsList() {
 	const listElement = document.getElementById("participants-list");
 	if (!listElement) return;
-
 	listElement.innerHTML = "";
-
 	if (state.participants.length === 0) {
 		listElement.innerHTML =
 			'<li class="participant-item-empty">Waiting for other players...</li>';
 		return;
 	}
-
 	state.participants.forEach((user) => {
 		const li = document.createElement("li");
 		li.className = "participant-item";
-
-		// --- ▼▼▼ ここが最重要修正点 ▼▼▼ ---
-		// ネストされた value プロパティを正しく参照する
 		const avatarUrl = user.avatar?.value || "/default.png";
 		const userName = user.name?.value || "Unnamed User";
-		// --- ▲▲▲ ここまで ▲▲▲ ---
-
 		li.innerHTML = `
             <img src="${avatarUrl}" alt="${userName}'s avatar" class="participant-avatar">
             <div class="participant-info">
                 <span class="participant-name">${userName}</span>
             </div>
         `;
-
 		listElement.appendChild(li);
 	});
 }
 
 function updateUI() {
-	// ルームIDと役割
 	const roomIdDisplay = document.getElementById("room-id-display");
 	if (roomIdDisplay) roomIdDisplay.textContent = state.roomInfo?.id || "...";
 
@@ -76,45 +71,37 @@ function updateUI() {
 	if (userRoleDisplay)
 		userRoleDisplay.textContent = state.isOwner ? "Owner" : "Guest";
 
-	// 参加者数
 	const participantCount = document.getElementById("participant-count");
 	if (participantCount)
 		participantCount.textContent = state.participants.length.toString();
 
-	// Start Game ボタンの表示制御
 	const startGameButton = document.getElementById(
 		"start-game-button",
 	) as HTMLButtonElement;
 	if (startGameButton) {
-		// オーナーであり、2人以上いて、WebSocketが接続されている場合のみ表示
 		const canStart =
 			state.isOwner && state.participants.length >= 2 && state.isWsConnected;
 		startGameButton.hidden = !canStart;
 	}
 
-	// Leave/Delete ボタンの状態制御
 	const leaveDeleteButton = document.getElementById(
 		"leave-delete-button",
 	) as HTMLButtonElement;
 	if (leaveDeleteButton) {
 		leaveDeleteButton.disabled = !state.isWsConnected;
 		if (state.isWsConnected) {
-			if (state.isOwner) {
-				leaveDeleteButton.textContent = "Delete Room";
-				leaveDeleteButton.className = "btn delete";
-			} else {
-				leaveDeleteButton.textContent = "Leave Room";
-				leaveDeleteButton.className = "btn leave";
-			}
+			leaveDeleteButton.className = state.isOwner ? "btn delete" : "btn leave";
+			leaveDeleteButton.textContent = state.isOwner
+				? "Delete Room"
+				: "Leave Room";
 		} else {
-			leaveDeleteButton.textContent = "Connecting...";
 			leaveDeleteButton.className = "btn";
+			leaveDeleteButton.textContent = "Connecting...";
 		}
 	}
-
-	// 参加者リストの再描画
 	renderParticipantsList();
 }
+
 // --- WebSocket ---
 function sendWsMessage(message: WSIncomingMsg) {
 	if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -130,12 +117,19 @@ function handleWsMessage(event: MessageEvent) {
 		console.log("Received WS message:", message);
 
 		if (message.status === "Room" && message.data.action === "USER") {
-			state.participants = message.data.users;
-			renderParticipantsList();
+			const roomData = message.data as WSRoomData;
+			state.participants = roomData.users;
+
+			// WebSocketから受け取ったroomInfoで状態を更新
+			if (roomData.roomInfo) {
+				state.roomInfo = roomData.roomInfo;
+				state.isOwner = state.roomInfo.ownerId === state.myUserId;
+			}
+
+			updateUI();
 		} else if (message.status === "Room" && message.data.action === "DELETE") {
 			alert("The room has been deleted by the owner.");
-			window.history.pushState({}, "", "/lobby");
-			window.dispatchEvent(new PopStateEvent("popstate"));
+			navigate("/lobby");
 		}
 	} catch (err) {
 		console.error("Failed to parse WebSocket message:", err);
@@ -151,18 +145,14 @@ function setupWebSocket(roomId: string, token: string) {
 		return;
 	}
 
-	const wsUrl = `wss://localhost:8080/wss?token=${token}`;
+	const wsUrl = `wss://localhost:8080/socket?room=${roomId}&token=${token}`;
 	websocket = new WebSocket(wsUrl);
 
 	websocket.onopen = () => {
 		console.log("WebSocket connected!");
 		state.isWsConnected = true;
-		updateUI();
-		sendWsMessage({
-			status: "User",
-			action: "ADD",
-			room: roomId,
-		});
+		// 接続が確立してもすぐにはUIを更新しない。
+		// 最初のUSERメッセージ受信時に完全な情報でUIを更新するため。
 	};
 
 	websocket.onmessage = handleWsMessage;
@@ -171,7 +161,7 @@ function setupWebSocket(roomId: string, token: string) {
 		console.log("WebSocket disconnected:", event.reason);
 		state.isWsConnected = false;
 		websocket = null;
-		updateUI();
+		updateUI(); // 切断されたらUIを更新
 	};
 
 	websocket.onerror = (error) => {
@@ -190,12 +180,10 @@ function handleLeaveOrDelete() {
 			sendWsMessage({ status: "Room", action: "DELETE" });
 		}
 	} else {
-		const roomId = state.roomInfo?.id;
-		if (roomId) {
-			sendWsMessage({ status: "User", action: "DELETE", room: roomId });
-			window.history.pushState({}, "", "/lobby");
-			window.dispatchEvent(new PopStateEvent("popstate"));
+		if (websocket) {
+			websocket.close();
 		}
+		navigate("/lobby");
 	}
 }
 
@@ -206,14 +194,10 @@ export function renderRoomPage(params?: { [key: string]: string }) {
 	container.innerHTML = roomHtml;
 
 	const headerHost = container.querySelector("#header-widget") as HTMLElement;
-	if (headerHost) {
-		HeaderWidget(headerHost);
-	}
+	if (headerHost) HeaderWidget(headerHost);
 
 	const sidebarHost = container.querySelector("#sidebar-widget") as HTMLElement;
-	if (sidebarHost) {
-		SidebarWidget(sidebarHost);
-	}
+	if (sidebarHost) SidebarWidget(sidebarHost);
 
 	const roomId = params?.roomId;
 	if (!roomId) {
@@ -226,31 +210,26 @@ export function renderRoomPage(params?: { [key: string]: string }) {
 		console.error("Access token not found.");
 		return;
 	}
+
 	state.myUserId = decodeJwt(token)?.id || null;
 	if (!state.myUserId) {
 		console.error("Could not get user ID from token");
 		return;
 	}
 
-	fetch(`https://localhost:8080/rooms/${roomId}`, {
-		headers: { Authorization: `Bearer ${token}` },
-	})
-		.then((res) => {
-			if (!res.ok) throw new Error("Failed to fetch room data");
-			return res.json();
-		})
-		.then((roomData) => {
-			state.roomInfo = roomData;
-			state.isOwner = state.roomInfo.ownerId === state.myUserId;
-			updateUI();
-			setupWebSocket(roomId, token);
-		})
-		.catch((err) => {
-			console.error(err);
-			const messageArea = document.getElementById("message-area");
-			if (messageArea) messageArea.textContent = `Error: ${err.message}`;
-		});
+	// 最初にUIを「接続中」の状態で表示
+	updateUI();
+
+	// すぐにWebSocket接続を開始
+	setupWebSocket(roomId, token);
 
 	const button = document.getElementById("leave-delete-button");
 	if (button) button.addEventListener("click", handleLeaveOrDelete);
+
+	const startGameButton = document.getElementById("start-game-button");
+	if (startGameButton) {
+		startGameButton.addEventListener("click", () => {
+			sendWsMessage({ status: "Room", action: "START" });
+		});
+	}
 }

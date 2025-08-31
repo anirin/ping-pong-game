@@ -2,6 +2,7 @@ import {
 	RoomService,
 	RoomUserService,
 } from "@application/services/rooms/RoomService.js";
+import { UserService } from "@application/services/users/UserService.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
@@ -12,13 +13,33 @@ import { TypeORMTournamentRepository } from "@infrastructure/repository/tourname
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import { type FastifyInstance, fastify } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
-import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
+import { JoinRoomWS, LeaveRoomWS, RoomWSHandler } from "../room/roomRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
 
-function leaveAll(ws: WebSocket.WebSocket) {
-	for (const set of rooms.values()) set.delete(ws);
+function authorizeUser(
+	app: FastifyInstance,
+	authHeader: string | undefined,
+): UserId | null {
+	if (!authHeader) return null;
+	const userId = decodeJWT(app, authHeader);
+	if (!userId) return null;
+	return userId;
+}
+
+function specifyRoom(url: URL): RoomId | null {
+	return url.searchParams.get("room");
+}
+
+function leaveAllfromRoom(roomId: RoomId): boolean {
+	const set = rooms.get(roomId);
+	if (!set) return false;
+	set.forEach((ws) => {
+		ws.close();
+	});
+	rooms.delete(roomId);
+	return true;
 }
 
 function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
@@ -32,49 +53,16 @@ function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 
 export type WebSocketContext = {
 	authedUser: UserId;
-	joinedRoom: RoomId | null;
-	websocket: WebSocket.WebSocket;
-	roomSockets: Map<RoomId, Set<WebSocket.WebSocket>>;
+	joinedRoom: RoomId;
 };
 
-export async function registerWebSocket(app: FastifyInstance) {
+export async function registerWSRoutes(app: FastifyInstance) {
 	app.get(
-		"/wss",
+		"/socket",
 		{ websocket: true },
-		(connection: WebSocket.WebSocket, req) => {
+		async (connection: WebSocket.WebSocket, req) => {
 			const ws = connection;
-
-			let token: string | undefined;
-			const authHeader = req.headers["authorization"];
-			if (authHeader?.startsWith("Bearer ")) {
-				token = authHeader.substring(7);
-			}
-			// if (!authHeader) {
-			// 	ws.close(4001, "Token is required");
-			// 	return;
-			// }
-
-			if (!token && req.url) {
-				const url = new URL(req.url, `http://${req.headers.host}`);
-				token = url.searchParams.get("token") ?? undefined;
-			}
-
-			if (!token) {
-				console.log(
-					"[WebSocket] Auth Error: Token not provided in header or query.",
-				);
-				ws.close(4001, "Token is required");
-				return;
-			}
-			const userId = decodeJWT(app, token);
-
-			if (!userId) {
-				console.log(
-					"[WebSocket-Debug] userId is null or undefined. Closing connection.",
-				);
-				ws.close(4001, "Token is required");
-				return;
-			}
+			const url = new URL(req.url, "https://localhost:8080/socket");
 
 			const roomRepository = new TypeOrmRoomRepository(
 				AppDataSource.getRepository("RoomEntity"),
@@ -88,18 +76,57 @@ export async function registerWebSocket(app: FastifyInstance) {
 			const matchRepository = new TypeORMMatchRepository(
 				AppDataSource.getRepository("MatchEntity"),
 			);
-			const roomService = new RoomService(roomRepository);
-			const roomUserService = new RoomUserService(
-				userRepository,
-				roomRepository,
-			);
+			const userService = new UserService(userRepository);
+			const roomService = new RoomService();
+			const roomUserService = new RoomUserService();
+
+			let token: string | undefined;
+
+			const authHeader = req.headers["authorization"];
+			if (authHeader?.startsWith("Bearer ")) {
+				token = authHeader.substring(7);
+			}
+			if (!token) {
+				token = url.searchParams.get("token") ?? undefined;
+			}
+
+			if (!token) {
+				ws.close(4001, "user authorization failed: token not found");
+				return;
+			}
+
+			const authedUser = decodeJWT(app, token);
+			if (!authedUser) {
+				ws.close(4001, "user authorization failed");
+				return;
+			}
+			const joinedRoom = await specifyRoom(url);
+			if (!joinedRoom) {
+				ws.close(4001, "room specification failed");
+				return;
+			}
 
 			const context: WebSocketContext = {
-				authedUser: userId,
-				joinedRoom: null,
-				websocket: ws,
-				roomSockets: rooms,
+				authedUser: authedUser,
+				joinedRoom: joinedRoom,
 			};
+
+			const joinResultMsg = await JoinRoomWS(
+				roomUserService,
+				roomService,
+				context,
+			);
+			if (joinResultMsg.status === "error") {
+				ws.send(JSON.stringify(joinResultMsg));
+				ws.close();
+				return;
+			} else {
+				let set = rooms.get(context.joinedRoom);
+				if (!set) set = new Set<WebSocket.WebSocket>();
+				set.add(ws);
+				rooms.set(context.joinedRoom, set);
+				broadcast(context.joinedRoom, joinResultMsg);
+			}
 
 			ws.on("message", async (raw: any) => {
 				let data: WSIncomingMsg;
@@ -124,19 +151,7 @@ export async function registerWebSocket(app: FastifyInstance) {
 							);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
-							else broadcast(context.joinedRoom!, resultmsg);
-							break;
-						}
-						case "User": {
-							const resultmsg = await RoomUserWSHandler(
-								data.action,
-								roomUserService,
-								data.room,
-								context,
-							);
-							if (resultmsg.status === "error")
-								ws.send(JSON.stringify(resultmsg));
-							else broadcast(context.joinedRoom!, resultmsg);
+							else broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
@@ -147,8 +162,31 @@ export async function registerWebSocket(app: FastifyInstance) {
 				}
 			});
 
-			ws.on("close", () => {
-				leaveAll(ws);
+			ws.on("close", async () => {
+				try {
+					let resultmsg: WSOutgoingMsg;
+					if (
+						await roomService.checkOwner(context.joinedRoom, context.authedUser)
+					) {
+						resultmsg = await RoomWSHandler("DELETE", roomService, context);
+						if (resultmsg.status !== "error") {
+							broadcast(context.joinedRoom, resultmsg);
+							leaveAllfromRoom(context.joinedRoom);
+							return;
+						}
+					} else {
+						resultmsg = await LeaveRoomWS(roomUserService, context);
+						if (resultmsg.status !== "error") {
+							rooms.get(context.joinedRoom)?.delete(ws);
+							broadcast(context.joinedRoom, resultmsg);
+							return;
+						}
+					}
+					ws.send(JSON.stringify(resultmsg));
+					return;
+				} catch (error) {
+					console.error(error);
+				}
 			});
 		},
 	);
