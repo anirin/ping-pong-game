@@ -45,7 +45,7 @@ export class TypeORMMatchRepository implements MatchRepository {
 			{ width: 800, height: 600 }, // fieldSize: デフォルト値
 		);
 
-		// Match.reconstitute静的メソッドを使って、安全にドメインエンティティを復元
+		// Match.reconstitute静的メソッドを使って、安全にドメインエンティティを復元 いる？
 		return Match.reconstitute({
 			id: entity.id,
 			tournamentId: entity.tournamentId,

@@ -1,5 +1,6 @@
 import type {
 	BallState,
+	FrameState,
 	MatchId,
 	MatchRule,
 	MatchStatus,
@@ -15,7 +16,7 @@ export class Match {
 	public readonly player2Id: UserId;
 	public readonly round: number;
 
-	private _rule: MatchRule;
+	public readonly rule: MatchRule;
 	private _status: MatchStatus;
 	private _score1: number;
 	private _score2: number;
@@ -38,16 +39,14 @@ export class Match {
 		this.player1Id = player1Id;
 		this.player2Id = player2Id;
 		this.round = round;
-		this._rule = rule;
+		this.rule = rule;
 
-		// 永続化されるべき状態の初期化
 		this._status = "scheduled";
 		this._score1 = 0;
 		this._score2 = 0;
 		this._winnerId = null;
 
-		// リアルタイム状態の初期化 (このメソッド内で上記プロパティが初期化される)
-		this.resetRealtimeState();
+		this.resetBallAndPaddles();
 	}
 
 	// --- Public Getters (外部から状態を安全に読み取るため) ---
@@ -75,7 +74,6 @@ export class Match {
 
 	// --- 振る舞い (ドメインロジック) ---
 
-	/** 試合を開始する */
 	public start(): void {
 		if (this._status !== "scheduled") {
 			throw new Error(
@@ -83,7 +81,7 @@ export class Match {
 			);
 		}
 		this._status = "playing";
-		this.resetRealtimeState();
+		this.resetBallAndPaddles();
 	}
 
 	public cancel(): void {
@@ -93,43 +91,12 @@ export class Match {
 		this._status = "canceled";
 	}
 
-	public advanceFrame(): void {
-		if (this._status !== "playing") return;
-
-		const currentState = {
-			ball: this._ballState,
-			player1Paddle: this._paddle1State,
-			player2Paddle: this._paddle2State,
-		};
-
-		const { nextBallState, scorer } =
-			this._rule.calculateNextFrame(currentState);
-		this._ballState = nextBallState;
-
-		if (scorer) {
-			const actualScorerId =
-				scorer === "player1" ? this.player1Id : this.player2Id;
-			this.addScore(actualScorerId);
-			this.resetRealtimeState();
+	public finish(winnerId: UserId): void {
+		if (this._status !== "playing") {
+			throw new Error("Cannot finish a non-playing match.");
 		}
-	}
-
-	public movePaddle(playerId: UserId, y: number): void {
-		if (this._status !== "playing") return;
-
-		const fieldHeight = this._rule.fieldSize.height;
-		const paddleHeight = 100;
-
-		const newY = Math.max(
-			paddleHeight / 2,
-			Math.min(fieldHeight - paddleHeight / 2, y),
-		);
-
-		if (playerId === this.player1Id) {
-			this._paddle1State.y = newY;
-		} else if (playerId === this.player2Id) {
-			this._paddle2State.y = newY;
-		}
+		this._status = "finished";
+		this._winnerId = winnerId;
 	}
 
 	public concludeByDisconnection(winnerId: UserId): void {
@@ -150,31 +117,126 @@ export class Match {
 			this._score2++;
 		}
 
-		if (this._score1 >= this._rule.pointToWin) {
+		if (this._score1 >= this.rule.pointToWin) {
 			this.finish(this.player1Id);
-		} else if (this._score2 >= this._rule.pointToWin) {
+		} else if (this._score2 >= this.rule.pointToWin) {
 			this.finish(this.player2Id);
 		}
 	}
 
-	private finish(winnerId: UserId): void {
-		if (this._status !== "playing") {
-			throw new Error("Cannot finish a non-playing match.");
+	public movePaddle(playerId: UserId, y: number): void {
+		if (this._status !== "playing") return;
+
+		const fieldHeight = this.rule.fieldSize.height;
+		const paddleHeight = 100;
+
+		const newY = Math.max(
+			paddleHeight / 2,
+			Math.min(fieldHeight - paddleHeight / 2, y),
+		);
+
+		if (playerId === this.player1Id) {
+			this._paddle1State.y = newY;
+		} else if (playerId === this.player2Id) {
+			this._paddle2State.y = newY;
 		}
-		this._status = "finished";
-		this._winnerId = winnerId;
 	}
 
-	private resetRealtimeState(): void {
+	private resetBallAndPaddles(): void {
 		this._ballState = {
-			x: this._rule.fieldSize.width / 2,
-			y: this._rule.fieldSize.height / 2,
-			vx: this._rule.initialBallSpeed.vx * (Math.random() > 0.5 ? 1 : -1),
-			vy: this._rule.initialBallSpeed.vy * (Math.random() > 0.5 ? 1 : -1),
+			x: this.rule.fieldSize.width / 2,
+			y: this.rule.fieldSize.height / 2,
+			vx: this.rule.initialBallSpeed.vx * (Math.random() > 0.5 ? 1 : -1),
+			vy: this.rule.initialBallSpeed.vy * (Math.random() > 0.5 ? 1 : -1),
 		};
-		this._paddle1State = { y: this._rule.fieldSize.height / 2 };
-		this._paddle2State = { y: this._rule.fieldSize.height / 2 };
+		this._paddle1State = { y: this.rule.fieldSize.height / 2 };
+		this._paddle2State = { y: this.rule.fieldSize.height / 2 };
 	}
+
+	public advanceFrame(): void {
+		if (this._status !== "playing") return;
+
+		const currentState = {
+			ball: this._ballState,
+			player1Paddle: this._paddle1State,
+			player2Paddle: this._paddle2State,
+		};
+
+		const { nextBallPosition, scorer } = this.calculateNextFrame(currentState);
+		this._ballState = nextBallPosition;
+
+		if (scorer) {
+			const actualScorerId =
+				scorer === "player1" ? this.player1Id : this.player2Id;
+			this.addScore(actualScorerId);
+			this.resetBallAndPaddles();
+		}
+	}
+
+	private calculateNextFrame(state: FrameState): {
+		nextBallPosition: BallState;
+		scorer?: "player1" | "player2";
+	} {
+		const nextBall = { ...state.ball };
+		const { player1Paddle, player2Paddle } = state;
+
+		nextBall.x += nextBall.vx;
+		nextBall.y += nextBall.vy;
+
+		if (
+			nextBall.y - this.rule.BALL_RADIUS <= 0 ||
+			nextBall.y + this.rule.BALL_RADIUS >= this.rule.fieldSize.height
+		) {
+			nextBall.vy *= -1;
+		}
+		let hit = false;
+
+		if (
+			nextBall.vx < 0 &&
+			nextBall.x - this.rule.BALL_RADIUS < this.rule.PADDLE_WIDTH &&
+			nextBall.y > player1Paddle.y - this.rule.PADDLE_HEIGHT / 2 &&
+			nextBall.y < player1Paddle.y + this.rule.PADDLE_HEIGHT / 2
+		) {
+			const intersectY =
+				(player1Paddle.y - nextBall.y) / (this.rule.PADDLE_HEIGHT / 2);
+
+			const MAX_BOUNCE_ANGLE = (5 * Math.PI) / 12;
+			const bounceAngle = intersectY * MAX_BOUNCE_ANGLE;
+
+			nextBall.vx = this.rule.totalSpeed * Math.cos(bounceAngle);
+			nextBall.vy = this.rule.totalSpeed * -Math.sin(bounceAngle);
+			hit = true;
+		} else if (
+			nextBall.vx > 0 &&
+			nextBall.x + this.rule.BALL_RADIUS > this.rule.fieldSize.width - this.rule.PADDLE_WIDTH
+		) {
+			if (
+				nextBall.y > player2Paddle.y - this.rule.PADDLE_HEIGHT / 2 &&
+				nextBall.y < player2Paddle.y + this.rule.PADDLE_HEIGHT / 2
+			) {
+				const intersectY =
+					(player2Paddle.y - nextBall.y) / (this.rule.PADDLE_HEIGHT / 2);
+				const MAX_BOUNCE_ANGLE = (5 * Math.PI) / 12;
+				const bounceAngle = intersectY * MAX_BOUNCE_ANGLE;
+
+				nextBall.vx = -this.rule.totalSpeed * Math.cos(bounceAngle);
+				nextBall.vy = this.rule.totalSpeed * -Math.sin(bounceAngle);
+				hit = true;
+			}
+		}
+
+		// ボールが壁に当たった場合 加算する処理は別関数に分けた方がいいかな？
+		if (nextBall.x - this.rule.BALL_RADIUS < 0) {
+			return { nextBallPosition: nextBall, scorer: "player2" };
+		}
+		if (nextBall.x + this.rule.BALL_RADIUS > this.rule.fieldSize.width) {
+			return { nextBallPosition: nextBall, scorer: "player1" };
+		}
+
+		return { nextBallPosition: nextBall };
+	}
+
+	// ここに書いていいかは微妙だから気になる 使うべきなのか？ factory メソッドに分けた方がいいかな？
 	public static reconstitute(props: {
 		id: MatchId;
 		tournamentId: TournamentId;
@@ -204,75 +266,3 @@ export class Match {
 		return match;
 	}
 }
-
-// import type {
-// 	MatchId,
-// 	MatchStatus,
-// } from "@domain/model/value-object/match/Match.js";
-// import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
-// import type { UserId } from "@domain/model/value-object/user/User.js";
-
-// // こいつをどこにおくのかは大問題
-// export class MatchRule {
-// 	public readonly pointToWin: number;
-
-// 	constructor(pointToWin: number) {
-// 		this.pointToWin = pointToWin;
-// 	}
-// }
-
-// export class Match {
-// 	public id: MatchId;
-// 	public player1: UserId;
-// 	public player2: UserId;
-// 	public score1: number = 0;
-// 	public score2: number = 0;
-// 	public status: MatchStatus = "scheduled";
-// 	public winnerId: UserId | null = null;
-// 	private _rule: MatchRule; // 型は定義するが値として持っておく
-// 	public round: number;
-// 	public tournamentId: TournamentId;
-
-// 	constructor(
-// 		id: MatchId,
-// 		player1: UserId,
-// 		player2: UserId,
-// 		rule: MatchRule,
-// 		round: number,
-// 		tournamentId: TournamentId,
-// 	) {
-// 		this.id = id;
-// 		this.player1 = player1;
-// 		this.player2 = player2;
-// 		this.score1 = 0;
-// 		this.score2 = 0;
-// 		this.status = "scheduled";
-// 		this.winnerId = null;
-// 		this._rule = rule;
-// 		this.round = round;
-// 		this.tournamentId = tournamentId;
-// 	}
-
-// 	start() {
-// 		if (this.status !== "scheduled") throw new Error("invalid transition");
-// 		this.status = "playing";
-// 	}
-
-// 	finish(winnerId: UserId) {
-// 		if (this.status !== "playing") throw new Error("invalid transition");
-// 		this.status = "finished";
-// 		this.winnerId = winnerId;
-// 	}
-
-// 	addScore(playerId: UserId) {
-// 		if (this.status !== "playing") throw new Error("invalid transition");
-// 		if (playerId === this.player1) this.score1++;
-// 		else this.score2++;
-
-// 		if (this.score1 >= this._rule.pointToWin) {
-// 			this.finish(this.player1);
-// 		} else if (this.score2 >= this._rule.pointToWin) {
-// 			this.finish(this.player2);
-// 		}
-// 	}
-// }
