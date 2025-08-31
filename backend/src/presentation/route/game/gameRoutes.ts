@@ -1,15 +1,21 @@
-import { GameService } from "@application/services/game/GameService.js";
+import type { GameService } from "@application/services/game/GameService.js";
+import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import { Match } from "@domain/model/entity/match/Match.js";
-import { MatchRule } from "@domain/model/value-object/match/Match.js";
-import { InMemoryMatchRepository } from "@infrastructure/repository/match/InMemoryMatchRepository.js";
-import { WebSocketNotifier } from "@infrastructure/repository/websocket/WebSocketNotifier.js";
+import { MatchRule } from "@domain/model/value-object/match/Match.js"; //テスト用
+import type { WebSocketNotifier } from "@infrastructure/repository/websocket/WebSocketNotifier.js";
 import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 
-const webSocketNotifier = new WebSocketNotifier();
-const matchRepository = new InMemoryMatchRepository();
-const gameService = new GameService(matchRepository, webSocketNotifier);
+type GameRoutesOptions = {
+	gameService: GameService;
+	webSocketNotifier: WebSocketNotifier;
+	matchRepository: MatchRepository; // テスト用エンドポイントのために追加
+};
 
-const gameRoutes: FastifyPluginAsync = async (fastify) => {
+const gameRoutes: FastifyPluginAsync<GameRoutesOptions> = async (
+	fastify,
+	options,
+) => {
+	const { gameService, webSocketNotifier, matchRepository } = options;
 	fastify.post(
 		"/test/creatematch",
 		{
@@ -29,7 +35,7 @@ const gameRoutes: FastifyPluginAsync = async (fastify) => {
 			}
 			const rule = new MatchRule(
 				20,
-				{ vx: 5, vy: 5 },
+				{ vx: 3, vy: 3 },
 				{ width: 800, height: 600 },
 			);
 			const matchId = `test-match-${Date.now()}`;
@@ -80,7 +86,7 @@ const gameRoutes: FastifyPluginAsync = async (fastify) => {
 				console.log(
 					`[WebSocket] User ${userId} connected to match ${matchId}.`,
 				);
-				webSocketNotifier.addConnection(matchId, socket);
+				webSocketNotifier.addConnection(matchId, userId, socket);
 
 				socket.on("message", (message: Buffer) => {
 					try {

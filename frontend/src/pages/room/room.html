@@ -1,0 +1,46 @@
+<!-- frontend/src/pages/room/ui/room.html (ヘッダー・サイドバー対応版) -->
+
+<div id="page-layout-container">
+
+    <div class="main-content-area">
+        <!-- ヘッダーの描画場所 -->
+        <div id="header-widget"></div>
+
+        <!-- Roomページのメインコンテンツ -->
+        <main class="content-body">
+            <div class="room-widget-container">
+                <!-- ルーム情報ヘッダー -->
+                <div class="room-header">
+                    <h2>Room ID: <span id="room-id-display" class="header-value"></span></h2>
+                    <div class="room-info-display">
+                        <span class="label">Your Role:</span>
+                        <span id="user-role-display" class="value"></span>
+                    </div>
+                </div>
+            
+                <hr class="separator">
+            
+                <!-- 参加者リストセクション -->
+                <div class="participants-section">
+                    <h3>Participants (<span id="participant-count">0</span>)</h3>
+                    <ul id="participants-list" class="participants-list">
+                        <!-- JavaScriptによって参加者リストがここに追加されます -->
+                        <li class="participant-item-empty">Waiting for players...</li>
+                    </ul>
+                </div>
+                
+                <hr class="separator">
+            
+                <!-- 操作ボタンセクション -->
+                <div class="room-actions">
+                    <button id="start-game-button" class="btn btn-primary" hidden>Start Game</button>
+                    <button id="leave-delete-button" class="btn">Connecting...</button>
+                </div>
+            
+                <!-- メッセージ表示エリア -->
+                <p id="message-area"></p>
+            </div>
+        </main>
+    </div>
+    <div id="sidebar-widget"></div>
+</div>

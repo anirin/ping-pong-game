@@ -1,11 +1,14 @@
-import sidebarHtml from "../../widgets/sidebar/ui/sidebar.html?raw";
-import settingsHtml from "./change_username.html?raw";
 import "../../widgets/sidebar/ui/sidebar.css";
-
-import headerHtml from "../../widgets/header/ui/header.html?raw";
+// import headerHtml from "../../widgets/header/ui/header.html?raw";
 import "../../widgets/header/ui/header.css";
+import { HeaderWidget } from "@widgets/header";
+import { SidebarWidget } from "@widgets/sidebar";
 import { renderChangeAvatarWidget } from "../change_avatar/index";
+import "./change_username.css";
+import usernameFormHtml from "./change_username.html?raw";
+import pageLayoutHtml from "./change_username_page.html?raw";
 
+// import { HeaderWidget } from "../../widgets/header";
 // JWTトークンからペイロードをデコードするヘルパー関数 (変更なし)
 function decodeJwt(token: string): any {
 	try {
@@ -40,11 +43,6 @@ async function handleUpdateUsernameSubmit(event: SubmitEvent) {
 
 	const decodedToken = decodeJwt(token);
 	const userId = decodedToken?.id || decodedToken?.sub;
-	console.log("デバッグ情報:");
-	console.log("取得したトークン:", token);
-	console.log("デコードされたトークン:", decodedToken);
-	console.log("抽出した userId:", userId);
-
 	if (!userId) {
 		if (messageElement)
 			messageElement.textContent =
@@ -109,71 +107,51 @@ async function handleUpdateUsernameSubmit(event: SubmitEvent) {
 	}
 }
 
-// ルーターから呼び出される、ページ全体を描画するためのメイン関数
 export function renderChangeUsernamePage(): void {
 	const app = document.getElementById("app");
-	if (!app) {
-		console.error("App root element (#app) not found!");
-		return;
+	if (!app) return;
+
+	// 1. ページ全体の骨格となるHTMLを描画 (app.innerHTMLはここで1回だけ)
+	app.innerHTML = pageLayoutHtml;
+
+	// 2. ヘッダーとサイドバーのウィジェットを初期化
+	const headerHost = app.querySelector("#header-widget") as HTMLElement;
+	if (headerHost) {
+		HeaderWidget(headerHost);
+	}
+	const sidebarHost = app.querySelector("#sidebar-widget") as HTMLElement;
+	if (sidebarHost) {
+		SidebarWidget(sidebarHost);
 	}
 
-	// ページレイアウトの描画 (変更なし)
-	app.innerHTML = `
-        <div id="page-container" style="display: flex; height: 100vh;">
-            <div id="sidebar-container"></div>
-            <div id="main-area" style="display: flex; flex-direction: column; flex-grow: 1;">
-                <div id="header-container"></div>
-                <main id="main-content" style="flex-grow: 1; padding: 40px; background-color: #f9fafb; overflow-y: auto;">
-                    <div id="content-wrapper" style="display: flex; justify-content: center; gap: 40px; align-items: flex-start;">
-                        <div id="username-widget-container"></div>
-                        <div id="avatar-widget-container"></div>
-                    </div>
-                </main>
-            </div>
-        </div>
-    `;
-
-	const headerContainer = document.getElementById("header-container");
-	if (headerContainer) headerContainer.innerHTML = headerHtml;
-
-	const sidebarContainer = document.getElementById("sidebar-container");
-	if (sidebarContainer) sidebarContainer.innerHTML = sidebarHtml;
-
+	// 3. ユーザー名変更フォームを描画するコンテナを取得
 	const usernameContainer = document.getElementById(
 		"username-widget-container",
 	);
 	if (usernameContainer) {
-		// 1. ユーザー名ウィジェットのHTMLを描画
-		usernameContainer.innerHTML = settingsHtml;
+		// 3a. フォームのHTMLをコンテナに挿入
+		usernameContainer.innerHTML = usernameFormHtml;
 
-		// ★★★ ここからが追加・修正の処理 ★★★
-		// 2. 現在のユーザー名を表示する要素を取得
+		// 3b. 現在のユーザー名を表示
 		const currentUsernameElement = document.getElementById("current-username");
 		if (currentUsernameElement) {
 			const token = localStorage.getItem("accessToken");
 			if (token) {
 				const decodedToken = decodeJwt(token);
-				// 3. バックエンドがJWTに含めるキー名（'username'など）に合わせてください
-				const currentUsername = decodedToken?.username;
-				if (currentUsername) {
-					// 4. 要素のテキストとしてユーザー名を設定
-					currentUsernameElement.textContent = currentUsername;
-				} else {
-					currentUsernameElement.textContent = "取得できませんでした";
-				}
+				currentUsernameElement.textContent =
+					decodedToken?.username || "取得できませんでした";
 			} else {
 				currentUsernameElement.textContent = "（ログインしていません）";
 			}
 		}
-		// ★★★ ここまでが追加・修正の処理 ★★★
 
-		// 5. フォームにイベントリスナーを設定 (これは元のまま)
+		// 3c. フォームに送信イベントリスナーを設定
 		const form = document.getElementById("update-username-form");
 		if (form) {
 			form.addEventListener("submit", handleUpdateUsernameSubmit);
 		}
 	}
 
-	// アバターウィジェットの描画 (変更なし)
+	// 4. アバター変更ウィジェットを描画
 	renderChangeAvatarWidget("avatar-widget-container");
 }

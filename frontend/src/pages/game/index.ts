@@ -1,13 +1,16 @@
-// Viteの機能を使って、HTMLファイルを生の文字列としてインポートします
 import gameHtml from "./game.html?raw";
 
-// --- サーバーから送られてくるデータの型定義 ---
+type PaddleStateDto = {
+	id: string;
+	y: number;
+};
+
 type RealtimeMatchStateDto = {
 	status: "scheduled" | "playing" | "finished" | "canceled";
 	ball: { x: number; y: number };
 	paddles: {
-		player1: { y: number };
-		player2: { y: number };
+		player1: PaddleStateDto;
+		player2: PaddleStateDto;
 	};
 	scores: {
 		player1: number;
@@ -23,7 +26,9 @@ class GamePage {
 
 	// ゲームの状態とUI要素
 	private serverState: RealtimeMatchStateDto | null = null;
-	private myPaddleY: number = 300; // 初期位置
+	private myPredictedPaddleY: number = 300;
+	private myPlayerNumber: "player1" | "player2" | null = null;
+	private myUserId: string | null = null;
 	private movingUp: boolean = false;
 	private movingDown: boolean = false;
 
@@ -52,7 +57,7 @@ class GamePage {
 			return;
 		}
 		// .
-		this.myPaddleY = 300; // レンダリングごとに初期化
+		this.myPredictedPaddleY = 300; // レンダリングごとに初期化
 
 		// 他のページに移動した際にリソースをクリーンアップするためのイベントリスナー
 		window.addEventListener("popstate", this.cleanup.bind(this), {
@@ -87,6 +92,15 @@ class GamePage {
 			window.location.pathname = "/auth/login";
 			return;
 		}
+		try {
+			const payload = JSON.parse(atob(token.split(".")[1]));
+			this.myUserId = payload.id;
+		} catch (e) {
+			console.error("Failed to decode JWT:", e);
+			alert("Invalid token.");
+			window.location.pathname = "/auth/login";
+			return;
+		}
 
 		const url = `wss://localhost:8080/ws/game/${matchId}?token=${token}`;
 		this.socket = new WebSocket(url);
@@ -99,6 +113,24 @@ class GamePage {
 			const message = JSON.parse(event.data);
 			if (message.status === "Match") {
 				this.serverState = message.data;
+				if (this.serverState && this.myPlayerNumber === null) {
+					if (this.myUserId === this.serverState.paddles.player1.id) {
+						this.myPlayerNumber = "player1";
+
+						// 自分のユーザーIDと、サーバーからのプレイヤー2のIDを比較
+					} else if (this.myUserId === this.serverState.paddles.player2.id) {
+						this.myPlayerNumber = "player2";
+					} else {
+						// どちらでもない場合は観戦者
+						this.myPlayerNumber = null;
+					}
+
+					console.log(
+						`You are assigned as ${this.myPlayerNumber || "spectator"}`,
+					);
+				} else {
+					console.error("Player IDs are missing in the data from the server.");
+				}
 			}
 		};
 	}
@@ -150,26 +182,29 @@ class GamePage {
 	}
 
 	private updateMyPaddle(): void {
-		const PADDLE_SPEED = 5;
+		const PADDLE_SPEED = 7;
 		let hasMoved = false;
 
 		if (this.movingUp) {
-			this.myPaddleY -= PADDLE_SPEED;
+			this.myPredictedPaddleY -= PADDLE_SPEED;
 			hasMoved = true;
 		}
 		if (this.movingDown) {
-			this.myPaddleY += PADDLE_SPEED;
+			this.myPredictedPaddleY += PADDLE_SPEED;
 			hasMoved = true;
 		}
 
-		this.myPaddleY = Math.max(50, Math.min(600 - 50, this.myPaddleY));
+		this.myPredictedPaddleY = Math.max(
+			50,
+			Math.min(600 - 50, this.myPredictedPaddleY),
+		);
 
 		if (hasMoved && this.socket?.readyState === WebSocket.OPEN) {
 			this.socket.send(
 				JSON.stringify({
 					status: "Match",
 					action: "Move",
-					position: { y: this.myPaddleY },
+					position: { y: this.myPredictedPaddleY },
 				}),
 			);
 		}
@@ -208,8 +243,24 @@ class GamePage {
 		if (score2El) score2El.textContent = state.scores.player2.toString();
 
 		ctx.fillStyle = "white";
-		ctx.fillRect(10, state.paddles.player1.y - 50, 10, 100);
-		ctx.fillRect(canvas.width - 20, state.paddles.player2.y - 50, 10, 100);
+		const serverP1Y = state.paddles.player1.y;
+		const serverP2Y = state.paddles.player2.y;
+		if (this.myPlayerNumber === "player1") {
+			// もし自分がプレイヤー1なら、サーバーの応答を待たずに自分の予測位置で描画する
+			ctx.fillRect(10, this.myPredictedPaddleY - 50, 10, 100);
+		} else {
+			// 自分以外（相手プレイヤー）のパドルは、サーバーからの真実の位置で描画する
+			ctx.fillRect(10, serverP1Y - 50, 10, 100);
+		}
+
+		// プレイヤー2のパドルを描画
+		if (this.myPlayerNumber === "player2") {
+			// もし自分がプレイヤー2なら、自分の予測位置で描画する
+			ctx.fillRect(canvas.width - 20, this.myPredictedPaddleY - 50, 10, 100);
+		} else {
+			// 自分以外（相手プレイヤー）のパドルは、サーバーからの真実の位置で描画する
+			ctx.fillRect(canvas.width - 20, serverP2Y - 50, 10, 100);
+		}
 		ctx.beginPath();
 		ctx.arc(state.ball.x, state.ball.y, 10, 0, Math.PI * 2);
 		ctx.fill();

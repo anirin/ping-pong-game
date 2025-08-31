@@ -58,6 +58,7 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 				mode: room.mode,
 				status: room.status,
 				createdAt: room.createdAt,
+				ownerId: room.ownerId,
 			});
 		} catch (error: any) {
 			return reply.status(500).send({ error: error.message });

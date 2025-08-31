@@ -132,6 +132,13 @@ export class Match {
 		}
 	}
 
+	public concludeByDisconnection(winnerId: UserId): void {
+		if (this._status === "finished" || this._status === "canceled") {
+			return;
+		}
+		this.finish(winnerId);
+	}
+
 	private addScore(playerId: UserId): void {
 		if (this._status !== "playing") {
 			throw new Error("Cannot add score to a non-playing match.");

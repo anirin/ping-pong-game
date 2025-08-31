@@ -43,15 +43,35 @@ export async function registerWebSocket(app: FastifyInstance) {
 		{ websocket: true },
 		(connection: WebSocket.WebSocket, req) => {
 			const ws = connection;
+
+			let token: string | undefined;
 			const authHeader = req.headers["authorization"];
-			if (!authHeader) {
-				console.log("[WebSocket] Connection attempt without token.");
+			if (authHeader?.startsWith("Bearer ")) {
+				token = authHeader.substring(7);
+			}
+			// if (!authHeader) {
+			// 	ws.close(4001, "Token is required");
+			// 	return;
+			// }
+
+			if (!token && req.url) {
+				const url = new URL(req.url, `http://${req.headers.host}`);
+				token = url.searchParams.get("token") ?? undefined;
+			}
+
+			if (!token) {
+				console.log(
+					"[WebSocket] Auth Error: Token not provided in header or query.",
+				);
 				ws.close(4001, "Token is required");
 				return;
 			}
+			const userId = decodeJWT(app, token);
 
-			const userId = decodeJWT(app, authHeader);
 			if (!userId) {
+				console.log(
+					"[WebSocket-Debug] userId is null or undefined. Closing connection.",
+				);
 				ws.close(4001, "Token is required");
 				return;
 			}
