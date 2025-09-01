@@ -151,7 +151,18 @@ export async function RoomUserWSHandler(
 	const ws = context.websocket;
 	switch (action) {
 		case "ADD": {
+			console.log("🔍 RoomUserWSHandler: Processing ADD action", {
+				userId: context.authedUser,
+				roomId: roomId,
+				joinedRoom: context.joinedRoom
+			});
+			
 			if (await roomUserService.joinRoom(context.authedUser, roomId)) {
+				console.log("✅ RoomUserWSHandler: Successfully joined room", {
+					userId: context.authedUser,
+					roomId: roomId
+				});
+				
 				context.joinedRoom = roomId;
 				set.add(ws);
 				roomSockets.set(roomId, set);
@@ -163,6 +174,12 @@ export async function RoomUserWSHandler(
 					} satisfies WSRoomData,
 				} satisfies WSOutgoingMsg;
 			} else {
+				console.error("❌ RoomUserWSHandler: Failed to join room", {
+					userId: context.authedUser,
+					roomId: roomId,
+					reason: "roomUserService.joinRoom returned false"
+				});
+				
 				return {
 					status: "error",
 					msg: "failed to join room",

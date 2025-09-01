@@ -35,11 +35,20 @@ export class RoomService {
 			const result = await this.roomRepository.start(id);
 			if (result) {
 				// ルームが正常に開始された場合にイベントを発火
+				console.log("🚀 RoomService: Emitting room.started event", {
+					roomId: id,
+					participants: room.participants,
+					createdBy: userid,
+					listenerCount: this.eventEmitter.listenerCount("room.started")
+				});
+				
 				this.eventEmitter.emit("room.started", {
 					roomId: id,
 					participants: room.participants,
 					createdBy: userid,
 				});
+				
+				console.log("✅ RoomService: room.started event emitted successfully");
 			}
 			return result;
 		}
@@ -79,9 +88,27 @@ export class RoomUserService {
 	}
 
 	async joinRoom(userid: UserId, roomid: RoomId): Promise<boolean> {
+		console.log("🔍 RoomUserService: Attempting to join room", {
+			userId: userid,
+			roomId: roomid
+		});
+		
 		const user = await this.userRepository.findById(userid);
-		if (user == null) throw Error("no user found");
-		return await this.roomRepository.join(roomid, user);
+		if (user == null) {
+			console.error("❌ RoomUserService: User not found", { userId: userid });
+			throw Error("no user found");
+		}
+		
+		console.log("✅ RoomUserService: User found", { userId: userid, userName: user.username });
+		
+		const result = await this.roomRepository.join(roomid, user);
+		console.log("🎯 RoomUserService: joinRoom result", {
+			userId: userid,
+			roomId: roomid,
+			success: result
+		});
+		
+		return result;
 	}
 
 	async leaveRoom(userid: UserId): Promise<boolean> {

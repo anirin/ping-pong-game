@@ -20,7 +20,8 @@ export class Room {
 		public readonly roomType: RoomType = "1on1",
 		public readonly createdAt: Date = new Date(),
 	) {
-		this.max_player = this.roomType === "1on1" ? 2 : 4;
+		// this.max_player = this.roomType === "1on1" ? 2 : 4;
+		this.max_player = 4;
 		participants.forEach((p) => {
 			this._participants.push(p.id);
 		});

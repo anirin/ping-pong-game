@@ -3,6 +3,7 @@ import {
 	RoomService,
 	RoomUserService,
 } from "@application/services/rooms/RoomService.js";
+import { TournamentService } from "@application/services/tournament/TournamentService.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
@@ -14,10 +15,14 @@ import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import { MatchWSHandler } from "../match/matchRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
+import { TournamentWSHandler } from "../tournament/tournamentRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
 const roomEventEmitters = new Map<RoomId, EventEmitter>();
+
+// ルームごとのTournamentServiceインスタンス
+const roomTournamentServices = new Map<RoomId, TournamentService>();
 
 // todo eventEmitter 処理 配置場所と関数名は要検討
 function getRoomEventEmitter(roomId: RoomId | null): EventEmitter {
@@ -26,7 +31,13 @@ function getRoomEventEmitter(roomId: RoomId | null): EventEmitter {
 		return new EventEmitter();
 	}
 	if (!roomEventEmitters.has(roomId)) {
-		roomEventEmitters.set(roomId, new EventEmitter());
+		const emitter = new EventEmitter();
+		roomEventEmitters.set(roomId, emitter);
+		
+		// 新しいルームEventEmitterが作成されたら、そのルーム用のTournamentServiceを作成
+		console.log("🔗 WebSocket: Creating TournamentService for room", roomId);
+		const tournamentService = new TournamentService(emitter);
+		roomTournamentServices.set(roomId, tournamentService);
 	}
 	return roomEventEmitters.get(roomId)!;
 }
@@ -36,6 +47,13 @@ function cleanupRoomEventEmitter(roomId: RoomId) {
 	if (emitter) {
 		emitter.removeAllListeners();
 		roomEventEmitters.delete(roomId);
+	}
+	
+	// TournamentServiceもクリーンアップ
+	const tournamentService = roomTournamentServices.get(roomId);
+	if (tournamentService) {
+		console.log("🧹 WebSocket: Cleaning up TournamentService for room", roomId);
+		roomTournamentServices.delete(roomId);
 	}
 }
 
@@ -86,6 +104,9 @@ export async function registerWebSocket(app: FastifyInstance) {
 				websocket: ws,
 				roomSockets: rooms,
 			};
+
+			// ルームごとのTournamentServiceは、ルームEventEmitter作成時に自動的に初期化される
+			console.log("🎯 WebSocket: Room-based TournamentService will be initialized when needed");
 
 			ws.on("message", async (raw: any) => {
 				let data: WSIncomingMsg;
