@@ -1,11 +1,8 @@
-import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { Match } from "@domain/model/entity/match/Match.js";
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
-import type {
-	TournamentId,
-} from "@domain/model/value-object/tournament/Tournament.js";
+import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-
 
 export type TournamentOutgoingMsg =
 	| {

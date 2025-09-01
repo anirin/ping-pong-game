@@ -1,6 +1,6 @@
 import {
 	RoomService,
-	type RoomUserService,
+	RoomUserService,
 } from "@application/services/rooms/RoomService.js";
 import type {
 	RoomId,
@@ -10,11 +10,11 @@ import type { WSTournamentData } from "@domain/model/value-object/tournament/Tou
 import type WebSocket from "@fastify/websocket";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
+import { EventEmitter } from "events";
 import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
-import { EventEmitter } from "events";
 
 // todo room にも eventEmitter を追加する
 
@@ -23,7 +23,7 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 		AppDataSource.getRepository("RoomEntity"),
 	);
 	const eventEmitter = new EventEmitter(); // api routing で eventEmitter は不要だが、ここでは使用している
-	const roomService = new RoomService(roomRepository, eventEmitter);
+	const roomService = new RoomService(eventEmitter);
 
 	// POST /rooms: ルーム作成
 	app.post<{ Body: { mode?: string } }>("/rooms", async (request, reply) => {
@@ -97,17 +97,15 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 
 export async function RoomWSHandler(
 	action: "START" | "DELETE",
-	room_service: RoomService,
 	eventEmitter: EventEmitter,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
+	const roomService = new RoomService(eventEmitter);
 	if (context.joinedRoom === null) throw Error("joined no room");
 	switch (action) {
 		// start は tournament を開始する 処理に変更が加わる
 		case "START": {
-			if (
-				await room_service.startRoom(context.joinedRoom, context.authedUser)
-			) {
+			if (await roomService.startRoom(context.joinedRoom, context.authedUser)) {
 				return {
 					status: "Room",
 					msg: "room started",
@@ -121,7 +119,7 @@ export async function RoomWSHandler(
 		}
 		case "DELETE": {
 			if (
-				await room_service.deleteRoom(context.joinedRoom, context.authedUser)
+				await roomService.deleteRoom(context.joinedRoom, context.authedUser)
 			) {
 				return {
 					status: "Room",
@@ -142,10 +140,10 @@ export async function RoomWSHandler(
 
 export async function RoomUserWSHandler(
 	action: "ADD" | "DELETE",
-	room_user_service: RoomUserService,
 	room_id: RoomId | null,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
+	const roomUserService = new RoomUserService();
 	const roomId = action === "ADD" ? room_id : context.joinedRoom;
 	if (!roomId) throw Error("no room specified");
 	const roomSockets = context.roomSockets;
@@ -153,7 +151,7 @@ export async function RoomUserWSHandler(
 	const ws = context.websocket;
 	switch (action) {
 		case "ADD": {
-			if (await room_user_service.joinRoom(context.authedUser, roomId)) {
+			if (await roomUserService.joinRoom(context.authedUser, roomId)) {
 				context.joinedRoom = roomId;
 				set.add(ws);
 				roomSockets.set(roomId, set);
@@ -161,7 +159,7 @@ export async function RoomUserWSHandler(
 					status: "Room",
 					data: {
 						action: "USER",
-						users: await room_user_service.getAllParticipants(roomId),
+						users: await roomUserService.getAllParticipants(roomId),
 					} satisfies WSRoomData,
 				} satisfies WSOutgoingMsg;
 			} else {
@@ -172,7 +170,7 @@ export async function RoomUserWSHandler(
 			}
 		}
 		case "DELETE": {
-			if (await room_user_service.leaveRoom(context.authedUser)) {
+			if (await roomUserService.leaveRoom(context.authedUser)) {
 				context.joinedRoom = null;
 				set.delete(ws);
 				if (set.size) roomSockets.set(roomId, set);
@@ -181,7 +179,7 @@ export async function RoomUserWSHandler(
 					status: "Room",
 					data: {
 						action: "USER",
-						users: await room_user_service.getAllParticipants(roomId),
+						users: await roomUserService.getAllParticipants(roomId),
 					} satisfies WSRoomData,
 				} satisfies WSOutgoingMsg;
 			} else {

@@ -26,8 +26,6 @@ import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORM
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import type { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
-import type { RoomRepository } from "@domain/interface/repository/rooms/RoomRepository.js";
-import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
@@ -46,7 +44,7 @@ export class TournamentService {
 
 		// match.finishedイベントをリスン
 		this.eventEmitter.on("match.finished", this.handleMatchFinished.bind(this));
-		
+
 		// room.startedイベントをリスン
 		this.eventEmitter.on("room.started", this.handleRoomStarted.bind(this));
 	}
@@ -69,10 +67,13 @@ export class TournamentService {
 		await this.sendTournamentState(match.tournamentId);
 	}
 
-	private async handleRoomStarted(data: { roomId: RoomId, participants: UserId[], createdBy: UserId }) {
+	private async handleRoomStarted(data: {
+		roomId: RoomId;
+		participants: UserId[];
+		createdBy: UserId;
+	}) {
 		try {
 			this.startTournament(data.participants, data.roomId, data.createdBy);
-			
 		} catch (error) {
 			console.error("Error handling room started event:", error);
 		}
@@ -83,6 +84,7 @@ export class TournamentService {
 		room_id: RoomId,
 		createdBy: UserId,
 	) {
+		console.log("startTournament called");
 		const tournamentId = uuidv4();
 		const tournament = new Tournament(
 			tournamentId,

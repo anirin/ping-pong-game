@@ -10,14 +10,34 @@ import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import { EventEmitter } from "events";
-import { type FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import { MatchWSHandler } from "../match/matchRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
-const eventEmitter = new EventEmitter(); // 配置場所は要検討 少なくとも同じ websocket の中にいないといけない
+const roomEventEmitters = new Map<RoomId, EventEmitter>();
+
+// todo eventEmitter 処理 配置場所と関数名は要検討
+function getRoomEventEmitter(roomId: RoomId | null): EventEmitter {
+	if (!roomId) {
+		// todo この処理は起きてはいけないが error handling が難しいので tmp でおいている
+		return new EventEmitter();
+	}
+	if (!roomEventEmitters.has(roomId)) {
+		roomEventEmitters.set(roomId, new EventEmitter());
+	}
+	return roomEventEmitters.get(roomId)!;
+}
+
+function cleanupRoomEventEmitter(roomId: RoomId) {
+	const emitter = roomEventEmitters.get(roomId);
+	if (emitter) {
+		emitter.removeAllListeners();
+		roomEventEmitters.delete(roomId);
+	}
+}
 
 function leaveAll(ws: WebSocket.WebSocket) {
 	for (const set of rooms.values()) set.delete(ws);
@@ -46,7 +66,7 @@ export async function registerWebSocket(app: FastifyInstance) {
 		(connection: WebSocket.WebSocket, req) => {
 			const ws = connection;
 
-			// todo auth 処理は共通なので ws 共通の middleware にまとめる
+			// todo auth 処理は共通なので ws 共通の middleware にまとめる? 要検討
 			const authHeader = req.headers["authorization"];
 			if (!authHeader) {
 				console.log("[WebSocket] Connection attempt without token.");
@@ -59,19 +79,6 @@ export async function registerWebSocket(app: FastifyInstance) {
 				ws.close(4001, "Token is required");
 				return;
 			}
-
-			// todo service と repository それぞれ責務があるとこに押し込める
-			const roomRepository = new TypeOrmRoomRepository(
-				AppDataSource.getRepository("RoomEntity"),
-			);
-			const userRepository = new TypeOrmUserRepository(
-				AppDataSource.getRepository("UserEntity"),
-			);
-			const roomService = new RoomService(roomRepository, eventEmitter);
-			const roomUserService = new RoomUserService(
-				userRepository,
-				roomRepository,
-			);
 
 			const context: WebSocketContext = {
 				authedUser: userId,
@@ -98,40 +105,40 @@ export async function registerWebSocket(app: FastifyInstance) {
 						case "Room": {
 							const resultmsg = await RoomWSHandler(
 								data.action,
-								roomService,
-								eventEmitter,
+								getRoomEventEmitter(context.joinedRoom),
 								context,
 							);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
-							else broadcast(context.joinedRoom!, resultmsg);
+							else if (context.joinedRoom)
+								broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "User": {
 							const resultmsg = await RoomUserWSHandler(
 								data.action,
-								roomUserService,
 								data.room,
 								context,
 							);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
-							else broadcast(context.joinedRoom!, resultmsg);
+							else if (context.joinedRoom)
+								broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
 							const resultmsg = await MatchWSHandler(
 								data,
 								context,
-								eventEmitter,
+								getRoomEventEmitter(context.joinedRoom),
 							);
 							if (
 								resultmsg.status === "Match" &&
 								resultmsg.data.type === "error"
 							) {
 								ws.send(JSON.stringify(resultmsg));
-							} else if (resultmsg.status === "Match") {
-								broadcast(context.joinedRoom!, resultmsg);
+							} else if (resultmsg.status === "Match" && context.joinedRoom) {
+								broadcast(context.joinedRoom, resultmsg);
 							}
 							break;
 						}
@@ -151,6 +158,12 @@ export async function registerWebSocket(app: FastifyInstance) {
 
 			ws.on("close", () => {
 				leaveAll(ws);
+				if (context.joinedRoom) {
+					const set = rooms.get(context.joinedRoom);
+					if (set && set.size === 0) {
+						cleanupRoomEventEmitter(context.joinedRoom);
+					}
+				}
 			});
 		},
 	);

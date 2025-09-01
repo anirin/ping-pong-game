@@ -3,14 +3,20 @@ import type { UserRepository } from "@domain/interface/repository/users/UserRepo
 import { Room } from "@domain/model/entity/room/Room.js";
 import type { RoomId, RoomUser } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import { AppDataSource } from "@infrastructure/data-source.js";
+import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
+import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 
 export class RoomService {
-	constructor(
-		private readonly roomRepository: RoomRepository,
-		private readonly eventEmitter: EventEmitter,
-	) {}
+	private readonly roomRepository: RoomRepository;
+
+	constructor(private readonly eventEmitter: EventEmitter) {
+		this.roomRepository = new TypeOrmRoomRepository(
+			AppDataSource.getRepository("RoomEntity"),
+		);
+	}
 
 	async createRoom(owner_id: string): Promise<Room> {
 		const room = new Room(uuidv4(), owner_id, []);
@@ -29,7 +35,11 @@ export class RoomService {
 			const result = await this.roomRepository.start(id);
 			if (result) {
 				// ルームが正常に開始された場合にイベントを発火
-				this.eventEmitter.emit("room.started", { roomId: id, participants: room.participants, createdBy: userid });
+				this.eventEmitter.emit("room.started", {
+					roomId: id,
+					participants: room.participants,
+					createdBy: userid,
+				});
 			}
 			return result;
 		}
@@ -56,10 +66,17 @@ export class RoomService {
 }
 
 export class RoomUserService {
-	constructor(
-		private readonly userRepository: UserRepository,
-		private readonly roomRepository: RoomRepository,
-	) {}
+	private readonly userRepository: UserRepository;
+	private readonly roomRepository: RoomRepository;
+
+	constructor() {
+		this.userRepository = new TypeOrmUserRepository(
+			AppDataSource.getRepository("UserEntity"),
+		);
+		this.roomRepository = new TypeOrmRoomRepository(
+			AppDataSource.getRepository("RoomEntity"),
+		);
+	}
 
 	async joinRoom(userid: UserId, roomid: RoomId): Promise<boolean> {
 		const user = await this.userRepository.findById(userid);

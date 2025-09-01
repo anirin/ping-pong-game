@@ -3,9 +3,7 @@ import type {
 	WSRoomData,
 } from "@domain/model/value-object/room/Room.js";
 import type { MatchIncomingMsg, MatchOutgoingMsg } from "../match/match-msg.js";
-import type {
-	TournamentOutgoingMsg,
-} from "../tournament/tournament-msg.js";
+import type { TournamentOutgoingMsg } from "../tournament/tournament-msg.js";
 
 // todo incoming はそれぞれの route/xxx に 持たせる方が良い
 export type WSIncomingMsg =
