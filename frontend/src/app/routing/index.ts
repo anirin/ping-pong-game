@@ -64,7 +64,6 @@ const routes: Route[] = [
 	},
 ];
 
-
 function matchRoute(
 	path: string,
 ): { route: Route; params: { [key: string]: string } } | null {
@@ -97,9 +96,9 @@ export function navigate(to?: string) {
 		window.history.pushState({}, "", to);
 	}
 	if (currentCleanup) {
-        currentCleanup();
-        currentCleanup = null;
-    }
+		currentCleanup();
+		currentCleanup = null;
+	}
 
 	const path = window.location.pathname;
 	console.log("Navigating to path:", path);
@@ -109,16 +108,16 @@ export function navigate(to?: string) {
 
 	if (match) {
 		const cleanupFn = match.route.handler(match.params);
-        if (typeof cleanupFn === 'function') {
-            currentCleanup = cleanupFn;
-        }
+		if (typeof cleanupFn === "function") {
+			currentCleanup = cleanupFn;
+		}
 	} else {
 		console.log("No match found. Redirecting to home.");
 		window.history.replaceState({}, "", "/");
 		const cleanupFn = renderHomePage(); // ホームページもクリーンアップ関数を返す可能性がある
-        if (typeof cleanupFn === 'function') {
-            currentCleanup = cleanupFn;
-        }
+		if (typeof cleanupFn === "function") {
+			currentCleanup = cleanupFn;
+		}
 	}
 }
 

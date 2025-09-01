@@ -188,32 +188,33 @@ function handleLeaveOrDelete() {
 }
 
 function cleanupRoomPage() {
-    console.log("Cleaning up Room Page state and WebSocket...");
+	console.log("Cleaning up Room Page state and WebSocket...");
 
-    // 既存のWebSocket接続があれば、イベントリスナーを削除してから閉じる
-    if (websocket) {
-        websocket.onopen = null;
-        websocket.onmessage = null;
-        websocket.onclose = null;
-        websocket.onerror = null;
-        if (websocket.readyState === WebSocket.OPEN) {
-            websocket.close();
-        }
-        websocket = null;
-    }
-    
-    // イベントリスナーを削除
-    const button = document.getElementById('leave-delete-button');
-    if (button) button.replaceWith(button.cloneNode(true));
-    const startGameButton = document.getElementById("start-game-button");
-    if (startGameButton) startGameButton.replaceWith(startGameButton.cloneNode(true));
+	// 既存のWebSocket接続があれば、イベントリスナーを削除してから閉じる
+	if (websocket) {
+		websocket.onopen = null;
+		websocket.onmessage = null;
+		websocket.onclose = null;
+		websocket.onerror = null;
+		if (websocket.readyState === WebSocket.OPEN) {
+			websocket.close();
+		}
+		websocket = null;
+	}
 
-    // stateオブジェクトを初期状態にリセット
-    state.myUserId = null;
-    state.roomInfo = null;
-    state.participants = [];
-    state.isOwner = false;
-    state.isWsConnected = false;
+	// イベントリスナーを削除
+	const button = document.getElementById("leave-delete-button");
+	if (button) button.replaceWith(button.cloneNode(true));
+	const startGameButton = document.getElementById("start-game-button");
+	if (startGameButton)
+		startGameButton.replaceWith(startGameButton.cloneNode(true));
+
+	// stateオブジェクトを初期状態にリセット
+	state.myUserId = null;
+	state.roomInfo = null;
+	state.participants = [];
+	state.isOwner = false;
+	state.isWsConnected = false;
 }
 
 // --- メイン関数 ---
