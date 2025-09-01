@@ -47,7 +47,8 @@ function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 	if (!set?.size) return;
 	const msg = JSON.stringify(payload);
 	for (const sock of set) {
-		if ((sock as any).readyState === (sock as any).OPEN) sock.send(msg);
+		if ((sock as any).readyState === (sock as any).OPEN)
+			sock.send(msg);
 	}
 }
 
