@@ -1,21 +1,13 @@
 // todo websocket の routing に等しいので一個上の階層にまとめる
-import {
-	RoomService,
-	RoomUserService,
-} from "@application/services/rooms/RoomService.js";
 import { TournamentService } from "@application/services/tournament/TournamentService.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
-import { AppDataSource } from "@infrastructure/data-source.js";
-import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
-import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import { EventEmitter } from "events";
 import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
 import { MatchWSHandler } from "../match/matchRoutes.js";
 import { RoomUserWSHandler, RoomWSHandler } from "../room/roomRoutes.js";
-import { TournamentWSHandler } from "../tournament/tournamentRoutes.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
@@ -34,10 +26,36 @@ function getRoomEventEmitter(roomId: RoomId | null): EventEmitter {
 		const emitter = new EventEmitter();
 		roomEventEmitters.set(roomId, emitter);
 		
-		// 新しいルームEventEmitterが作成されたら、そのルーム用のTournamentServiceを作成
-		console.log("🔗 WebSocket: Creating TournamentService for room", roomId);
-		const tournamentService = new TournamentService(emitter);
-		roomTournamentServices.set(roomId, tournamentService);
+			// 新しいルームEventEmitterが作成されたら、そのルーム用のTournamentServiceを作成
+	console.log("🔗 WebSocket: Creating TournamentService for room", roomId);
+	const tournamentService = new TournamentService(emitter);
+	
+	// BroadcastCallbackを設定
+	tournamentService.setBroadcastCallback((tournamentId, data) => {
+		console.log("📡 WebSocket: Broadcasting tournament event", {
+			tournamentId,
+			roomId,
+			dataType: data.type
+		});
+		
+		const set = rooms.get(roomId);
+		if (set) {
+			const message = JSON.stringify({
+				status: "Tournament",
+				data,
+			});
+			for (const ws of set) {
+				if ((ws as any).readyState === (ws as any).OPEN) {
+					ws.send(message);
+				}
+			}
+			console.log("✅ WebSocket: Tournament broadcast sent to", set.size, "clients");
+		} else {
+			console.warn("⚠️ WebSocket: No clients found for room", roomId);
+		}
+	});
+	
+	roomTournamentServices.set(roomId, tournamentService);
 	}
 	return roomEventEmitters.get(roomId)!;
 }

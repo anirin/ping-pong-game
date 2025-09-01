@@ -166,8 +166,6 @@ export class TournamentService {
 			} else {
 				console.warn("⚠️ TournamentService: No broadcast callback set");
 			}
-			
-			console.log("✅ TournamentService: Tournament started successfully");
 		} catch (error) {
 			console.error("❌ TournamentService: Error in startTournament:", {
 				error: error instanceof Error ? error.message : error,
