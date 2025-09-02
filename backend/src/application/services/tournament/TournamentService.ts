@@ -154,12 +154,26 @@ export class TournamentService {
 			// WebSocketでブロードキャスト ここの実装と関心ごとをどこに置くのかが非常に難しい
 			console.log(" TournamentService: Broadcasting tournament started...");
 			if (this.broadcastCallback) {
+				// matchesのデータを整形して、フロントエンドで使いやすい形式にする
+				const formattedMatches = matches.map(match => ({
+					id: match.id,
+					tournamentId: match.tournamentId,
+					player1Id: match.player1Id,
+					player2Id: match.player2Id,
+					round: match.round,
+					status: match.status,
+					score1: match.score1,
+					score2: match.score2,
+					winnerId: match.winnerId,
+					rule: match.rule
+				}));
+
 				this.broadcastCallback(tournamentId, {
 					type: "tournament_started",
 					tournament_id: tournamentId,
 					room_id, // context にあるからいらないはず
 					participants,
-					matches,
+					matches: formattedMatches,
 					next_match_id: nextMatch.id,
 				});
 				console.log("✅ TournamentService: Tournament started broadcast sent");
@@ -180,12 +194,13 @@ export class TournamentService {
 
 	async generateNextRound(tournamentId: TournamentId) {
 		const tournament = await this.tournamentRepository.findById(tournamentId);
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		tournament!.matches = tournamentMatches;
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
+		
+		const tournamentMatches =
+			await this.matchRepository.findByTournamentId(tournamentId);
+		tournament.matches = tournamentMatches;
 		try {
 			tournament.generateNextRound();
 		} catch (error) {
@@ -201,6 +216,9 @@ export class TournamentService {
 		);
 		await this.matchRepository.saveAll(currentRoundMatches);
 
+		// generateNextRoundが成功した場合、tournamentのcurrentRoundを更新してデータベースに保存
+		await this.tournamentRepository.save(tournament);
+
 		return;
 	}
 
@@ -213,6 +231,7 @@ export class TournamentService {
 			// エラーが発生しても現在の状態を送信
 		}
 
+		// generateNextRoundが成功した場合、最新のtournament情報を取得
 		const tournament = await this.tournamentRepository.findById(tournamentId);
 		if (!tournament) {
 			throw new Error("Tournament not found");
@@ -238,11 +257,25 @@ export class TournamentService {
 
 		// 現在の状態をブロードキャスト
 		if (this.broadcastCallback) {
+			// matchesのデータを整形して、フロントエンドで使いやすい形式にする
+			const formattedMatches = matches.map(match => ({
+				id: match.id,
+				tournamentId: match.tournamentId,
+				player1Id: match.player1Id,
+				player2Id: match.player2Id,
+				round: match.round,
+				status: match.status,
+				score1: match.score1,
+				score2: match.score2,
+				winnerId: match.winnerId,
+				rule: match.rule
+			}));
+
 			this.broadcastCallback(tournamentId, {
 				type: "tournament_status",
 				tournament_id: tournamentId,
-				room_id: tournament.room_id,
-				matches,
+				room_id: tournament.room_id, // context にあるからいらないはず
+				matches: formattedMatches,
 				next_match_id: tournament.getNextMatch()?.id,
 				current_round: tournament.currentRound,
 			});

@@ -59,6 +59,11 @@ export class MatchService {
 				this.broadcastCallback(matchId, state);
 			}
 
+			// scoreが変更された場合、データベースに保存
+			if (match.status === "playing") {
+				await this.matchRepository.save(match);
+			}
+
 			if (match.status === "finished") {
 				clearInterval(interval);
 				this.intervals.delete(matchId);
@@ -82,8 +87,10 @@ export class MatchService {
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) return;
 
+		// 試合が終了した時点で、現在のscoreを保存
 		match.finish(winnerId);
-		// todo score の更新ができていない
+		
+		// データベースに保存
 		await this.matchRepository.save(match);
 
 		// tournament event を発火
