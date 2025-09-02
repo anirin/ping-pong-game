@@ -83,6 +83,7 @@ export class MatchService {
 		if (!match) return;
 
 		match.finish(winnerId);
+		// todo score の更新ができていない
 		await this.matchRepository.save(match);
 
 		// tournament event を発火
