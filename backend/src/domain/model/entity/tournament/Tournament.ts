@@ -41,17 +41,23 @@ export class Tournament {
 	// participants は4人と仮定する
 	generateFirstRound(): void {
 		if (this.participants.length !== 4) {
-		  throw new Error("Tournament requires exactly 4 participants");
+			throw new Error("Tournament requires exactly 4 participants");
 		}
 		if (this.status !== "waiting") {
-		  throw new Error("Cannot generate first round: tournament already started");
+			throw new Error(
+				"Cannot generate first round: tournament already started",
+			);
 		}
 		if (this.matches.length > 0) {
-		  throw new Error("First round already generated");
+			throw new Error("First round already generated");
 		}
-	
-		const matchRule = new MatchRule(2, { vx: 7, vy: 7 }, { width: 800, height: 600 });
-	
+
+		const matchRule = new MatchRule(
+			2,
+			{ vx: 7, vy: 7 },
+			{ width: 800, height: 600 },
+		);
+
 		// match作成は factory でやるべき
 		const matches = [
 			new Match(
@@ -60,7 +66,7 @@ export class Tournament {
 				this.participants[0]!,
 				this.participants[1]!,
 				1,
-				matchRule
+				matchRule,
 			),
 			new Match(
 				uuidv4(),
@@ -68,22 +74,27 @@ export class Tournament {
 				this.participants[2]!,
 				this.participants[3]!,
 				1,
-				matchRule
+				matchRule,
 			),
 		];
-	
+
 		this.matches = matches;
 	}
 
 	generateNextRound() {
 		// もし current round が全て finished でなければ error （これは application で制御すべき？）
 		if (!this.matches.every((match) => match.status === "finished")) {
-			throw new Error("Cannot generate next round: not all matches are finished");
+			throw new Error(
+				"Cannot generate next round: not all matches are finished",
+			);
 		}
 
 		// 決勝戦が終了している場合 (current round が 1つしかない場合)
 		// ここを通ることはないが一応
-		if (this.matches.filter((match) => match.round === this.currentRound).length === 1) {
+		if (
+			this.matches.filter((match) => match.round === this.currentRound)
+				.length === 1
+		) {
 			this.finish(this.matches[0]!.winnerId!); // service 層に tournament 終了を教える必要がある
 			return;
 		}
@@ -97,7 +108,9 @@ export class Tournament {
 		);
 		const nextRound = this.currentRound + 1;
 		// 以下 filter して勝者を取得
-		const current_matches = this.matches.filter((match) => match.round === this.currentRound); 
+		const current_matches = this.matches.filter(
+			(match) => match.round === this.currentRound,
+		);
 
 		const finalMatch = new Match(
 			matchId3,
@@ -145,6 +158,10 @@ export class Tournament {
 
 	canGenerateNextRound(): boolean {
 		// 全てfinished かつ currentRound の matches が2つ以上ある場合
-		return this.matches.every((match) => match.status === "finished") && this.matches.filter((match) => match.round === this.currentRound).length >= 2;
+		return (
+			this.matches.every((match) => match.status === "finished") &&
+			this.matches.filter((match) => match.round === this.currentRound)
+				.length >= 2
+		);
 	}
 }

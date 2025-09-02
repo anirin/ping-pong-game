@@ -129,7 +129,8 @@ export class TournamentService {
 			if (!tournament) {
 				throw new Error("Tournament not found");
 			}
-			const matches = await this.matchRepository.findByTournamentId(tournamentId);
+			const matches =
+				await this.matchRepository.findByTournamentId(tournamentId);
 			if (!matches) {
 				throw new Error("Matches not found");
 			}
