@@ -39,15 +39,15 @@ export class RoomService {
 					roomId: id,
 					participants: room.participants,
 					createdBy: userid,
-					listenerCount: this.eventEmitter.listenerCount("room.started")
+					listenerCount: this.eventEmitter.listenerCount("room.started"),
 				});
-				
+
 				this.eventEmitter.emit("room.started", {
 					roomId: id,
 					participants: room.participants,
 					createdBy: userid,
 				});
-				
+
 				console.log("✅ RoomService: room.started event emitted successfully");
 			}
 			return result;
@@ -90,24 +90,27 @@ export class RoomUserService {
 	async joinRoom(userid: UserId, roomid: RoomId): Promise<boolean> {
 		console.log("🔍 RoomUserService: Attempting to join room", {
 			userId: userid,
-			roomId: roomid
+			roomId: roomid,
 		});
-		
+
 		const user = await this.userRepository.findById(userid);
 		if (user == null) {
 			console.error("❌ RoomUserService: User not found", { userId: userid });
 			throw Error("no user found");
 		}
-		
-		console.log("✅ RoomUserService: User found", { userId: userid, userName: user.username });
-		
+
+		console.log("✅ RoomUserService: User found", {
+			userId: userid,
+			userName: user.username,
+		});
+
 		const result = await this.roomRepository.join(roomid, user);
 		console.log("🎯 RoomUserService: joinRoom result", {
 			userId: userid,
 			roomId: roomid,
-			success: result
+			success: result,
 		});
-		
+
 		return result;
 	}
 

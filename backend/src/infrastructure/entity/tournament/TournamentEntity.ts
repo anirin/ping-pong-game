@@ -24,6 +24,9 @@ export class TournamentEntity {
 	@Column("text", { default: "waiting" })
 	status!: string;
 
+	@Column("int", { default: 1 })
+	current_round!: number;
+
 	@Column("uuid", { nullable: true })
 	winner_id!: string | null;
 

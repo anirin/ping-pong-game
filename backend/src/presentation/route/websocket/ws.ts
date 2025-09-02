@@ -25,37 +25,41 @@ function getRoomEventEmitter(roomId: RoomId | null): EventEmitter {
 	if (!roomEventEmitters.has(roomId)) {
 		const emitter = new EventEmitter();
 		roomEventEmitters.set(roomId, emitter);
-		
-			// 新しいルームEventEmitterが作成されたら、そのルーム用のTournamentServiceを作成
-	console.log("🔗 WebSocket: Creating TournamentService for room", roomId);
-	const tournamentService = new TournamentService(emitter);
-	
-	// BroadcastCallbackを設定
-	tournamentService.setBroadcastCallback((tournamentId, data) => {
-		console.log("📡 WebSocket: Broadcasting tournament event", {
-			tournamentId,
-			roomId,
-			dataType: data.type
-		});
-		
-		const set = rooms.get(roomId);
-		if (set) {
-			const message = JSON.stringify({
-				status: "Tournament",
-				data,
+
+		// 新しいルームEventEmitterが作成されたら、そのルーム用のTournamentServiceを作成
+		console.log("🔗 WebSocket: Creating TournamentService for room", roomId);
+		const tournamentService = new TournamentService(emitter);
+
+		// BroadcastCallbackを設定
+		tournamentService.setBroadcastCallback((tournamentId, data) => {
+			console.log("📡 WebSocket: Broadcasting tournament event", {
+				tournamentId,
+				roomId,
+				dataType: data.type,
 			});
-			for (const ws of set) {
-				if ((ws as any).readyState === (ws as any).OPEN) {
-					ws.send(message);
+
+			const set = rooms.get(roomId);
+			if (set) {
+				const message = JSON.stringify({
+					status: "Tournament",
+					data,
+				});
+				for (const ws of set) {
+					if ((ws as any).readyState === (ws as any).OPEN) {
+						ws.send(message);
+					}
 				}
+				console.log(
+					"✅ WebSocket: Tournament broadcast sent to",
+					set.size,
+					"clients",
+				);
+			} else {
+				console.warn("⚠️ WebSocket: No clients found for room", roomId);
 			}
-			console.log("✅ WebSocket: Tournament broadcast sent to", set.size, "clients");
-		} else {
-			console.warn("⚠️ WebSocket: No clients found for room", roomId);
-		}
-	});
-	
-	roomTournamentServices.set(roomId, tournamentService);
+		});
+
+		roomTournamentServices.set(roomId, tournamentService);
 	}
 	return roomEventEmitters.get(roomId)!;
 }
@@ -66,7 +70,7 @@ function cleanupRoomEventEmitter(roomId: RoomId) {
 		emitter.removeAllListeners();
 		roomEventEmitters.delete(roomId);
 	}
-	
+
 	// TournamentServiceもクリーンアップ
 	const tournamentService = roomTournamentServices.get(roomId);
 	if (tournamentService) {
@@ -124,7 +128,9 @@ export async function registerWebSocket(app: FastifyInstance) {
 			};
 
 			// ルームごとのTournamentServiceは、ルームEventEmitter作成時に自動的に初期化される
-			console.log("🎯 WebSocket: Room-based TournamentService will be initialized when needed");
+			console.log(
+				"🎯 WebSocket: Room-based TournamentService will be initialized when needed",
+			);
 
 			ws.on("message", async (raw: any) => {
 				let data: WSIncomingMsg;

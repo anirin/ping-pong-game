@@ -1,18 +1,3 @@
-// tournament の初期化
-// tournament の開始
-// tournament の次のラウンドの生成
-// tournament の終了
-
-// 適宜　tournament の状態を更新する （match依存するので問題なし）
-// 開始後は全て上のメソッドは全てmatch次第 だが今回は 手動でmethodを呼ぶ
-
-// frontendに送るべき情報
-/*
-user情報
-match情報
-tournament情報（遷移状態）
-*/
-
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
 import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
@@ -27,6 +12,8 @@ import { TypeORMTournamentRepository } from "@infrastructure/repository/tourname
 import type { EventEmitter } from "events";
 import { v4 as uuidv4 } from "uuid";
 
+// コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
+
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
@@ -40,12 +27,10 @@ export class TournamentService {
 		this.matchRepository = new TypeORMMatchRepository(
 			AppDataSource.getRepository(MatchEntity),
 		);
+
+		// eventEmitter 設定
 		this.eventEmitter = eventEmitter;
-
-		// match.finishedイベントをリスン
 		this.eventEmitter.on("match.finished", this.handleMatchFinished.bind(this));
-
-		// room.startedイベントをリスン
 		this.eventEmitter.on("room.started", this.handleRoomStarted.bind(this));
 	}
 
@@ -55,21 +40,19 @@ export class TournamentService {
 		this.broadcastCallback = callback;
 	}
 
-	// EventEmitterにアクセスするためのパブリックメソッド
-	getEventEmitter(): EventEmitter {
-		return this.eventEmitter;
-	}
-
 	private async handleMatchFinished(data: {
 		matchId: string;
-		winnerId: string;
+		winnerId: string; // これ不要
 	}) {
-		// マッチが終了したら、そのマッチが属するトーナメントを特定
-		const match = await this.matchRepository.findById(data.matchId);
-		if (!match || !match.tournamentId) return;
-
-		// トーナメントの状態を更新
-		await this.sendTournamentState(match.tournamentId);
+		try {
+			const match = await this.matchRepository.findById(data.matchId);
+			if (!match) {
+				throw new Error("Match not found");
+			}
+			await this.processAfterMatch(match.tournamentId);
+		} catch (error) {
+			throw new Error("Failed to process after match");
+		}
 	}
 
 	private async handleRoomStarted(data: {
@@ -77,28 +60,14 @@ export class TournamentService {
 		participants: UserId[];
 		createdBy: UserId;
 	}) {
-		console.log("🎯 TournamentService: room.started event received", {
-			roomId: data.roomId,
-			participants: data.participants,
-			createdBy: data.createdBy,
-			eventEmitterId: this.eventEmitter.listenerCount("room.started")
-		});
-		
-		// 参加者数が4人未満の場合はトーナメントを開始しない
+		// 参加者数が4人未満の場合はトーナメントを開始しない // ここは修正
 		if (data.participants.length < 4) {
-			console.log("⚠️ TournamentService: Skipping tournament start - insufficient participants", {
-				required: 4,
-				actual: data.participants.length
-			});
-			return;
+			throw new Error("Insufficient participants");
 		}
-		
-		try {
-			await this.startTournament(data.participants, data.roomId, data.createdBy);
-			console.log("✅ TournamentService: Tournament started successfully");
-		} catch (error) {
-			console.error("❌ TournamentService: Error handling room started event:", error);
-		}
+
+		await this.startTournament(data.participants, data.roomId, data.createdBy);
+
+		return;
 	}
 
 	async startTournament(
@@ -106,182 +75,117 @@ export class TournamentService {
 		room_id: RoomId,
 		createdBy: UserId,
 	) {
-		console.log("startTournament called");
-		try {
-			const tournamentId = uuidv4();
-			console.log(" TournamentService: Generated tournament ID:", tournamentId);
-			
-			const tournament = new Tournament(
-				tournamentId,
-				participants,
-				createdBy,
-				room_id,
-			);
-			console.log(" TournamentService: Tournament entity created");
-
-			// 一回戦の作成
-			console.log(" TournamentService: Generating first round...");
-			tournament.generateFirstRound();
-			console.log("✅ TournamentService: First round generated successfully");
-
-			// matches の db保存
-			const matches = tournament.matches;
-			console.log(" TournamentService: Saving matches to database...", {
-				matchCount: matches.length,
-				matchIds: matches.map(m => m.id)
-			});
-			await this.matchRepository.saveAll(matches);
-			console.log("✅ TournamentService: Matches saved successfully");
-
-			// tournament の db保存
-			console.log(" TournamentService: Saving tournament to database...");
-			await this.tournamentRepository.save(tournament);
-			console.log("✅ TournamentService: Tournament saved successfully");
-
-			// トーナメント開始
-			console.log(" TournamentService: Starting tournament...");
-			tournament.start();
-			console.log("✅ TournamentService: Tournament status changed to 'ongoing'");
-
-			// まず最初の試合も送る
-			console.log(" TournamentService: Getting next match...");
-			const nextMatch = tournament.getNextMatch();
-			if (!nextMatch) {
-				throw new Error("Next match not found");
-			}
-			console.log("✅ TournamentService: Next match found:", nextMatch.id);
-
-			// WebSocketでブロードキャスト ここの実装と関心ごとをどこに置くのかが非常に難しい
-			console.log(" TournamentService: Broadcasting tournament started...");
-			if (this.broadcastCallback) {
-				// matchesのデータを整形して、フロントエンドで使いやすい形式にする
-				const formattedMatches = matches.map(match => ({
-					id: match.id,
-					tournamentId: match.tournamentId,
-					player1Id: match.player1Id,
-					player2Id: match.player2Id,
-					round: match.round,
-					status: match.status,
-					score1: match.score1,
-					score2: match.score2,
-					winnerId: match.winnerId,
-					rule: match.rule
-				}));
-
-				this.broadcastCallback(tournamentId, {
-					type: "tournament_started",
-					tournament_id: tournamentId,
-					room_id, // context にあるからいらないはず
-					participants,
-					matches: formattedMatches,
-					next_match_id: nextMatch.id,
-				});
-				console.log("✅ TournamentService: Tournament started broadcast sent");
-			} else {
-				console.warn("⚠️ TournamentService: No broadcast callback set");
-			}
-		} catch (error) {
-			console.error("❌ TournamentService: Error in startTournament:", {
-				error: error instanceof Error ? error.message : error,
-				stack: error instanceof Error ? error.stack : undefined,
-				participants,
-				room_id,
-				createdBy
-			});
-			throw error; // エラーを再スローして上位でハンドリングできるようにする
-		}
-	}
-
-	async generateNextRound(tournamentId: TournamentId) {
-		const tournament = await this.tournamentRepository.findById(tournamentId);
-		if (!tournament) {
-			throw new Error("Tournament not found");
-		}
-		
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		tournament.matches = tournamentMatches;
-		try {
-			tournament.generateNextRound();
-		} catch (error) {
-			console.error(error);
-			throw new Error("Failed to generate next round");
-		}
-
-		// そのラウンドにあるmatches の 追加保存
-		const matches = tournament.matches;
-		// currentRound の matches を取得して、それを保存する
-		const currentRoundMatches = matches.filter(
-			(match) => match.round === tournament.currentRound,
+		const tournamentId = uuidv4();
+		const tournament = new Tournament(
+			tournamentId,
+			participants,
+			createdBy,
+			room_id,
 		);
-		await this.matchRepository.saveAll(currentRoundMatches);
 
-		// generateNextRoundが成功した場合、tournamentのcurrentRoundを更新してデータベースに保存
-		await this.tournamentRepository.save(tournament);
+		// 一回戦の作成
+		tournament.generateFirstRound();
 
-		return;
+		const matches = tournament.matches;
+
+		// matches の db保存
+		try {
+			await this.matchRepository.saveAll(matches);
+		} catch (error) {
+			throw new Error("Failed to save matches");
+		}
+
+		// トーナメント開始
+		tournament.start();
+
+		// tournament の db保存
+		try {
+			await this.tournamentRepository.save(tournament);
+		} catch (error) {
+			throw new Error("Failed to save tournament");
+		}
+
+		// まず最初の試合も送る
+		const nextMatch = tournament.getNextMatch();
+		if (!nextMatch) {
+			throw new Error("Next match not found");
+		}
+
+		this.broadcastTournament(tournamentId, {
+			type: "tournament_started",
+			tournament_id: tournamentId,
+			room_id,
+			participants,
+			matches,
+			next_match_id: nextMatch.id,
+		});
 	}
 
-	// broadcast 用
-	async sendTournamentState(tournamentId: TournamentId) {
+	async processAfterMatch(tournamentId: TournamentId) {
+		let tournament: Tournament | null;
+
 		try {
-			await this.generateNextRound(tournamentId);
-		} catch (error) {
-			console.error("Failed to generate next round:", error);
-			// エラーが発生しても現在の状態を送信
-		}
-
-		// generateNextRoundが成功した場合、最新のtournament情報を取得
-		const tournament = await this.tournamentRepository.findById(tournamentId);
-		if (!tournament) {
-			throw new Error("Tournament not found");
-		}
-
-		const matches = await this.matchRepository.findByTournamentId(tournamentId);
-		if (!matches) {
-			throw new Error("Matches not found");
-		}
-
-		// tournament が終了したかを判定する logic を domain service に追加する
-		if (tournament.status === "finished") {
-			// websocket にて broadcast を行う
-			if (this.broadcastCallback) {
-				this.broadcastCallback(tournamentId, {
-					type: "tournament_finished",
-					tournament_id: tournamentId,
-					winner_id: tournament.winner_id,
-				});
+			tournament = await this.tournamentRepository.findById(tournamentId);
+			if (!tournament) {
+				throw new Error("Tournament not found");
 			}
+			const matches = await this.matchRepository.findByTournamentId(tournamentId);
+			if (!matches) {
+				throw new Error("Matches not found");
+			}
+
+			tournament.matches = matches;
+		} catch (error) {
+			throw new Error("Failed to find tournament");
+		}
+
+		// case 1 : current round に scheduled の match がある場合
+		const scheduledMatch = tournament!.matches.find(
+			(match) =>
+				match.status === "scheduled" && match.round === tournament.currentRound,
+		);
+		if (scheduledMatch) {
+			// broadcast
+			this.broadcastTournament(tournamentId, {
+				type: "tournament_status",
+				next_match_id: scheduledMatch.id,
+				current_round: tournament.currentRound,
+				tournament_id: tournamentId,
+				matches: tournament!.matches,
+			});
 			return;
 		}
 
-		// 現在の状態をブロードキャスト
-		if (this.broadcastCallback) {
-			// matchesのデータを整形して、フロントエンドで使いやすい形式にする
-			const formattedMatches = matches.map(match => ({
-				id: match.id,
-				tournamentId: match.tournamentId,
-				player1Id: match.player1Id,
-				player2Id: match.player2Id,
-				round: match.round,
-				status: match.status,
-				score1: match.score1,
-				score2: match.score2,
-				winnerId: match.winnerId,
-				rule: match.rule
-			}));
+		if (tournament!.canGenerateNextRound()) {
+			// case 2 : 全て finised で next round 生成可能な場合
+			tournament!.generateNextRound();
 
-			this.broadcastCallback(tournamentId, {
+			// 各種 db 操作
+			try {
+				await this.matchRepository.saveAll(tournament!.matches);
+				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
+			} catch (error) {
+				throw new Error("Failed to save matches");
+			}
+
+			const nextMatch = tournament!.getNextMatch();
+			if (!nextMatch) {
+				throw new Error("Next match not found");
+			}
+
+			// tournament を broadcast
+			this.broadcastTournament(tournamentId, {
 				type: "tournament_status",
-				tournament_id: tournamentId,
-				room_id: tournament.room_id, // context にあるからいらないはず
-				matches: formattedMatches,
-				next_match_id: tournament.getNextMatch()?.id,
+				next_match_id: nextMatch.id,
 				current_round: tournament.currentRound,
+				tournament_id: tournamentId,
+				matches: tournament!.matches,
 			});
+		} else {
+			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
+			// tournament finish を broadcast
+			this.finishTournament(tournamentId, tournament.winner_id!);
 		}
-
-		return;
 	}
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
@@ -289,16 +193,28 @@ export class TournamentService {
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
-		tournament.finish(winnerId);
-		await this.tournamentRepository.save(tournament);
 
-		// WebSocketでブロードキャスト
+		tournament.finish(winnerId);
+
+		// db操作
+		try {
+			await this.tournamentRepository.save(tournament);
+		} catch (error) {
+			throw new Error("Failed to save tournament");
+		}
+
+		// broadcast
+		this.broadcastTournament(tournamentId, {
+			type: "tournament_finished",
+			tournament_id: tournamentId,
+			winner_id: winnerId,
+		});
+	}
+
+	// 型定義しないとな
+	private broadcastTournament(tournamentId: TournamentId, data: any) {
 		if (this.broadcastCallback) {
-			this.broadcastCallback(tournamentId, {
-				type: "tournament_finished",
-				tournament_id: tournamentId,
-				winner_id: winnerId,
-			});
+			this.broadcastCallback(tournamentId, data);
 		}
 	}
 }

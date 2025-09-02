@@ -61,10 +61,14 @@ export class MatchService {
 
 			// scoreが変更された場合、データベースに保存
 			if (match.status === "playing") {
-				await this.matchRepository.save(match);
+				await this.matchRepository.save(match); //最後にまとめてやれば良くない？
 			}
 
 			if (match.status === "finished") {
+				console.log("🎯 MatchService: Match finished in game loop", {
+					matchId,
+					winnerId: match.winnerId,
+				});
 				clearInterval(interval);
 				this.intervals.delete(matchId);
 				await this.finishMatch(matchId, match.winnerId!);
@@ -84,16 +88,64 @@ export class MatchService {
 	}
 
 	async finishMatch(matchId: MatchId, winnerId: UserId): Promise<void> {
+		console.log("🏁 MatchService: finishMatch called", { matchId, winnerId });
+
 		const match = await this.matchRepository.findById(matchId);
-		if (!match) return;
+		if (!match) {
+			console.error("❌ MatchService: Match not found", { matchId });
+			return;
+		}
+
+		console.log("📊 MatchService: Match before finish", {
+			matchId,
+			round: match.round,
+			status: match.status,
+			score1: match.score1,
+			score2: match.score2,
+		});
 
 		// 試合が終了した時点で、現在のscoreを保存
 		match.finish(winnerId);
-		
+
+		console.log("✅ MatchService: Match after finish", {
+			matchId,
+			round: match.round,
+			status: match.status,
+			winnerId: match.winnerId,
+		});
+
 		// データベースに保存
-		await this.matchRepository.save(match);
+		try {
+			await this.matchRepository.save(match);
+			console.log("💾 MatchService: Match saved to database", { matchId });
+
+			// 保存後に、データベースから再取得して保存が確実に完了したことを確認
+			const savedMatch = await this.matchRepository.findById(matchId);
+			if (savedMatch) {
+				console.log("✅ MatchService: Verified saved match in database", {
+					matchId,
+					status: savedMatch.status,
+					winnerId: savedMatch.winnerId,
+					score1: savedMatch.score1,
+					score2: savedMatch.score2,
+				});
+			} else {
+				console.error("❌ MatchService: Failed to verify saved match", {
+					matchId,
+				});
+			}
+		} catch (error) {
+			console.error("❌ MatchService: Failed to save match", {
+				matchId,
+				error,
+			});
+		}
 
 		// tournament event を発火
+		console.log("📡 MatchService: Emitting match.finished event", {
+			matchId,
+			winnerId,
+		});
 		this.eventEmitter.emit("match.finished", { matchId, winnerId });
 	}
 
