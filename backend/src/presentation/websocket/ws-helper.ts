@@ -5,7 +5,6 @@ import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../route/auth/authRoutes.js";
 import type { WSOutgoingMsg } from "./ws-msg.js";
 
-// ルーム管理用のMap
 const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
 
 export function authorizeUser(
