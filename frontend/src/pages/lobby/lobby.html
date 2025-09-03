@@ -1,0 +1,36 @@
+<!-- frontend/src/pages/lobby/ui/lobby.html (ヘッダー・サイドバー対応版) -->
+
+<div id="page-layout-container">
+
+    <div class="main-content-area">
+        <!-- ヘッダーの描画場所 -->
+        <div id="header-widget"></div>
+
+        <!-- Lobbyページのメインコンテンツ -->
+        <main class="content-body">
+            <div class="lobby-widget-container">
+                <div class="lobby-header">
+                    <h2>Game Lobby</h2>
+                    <p>Welcome! Create a new room to start a match with your friends.</p>
+                </div>
+
+                <hr class="separator">
+                
+                <div class="lobby-actions">
+                    <button id="create-room-btn" class="btn btn-primary">Create New Room</button>
+                </div>
+                
+                <hr class="separator">
+
+                <div class="join-room-section">
+                    <h3>Join a Room</h3>
+                    <div class="join-room-form">
+                        <input type="text" id="room-id-input" placeholder="Enter Room ID...">
+                        <button id="join-room-btn" class="btn btn-join">Join</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="sidebar-widget"></div>
+</div>

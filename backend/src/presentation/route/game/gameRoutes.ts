@@ -35,7 +35,7 @@ const gameRoutes: FastifyPluginAsync<GameRoutesOptions> = async (
 			}
 			const rule = new MatchRule(
 				20,
-				{ vx: 5, vy: 5 },
+				{ vx: 3, vy: 3 },
 				{ width: 800, height: 600 },
 			);
 			const matchId = `test-match-${Date.now()}`;
