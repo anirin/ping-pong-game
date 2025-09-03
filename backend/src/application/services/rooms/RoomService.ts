@@ -11,8 +11,8 @@ import {
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
-import type { WSOutgoingMsg } from "@presentation/route/websocket/ws-msg.js";
 import { v4 as uuidv4 } from "uuid";
+import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
 
 export class RoomService {
 	private readonly roomRepository: RoomRepository;
@@ -39,6 +39,8 @@ export class RoomService {
 		if (room === null) return false;
 		if (room.ownerId === userid && room.status === "waiting")
 			return this.roomRepository.start(roomid);
+		// todo : tournament を呼ぶイベントを発火させる
+		globalEventEmitter.emit("room.started", { roomid, userid });
 		return false;
 	}
 

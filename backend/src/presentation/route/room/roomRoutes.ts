@@ -1,6 +1,6 @@
 import {
 	RoomService,
-	type RoomUserService, // RoomUserServiceもインポートされていることを確認
+	RoomUserService, // RoomUserServiceもインポートされていることを確認
 } from "@application/services/rooms/RoomService.js";
 import { UserService } from "@application/services/users/UserService.js";
 import type { WSRoomData } from "@domain/model/value-object/room/Room.js";
@@ -9,8 +9,8 @@ import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
-import type { WebSocketContext } from "../websocket/ws.js";
-import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
+import type { WebSocketContext } from "../../websocket/ws-helper.js";
+import type { WSOutgoingMsg } from "../../websocket/ws-msg.js";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
 	// 各サービスは自身でリポジトリを初期化するスタイルに変更
@@ -46,10 +46,10 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 
 export async function RoomWSHandler(
 	action: "START" | "DELETE",
-	room_service: RoomService,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
 	if (context.joinedRoom === null) throw Error("joined no room");
+	const room_service = new RoomService();
 	switch (action) {
 		case "START": {
 			if (
@@ -91,10 +91,10 @@ export async function RoomWSHandler(
 }
 
 export async function JoinRoomWS(
-	room_user_service: RoomUserService,
-	room_service: RoomService,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
+	const room_service = new RoomService();
+	const room_user_service = new RoomUserService();
 	try {
 		const succeeded = await room_user_service.joinRoom(
 			context.authedUser,
@@ -133,9 +133,9 @@ export async function JoinRoomWS(
 }
 
 export async function LeaveRoomWS(
-	room_user_service: RoomUserService,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
+	const room_user_service = new RoomUserService();
 	try {
 		const succeeded = await room_user_service.leaveRoom(context.authedUser);
 		if (succeeded)

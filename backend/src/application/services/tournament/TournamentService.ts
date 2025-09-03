@@ -1,18 +1,3 @@
-// tournament の初期化
-// tournament の開始
-// tournament の次のラウンドの生成
-// tournament の終了
-
-// 適宜　tournament の状態を更新する （match依存するので問題なし）
-// 開始後は全て上のメソッドは全てmatch次第 だが今回は 手動でmethodを呼ぶ
-
-// frontendに送るべき情報
-/*
-user情報
-match情報
-tournament情報（遷移状態）
-*/
-
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
 import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
@@ -26,9 +11,13 @@ import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORM
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { v4 as uuidv4 } from "uuid";
 
+// コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
+
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
+	private broadcastCallback?: (tournamentId: TournamentId, data: any) => void; // これが謎すぎる
+
 	constructor() {
 		this.tournamentRepository = new TypeORMTournamentRepository(
 			AppDataSource.getRepository(TournamentEntity),
@@ -36,6 +25,42 @@ export class TournamentService {
 		this.matchRepository = new TypeORMMatchRepository(
 			AppDataSource.getRepository(MatchEntity),
 		);
+	}
+
+	setBroadcastCallback(
+		callback: (tournamentId: TournamentId, data: any) => void,
+	) {
+		this.broadcastCallback = callback;
+	}
+
+	private async handleMatchFinished(data: {
+		matchId: string;
+		winnerId: string; // これ不要
+	}) {
+		try {
+			const match = await this.matchRepository.findById(data.matchId);
+			if (!match) {
+				throw new Error("Match not found");
+			}
+			await this.processAfterMatch(match.tournamentId);
+		} catch (error) {
+			throw new Error("Failed to process after match");
+		}
+	}
+
+	private async handleRoomStarted(data: {
+		roomId: RoomId;
+		participants: UserId[];
+		createdBy: UserId;
+	}) {
+		// 参加者数が4人未満の場合はトーナメントを開始しない // ここは修正
+		if (data.participants.length < 4) {
+			throw new Error("Insufficient participants");
+		}
+
+		await this.startTournament(data.participants, data.roomId, data.createdBy);
+
+		return;
 	}
 
 	async startTournament(
@@ -54,69 +79,107 @@ export class TournamentService {
 		// 一回戦の作成
 		tournament.generateFirstRound();
 
-		// matches の db保存
 		const matches = tournament.matches;
-		await this.matchRepository.saveAll(matches);
 
-		// tournament の db保存
-		await this.tournamentRepository.save(tournament);
+		// matches の db保存
+		try {
+			await this.matchRepository.saveAll(matches);
+		} catch (error) {
+			throw new Error("Failed to save matches");
+		}
 
 		// トーナメント開始
 		tournament.start();
 
+		// tournament の db保存
+		try {
+			await this.tournamentRepository.save(tournament);
+		} catch (error) {
+			throw new Error("Failed to save tournament");
+		}
+
 		// まず最初の試合も送る
 		const nextMatch = tournament.getNextMatch();
+		if (!nextMatch) {
+			throw new Error("Next match not found");
+		}
 
-		return {
-			tournament,
-			nextMatch,
-		};
+		this.broadcastTournament(tournamentId, {
+			type: "tournament_started",
+			tournament_id: tournamentId,
+			room_id,
+			participants,
+			matches,
+			next_match_id: nextMatch.id,
+		});
 	}
 
-	async generateNextRound(tournamentId: TournamentId) {
-		const tournament = await this.tournamentRepository.findById(tournamentId);
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		tournament!.matches = tournamentMatches;
-		if (!tournament) {
-			throw new Error("Tournament not found");
-		}
+	async processAfterMatch(tournamentId: TournamentId) {
+		let tournament: Tournament | null;
+
 		try {
-			tournament.generateNextRound();
+			tournament = await this.tournamentRepository.findById(tournamentId);
+			if (!tournament) {
+				throw new Error("Tournament not found");
+			}
+			const matches =
+				await this.matchRepository.findByTournamentId(tournamentId);
+			if (!matches) {
+				throw new Error("Matches not found");
+			}
+
+			tournament.matches = matches;
 		} catch (error) {
-			console.error(error);
-			throw new Error("Failed to generate next round");
+			throw new Error("Failed to find tournament");
 		}
 
-		// そのラウンドにあるmatches の 追加保存
-		const matches = tournament.matches;
-		// currentRound の matches を取得して、それを保存する
-		const currentRoundMatches = matches.filter(
-			(match) => match.round === tournament.currentRound,
+		// case 1 : current round に scheduled の match がある場合
+		const scheduledMatch = tournament!.matches.find(
+			(match) =>
+				match.status === "scheduled" && match.round === tournament.currentRound,
 		);
-		await this.matchRepository.saveAll(currentRoundMatches);
-
-		// 次に行う試合も送る
-		const nextMatch = tournament.getNextMatch();
-
-		return {
-			tournament,
-			nextMatch,
-		};
-	}
-
-	async getNextMatch(tournamentId: TournamentId) {
-		const tournament = await this.tournamentRepository.findById(tournamentId);
-		if (!tournament) {
-			throw new Error("Tournament not found");
+		if (scheduledMatch) {
+			// broadcast
+			this.broadcastTournament(tournamentId, {
+				type: "tournament_status",
+				next_match_id: scheduledMatch.id,
+				current_round: tournament.currentRound,
+				tournament_id: tournamentId,
+				matches: tournament!.matches,
+			});
+			return;
 		}
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		if (!tournamentMatches) {
-			throw new Error("Tournament matches not found");
+
+		if (tournament!.canGenerateNextRound()) {
+			// case 2 : 全て finised で next round 生成可能な場合
+			tournament!.generateNextRound();
+
+			// 各種 db 操作
+			try {
+				await this.matchRepository.saveAll(tournament!.matches);
+				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
+			} catch (error) {
+				throw new Error("Failed to save matches");
+			}
+
+			const nextMatch = tournament!.getNextMatch();
+			if (!nextMatch) {
+				throw new Error("Next match not found");
+			}
+
+			// tournament を broadcast
+			this.broadcastTournament(tournamentId, {
+				type: "tournament_status",
+				next_match_id: nextMatch.id,
+				current_round: tournament.currentRound,
+				tournament_id: tournamentId,
+				matches: tournament!.matches,
+			});
+		} else {
+			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
+			// tournament finish を broadcast
+			this.finishTournament(tournamentId, tournament.winner_id!);
 		}
-		tournament.matches = tournamentMatches;
-		return tournament.getNextMatch();
 	}
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
@@ -124,7 +187,28 @@ export class TournamentService {
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
+
 		tournament.finish(winnerId);
-		await this.tournamentRepository.save(tournament);
+
+		// db操作
+		try {
+			await this.tournamentRepository.save(tournament);
+		} catch (error) {
+			throw new Error("Failed to save tournament");
+		}
+
+		// broadcast
+		this.broadcastTournament(tournamentId, {
+			type: "tournament_finished",
+			tournament_id: tournamentId,
+			winner_id: winnerId,
+		});
+	}
+
+	// 型定義しないとな
+	private broadcastTournament(tournamentId: TournamentId, data: any) {
+		if (this.broadcastCallback) {
+			this.broadcastCallback(tournamentId, data);
+		}
 	}
 }
