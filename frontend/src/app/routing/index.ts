@@ -3,11 +3,13 @@ import { renderAuthPage } from "@pages/first_page/index";
 import { renderGamePage } from "@pages/game/index";
 import { renderHomePage } from "@pages/home/index";
 import { renderLobbyPage } from "@pages/lobby";
+import { renderGuestTournamentPage } from "@pages/lobby_guest";
 import { renderLoginPage } from "@pages/login/index";
 import { renderRegisterPage } from "@pages/register/index";
 import { renderRoomPage } from "@pages/room";
 import { renderSetupPage } from "@pages/setup/index";
 import { renderTournamentPage } from "@pages/tournament";
+import { isLoggedIn } from "@/app/auth";
 
 let currentCleanup: (() => void) | null = null;
 
@@ -60,7 +62,13 @@ const routes: Route[] = [
 	},
 	{
 		path: "/lobby",
-		handler: renderLobbyPage,
+		handler: () => {
+			if (isLoggedIn()) {
+				return renderLobbyPage();
+			} else {
+				return renderGuestTournamentPage();
+			}
+		},
 	},
 ];
 
@@ -77,7 +85,6 @@ function matchRoute(
 			.replace(/\//g, "\\/");
 
 		const regex = new RegExp(`^${regexPath}$`);
-		console.log(`Checking route: "${route.path}" -> Regex: ${regex}`);
 		const match = path.match(regex);
 
 		if (match) {
@@ -101,11 +108,8 @@ export function navigate(to?: string) {
 	}
 
 	const path = window.location.pathname;
-	console.log("Navigating to path:", path);
 
 	const match = matchRoute(path);
-	console.log("Match result:", match);
-
 	if (match) {
 		const cleanupFn = match.route.handler(match.params);
 		if (typeof cleanupFn === "function") {
@@ -114,7 +118,7 @@ export function navigate(to?: string) {
 	} else {
 		console.log("No match found. Redirecting to home.");
 		window.history.replaceState({}, "", "/");
-		const cleanupFn = renderHomePage(); // ホームページもクリーンアップ関数を返す可能性がある
+		const cleanupFn = renderHomePage();
 		if (typeof cleanupFn === "function") {
 			currentCleanup = cleanupFn;
 		}

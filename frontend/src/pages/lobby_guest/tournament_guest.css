@@ -1,0 +1,106 @@
+/* --- 共通レイアウトスタイル (lobby.cssからコピー) --- */
+#page-layout-container {
+	display: flex;
+	height: 100vh;
+	background-color: #f8f9fa;
+}
+
+.main-content-area {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.content-body {
+	flex-grow: 1;
+	padding: 20px 40px;
+	overflow-y: auto;
+}
+/* --- ここまで共通レイアウトスタイル --- */
+
+/* --- ゲストトーナメントページ専用スタイル --- */
+.guest-tournament-container {
+	background-color: #ffffff;
+	padding: 25px 30px;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border: 1px solid #e9e9e9;
+	width: 100%;
+	max-width: 650px; /* コンテンツに合わせて調整 */
+	margin: 0 auto;
+	box-sizing: border-box;
+}
+
+.guest-tournament-header h2 {
+	margin-top: 0;
+	margin-bottom: 10px;
+	font-size: 24px;
+	color: #333;
+}
+
+.guest-tournament-header p {
+	color: #666;
+	font-size: 16px;
+	margin-bottom: 0;
+}
+
+.separator {
+	margin: 25px 0;
+	border: none;
+	border-top: 1px solid #eee;
+}
+
+/* --- フォームスタイル --- */
+.guest-form .form-row {
+	display: flex;
+	flex-direction: column; /* ラベルと入力欄を縦に並べる */
+	margin-bottom: 20px;
+}
+
+.guest-form label {
+	margin-bottom: 8px;
+	font-weight: bold;
+	color: #555;
+	font-size: 16px;
+}
+
+.guest-form input {
+	width: 100%; /* 親要素の幅いっぱいに広げる */
+	padding: 12px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	font-size: 16px;
+	box-sizing: border-box; /* paddingを含めてwidthを100%にする */
+	transition: all 0.2s;
+}
+
+.guest-form input:focus {
+	border-color: #28a745; /* プライマリカラーに合わせる */
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}
+
+.form-actions {
+	text-align: center;
+	margin-top: 10px;
+}
+
+/* --- ボタンのスタイル (lobby.cssからコピー) --- */
+.btn {
+	padding: 15px 30px;
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.btn-primary {
+	background-color: #28a745;
+}
+.btn-primary:hover {
+	background-color: #218838;
+}
