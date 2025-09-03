@@ -1,20 +1,22 @@
-import {
-	RoomService,
-} from "@application/services/rooms/RoomService.js";
+import { RoomService } from "@application/services/rooms/RoomService.js";
 import type WebSocket from "@fastify/websocket";
-import { type FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../route/auth/authRoutes.js";
-import { JoinRoomWS, LeaveRoomWS, RoomWSHandler } from "../route/room/roomRoutes.js";
 import { MatchWSHandler } from "../route/match/matchRoutes.js";
-import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 import {
-	specifyRoom,
-	leaveAllfromRoom,
-	broadcast,
+	JoinRoomWS,
+	LeaveRoomWS,
+	RoomWSHandler,
+} from "../route/room/roomRoutes.js";
+import {
 	addWebSocketToRoom,
+	broadcast,
+	leaveAllfromRoom,
 	removeWebSocketFromRoom,
+	specifyRoom,
 	type WebSocketContext,
 } from "./ws-helper.js";
+import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 export async function registerWSRoutes(app: FastifyInstance) {
 	app.get(
@@ -31,26 +33,18 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const authHeader = req.headers["authorization"];
 			token = authHeader;
 
-			// todo : bearer を websocket で使えない気がしている
-			// // debug
-			// console.log("header : ", authHeader);
+			if (authHeader?.startsWith("Bearer ")) {
+				token = authHeader.substring(7);
+			}
 
-			// if (authHeader?.startsWith("Bearer ")) {
-			// 	token = authHeader.substring(7);
-			// }
-			// // debug
-			// console.log("token : ", token);
+			if (!token) {
+				token = url.searchParams.get("token") ?? undefined;
+			}
 
-			// if (!token) {
-			// 	token = url.searchParams.get("token") ?? undefined;
-			// }
-			// // debug
-			// console.log("token : ", token);
-
-			// if (!token) {
-			// 	ws.close(4001, "user authorization failed: token not found");
-			// 	return;
-			// }
+			if (!token) {
+				ws.close(4001, "user authorization failed: token not found");
+				return;
+			}
 
 			const authedUser = decodeJWT(app, token!);
 			if (!authedUser) {
@@ -68,9 +62,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				joinedRoom: joinedRoom,
 			};
 
-			const joinResultMsg = await JoinRoomWS(
-				context,
-			);
+			const joinResultMsg = await JoinRoomWS(context);
 			if (joinResultMsg.status === "error") {
 				ws.send(JSON.stringify(joinResultMsg));
 				ws.close();
@@ -96,20 +88,14 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				try {
 					switch (data.status) {
 						case "Room": {
-							const resultmsg = await RoomWSHandler(
-								data.action,
-								context,
-							);
+							const resultmsg = await RoomWSHandler(data.action, context);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
 							else broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
-							const resultmsg = await MatchWSHandler(
-								data,
-								context,
-							);
+							const resultmsg = await MatchWSHandler(data, context);
 							if (resultmsg.data.type === "error")
 								ws.send(JSON.stringify(resultmsg));
 							else broadcast(context.joinedRoom, resultmsg);

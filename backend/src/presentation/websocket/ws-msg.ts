@@ -1,7 +1,7 @@
-import type { RoomIncomingMsg, RoomOutgoingMsg } from "./room/room-msg.js";
-import type { UserIncomingMsg } from "./user/user-msg.js";
 import type { MatchIncomingMsg, MatchOutgoingMsg } from "./match/match-msg.js";
+import type { RoomIncomingMsg, RoomOutgoingMsg } from "./room/room-msg.js";
 import type { TournamentOutgoingMsg } from "./tournament/tournament-msg.js";
+import type { UserIncomingMsg } from "./user/user-msg.js";
 
 export type WSOutgoingMsgError = {
 	status: "error";
@@ -9,12 +9,12 @@ export type WSOutgoingMsgError = {
 };
 
 export type WSIncomingMsg =
-| RoomIncomingMsg
-| UserIncomingMsg
-| MatchIncomingMsg
+	| RoomIncomingMsg
+	| UserIncomingMsg
+	| MatchIncomingMsg;
 
 export type WSOutgoingMsg =
-| RoomOutgoingMsg
-| MatchOutgoingMsg
-| TournamentOutgoingMsg
-| WSOutgoingMsgError
+	| RoomOutgoingMsg
+	| MatchOutgoingMsg
+	| TournamentOutgoingMsg
+	| WSOutgoingMsgError;

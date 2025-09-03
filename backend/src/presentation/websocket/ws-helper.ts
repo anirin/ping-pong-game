@@ -1,7 +1,7 @@
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
-import { type FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../route/auth/authRoutes.js";
 import type { WSOutgoingMsg } from "./ws-msg.js";
 
@@ -48,7 +48,10 @@ export function addWebSocketToRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
 	rooms.set(roomId, set);
 }
 
-export function removeWebSocketFromRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
+export function removeWebSocketFromRoom(
+	roomId: RoomId,
+	ws: WebSocket.WebSocket,
+) {
 	const roomSet = rooms.get(roomId);
 	if (roomSet) {
 		roomSet.delete(ws);

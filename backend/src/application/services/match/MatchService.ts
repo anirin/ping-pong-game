@@ -1,12 +1,13 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { Match } from "@domain/model/entity/match/Match.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
-import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js"; // todo 依存してはいけない
 import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
+import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js"; // todo 依存してはいけない
 
 type Info = {
 	interval: NodeJS.Timeout;
@@ -104,9 +105,10 @@ export class MatchService {
 		match.finish(winnerId);
 
 		// データベースに保存
+		let savedMatch: Match | null = null;
 		try {
 			await this.matchRepository.save(match);
-			const savedMatch = await this.matchRepository.findById(matchId);
+			savedMatch = await this.matchRepository.findById(matchId);
 			if (savedMatch) {
 				throw new Error("Failed to verify saved match");
 			}
@@ -115,7 +117,8 @@ export class MatchService {
 		}
 
 		// tournament event を発火
-		globalEventEmitter.emit("match.finished", { matchId, winnerId }); // room id を追加する
+		const tournamentId: TournamentId = savedMatch!.tournamentId;
+		globalEventEmitter.emit("match.finished", tournamentId);
 	}
 
 	async handlePlayerInput(

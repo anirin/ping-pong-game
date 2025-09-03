@@ -48,21 +48,6 @@ export class TournamentService {
 		}
 	}
 
-	private async handleRoomStarted(data: {
-		roomId: RoomId;
-		participants: UserId[];
-		createdBy: UserId;
-	}) {
-		// 参加者数が4人未満の場合はトーナメントを開始しない // ここは修正
-		if (data.participants.length < 4) {
-			throw new Error("Insufficient participants");
-		}
-
-		await this.startTournament(data.participants, data.roomId, data.createdBy);
-
-		return;
-	}
-
 	async startTournament(
 		participants: UserId[],
 		room_id: RoomId,

@@ -8,9 +8,9 @@ import type { WSTournamentData } from "@domain/model/value-object/tournament/Tou
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { FastifyInstance } from "fastify";
-import { decodeJWT } from "../auth/authRoutes.js";
 import type { WebSocketContext } from "../../websocket/ws-helper.js";
 import type { WSOutgoingMsg } from "../../websocket/ws-msg.js";
+import { decodeJWT } from "../auth/authRoutes.js";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
 	// 各サービスは自身でリポジトリを初期化するスタイルに変更
@@ -32,6 +32,7 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 					.send({ error: "invalid JWT or non existing user" });
 			}
 			const room = await roomService.createRoom(owner_id);
+			console.log("create room success: ", room);
 			return reply.status(201).send({
 				id: room.id,
 				mode: room.mode,
