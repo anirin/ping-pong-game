@@ -16,7 +16,7 @@ export async function MatchWSHandler(
 	try {
 		switch (msg.action) {
 			case "start": {
-				await matchService.startMatch(msg.matchId);
+				await matchService.startMatch(msg.matchId, context.joinedRoom);
 				return {
 					status: "Match",
 					data: {
