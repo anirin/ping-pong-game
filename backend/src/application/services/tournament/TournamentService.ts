@@ -32,6 +32,11 @@ export class TournamentService {
 		room_id: RoomId,
 		createdBy: UserId,
 	) {
+		// 参加者数の検証
+		if (!participants || participants.length !== 4) {
+			throw new Error(`Tournament requires exactly 4 participants, got ${participants?.length || 0}`);
+		}
+
 		const tournamentId = uuidv4();
 		const tournament = new Tournament(
 			tournamentId,

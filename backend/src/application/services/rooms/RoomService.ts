@@ -42,6 +42,13 @@ export class RoomService {
 
 		// tournament event を発火
 		const participants: UserId[] = room.allParticipants.map((p) => p.id);
+		
+		// 参加者が4人未満の場合はトーナメントを開始しない
+		if (participants.length < 4) {
+			console.warn(`Cannot start tournament: insufficient participants (${participants.length}/4) for room ${roomid}`);
+			return false;
+		}
+		
 		const ownerid: UserId = room.ownerId;
 		globalEventEmitter.emit("room.started", { roomid, participants, ownerid });
 		return false;

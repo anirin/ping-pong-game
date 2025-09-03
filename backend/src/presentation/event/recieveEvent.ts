@@ -9,19 +9,29 @@ import { wsManager } from "../websocket/ws-helper.js";
 
 globalEventEmitter.on(
 	"room.started",
-	(roomId: RoomId, participants: UserId[], ownerid: UserId) => {
+	async (roomId: RoomId, participants: UserId[], ownerid: UserId) => {
 		console.log("tournament event started");
 
-		// tournament service を呼び出す
-		const tournamentService = new TournamentService();
-		tournamentService.startTournament(participants, roomId, ownerid);
+		try {
+			// tournament service を呼び出す
+			const tournamentService = new TournamentService();
+			await tournamentService.startTournament(participants, roomId, ownerid);
+		} catch (error) {
+			console.error("Failed to start tournament:", error);
+			// エラーが発生してもサーバーは停止しない
+		}
 	},
 );
 
-globalEventEmitter.on("match.finished", (tournamentId: TournamentId) => {
+globalEventEmitter.on("match.finished", async (tournamentId: TournamentId) => {
 	console.log("match event finished");
 
-	// tournament service を呼び出す
-	const tournamentService = new TournamentService();
-	tournamentService.processAfterMatch(tournamentId);
+	try {
+		// tournament service を呼び出す
+		const tournamentService = new TournamentService();
+		await tournamentService.processAfterMatch(tournamentId);
+	} catch (error) {
+		console.error("Failed to process match finish:", error);
+		// エラーが発生してもサーバーは停止しない
+	}
 });
