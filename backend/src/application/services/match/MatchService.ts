@@ -1,13 +1,15 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { Match } from "@domain/model/entity/match/Match.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
-import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js"; // todo 依存してはいけない
+import { wsManager } from "@presentation/websocket/ws-helper.js";
+import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js";
 
 type Info = {
 	interval: NodeJS.Timeout;
@@ -17,10 +19,6 @@ type Info = {
 export class MatchService {
 	private intervals: Map<MatchId, Info> = new Map();
 	private readonly matchRepository: MatchRepository;
-	private broadcastCallback?: (
-		matchId: MatchId,
-		state: RealtimeMatchStateDto,
-	) => void;
 
 	constructor() {
 		this.matchRepository = new TypeORMMatchRepository(
@@ -28,13 +26,7 @@ export class MatchService {
 		);
 	}
 
-	setBroadcastCallback(
-		callback: (matchId: MatchId, state: RealtimeMatchStateDto) => void,
-	) {
-		this.broadcastCallback = callback;
-	}
-
-	async startMatch(matchId: MatchId): Promise<void> {
+	async startMatch(matchId: MatchId, roomId: RoomId): Promise<void> {
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
 			throw new Error(`Match with id ${matchId} not found`);
@@ -58,9 +50,16 @@ export class MatchService {
 			match.advanceFrame();
 
 			// リアルタイム状態をブロードキャスト
-			if (this.broadcastCallback) {
+			if (wsManager.hasRoom(roomId)) {
 				const state = this.createMatchStateDto(match);
-				this.broadcastCallback(matchId, state);
+				wsManager.broadcast(roomId, {
+					status: "Match",
+					data: {
+						type: "match_state",
+						matchId: matchId,
+						state: state,
+					}
+				});
 			}
 
 			// scoreが変更された場合、データベースに保存

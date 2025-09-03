@@ -5,57 +5,76 @@ import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../route/auth/authRoutes.js";
 import type { WSOutgoingMsg } from "./ws-msg.js";
 
-const rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
+export class WebSocketManager {
+	private static instance: WebSocketManager;
+	private rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
 
-export function authorizeUser(
-	app: FastifyInstance,
-	authHeader: string | undefined,
-): UserId | null {
-	if (!authHeader) return null;
-	const userId = decodeJWT(app, authHeader);
-	if (!userId) return null;
-	return userId;
-}
+	private constructor() {}
 
-export function specifyRoom(url: URL): RoomId | null {
-	return url.searchParams.get("room");
-}
+	static getInstance(): WebSocketManager {
+		if (!WebSocketManager.instance) {
+			WebSocketManager.instance = new WebSocketManager();
+		}
+		return WebSocketManager.instance;
+	}
 
-export function leaveAllfromRoom(roomId: RoomId): boolean {
-	const set = rooms.get(roomId);
-	if (!set) return false;
-	set.forEach((ws) => {
-		ws.close();
-	});
-	rooms.delete(roomId);
-	return true;
-}
+	authorizeUser(
+		app: FastifyInstance,
+		authHeader: string | undefined,
+	): UserId | null {
+		if (!authHeader) return null;
+		const userId = decodeJWT(app, authHeader);
+		if (!userId) return null;
+		return userId;
+	}
 
-export function broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
-	const set = rooms.get(roomId);
-	if (!set?.size) return;
-	const msg = JSON.stringify(payload);
-	for (const sock of set) {
-		if ((sock as any).readyState === (sock as any).OPEN) sock.send(msg);
+	specifyRoom(url: URL): RoomId | null {
+		return url.searchParams.get("room");
+	}
+
+	leaveAllfromRoom(roomId: RoomId): boolean {
+		const set = this.rooms.get(roomId);
+		if (!set) return false;
+		set.forEach((ws) => {
+			ws.close();
+		});
+		this.rooms.delete(roomId);
+		return true;
+	}
+
+	broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
+		const set = this.rooms.get(roomId);
+		if (!set?.size) return;
+		const msg = JSON.stringify(payload);
+		for (const sock of set) {
+			if ((sock as any).readyState === (sock as any).OPEN) sock.send(msg);
+		}
+	}
+
+	addWebSocketToRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
+		let set = this.rooms.get(roomId);
+		if (!set) set = new Set<WebSocket.WebSocket>();
+		set.add(ws);
+		this.rooms.set(roomId, set);
+	}
+
+	removeWebSocketFromRoom(
+		roomId: RoomId,
+		ws: WebSocket.WebSocket,
+	) {
+		const roomSet = this.rooms.get(roomId);
+		if (roomSet) {
+			roomSet.delete(ws);
+		}
+	}
+
+	hasRoom(roomId: RoomId): boolean {
+		const set = this.rooms.get(roomId);
+		return set !== undefined && set.size > 0;
 	}
 }
 
-export function addWebSocketToRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
-	let set = rooms.get(roomId);
-	if (!set) set = new Set<WebSocket.WebSocket>();
-	set.add(ws);
-	rooms.set(roomId, set);
-}
-
-export function removeWebSocketFromRoom(
-	roomId: RoomId,
-	ws: WebSocket.WebSocket,
-) {
-	const roomSet = rooms.get(roomId);
-	if (roomSet) {
-		roomSet.delete(ws);
-	}
-}
+export const wsManager = WebSocketManager.getInstance();
 
 export type WebSocketContext = {
 	authedUser: UserId;

@@ -57,11 +57,8 @@ export async function RoomWSHandler(
 				await room_service.startRoom(context.joinedRoom, context.authedUser)
 			) {
 				return {
-					status: "Tournament",
-					data: {
-						next_match_id: "",
-						matches: [],
-					} satisfies WSTournamentData,
+					status: "Room",
+					msg: "room started",
 				} satisfies WSOutgoingMsg;
 			} else {
 				return {

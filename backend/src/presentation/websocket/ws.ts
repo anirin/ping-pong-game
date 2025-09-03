@@ -9,11 +9,7 @@ import {
 	RoomWSHandler,
 } from "../route/room/roomRoutes.js";
 import {
-	addWebSocketToRoom,
-	broadcast,
-	leaveAllfromRoom,
-	removeWebSocketFromRoom,
-	specifyRoom,
+	wsManager,
 	type WebSocketContext,
 } from "./ws-helper.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
@@ -51,7 +47,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close(4001, "user authorization failed");
 				return;
 			}
-			const joinedRoom = await specifyRoom(url);
+			const joinedRoom = wsManager.specifyRoom(url);
 			if (!joinedRoom) {
 				ws.close(4001, "room specification failed");
 				return;
@@ -68,8 +64,8 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close();
 				return;
 			} else {
-				addWebSocketToRoom(context.joinedRoom, ws);
-				broadcast(context.joinedRoom, joinResultMsg);
+				wsManager.addWebSocketToRoom(context.joinedRoom, ws);
+				wsManager.broadcast(context.joinedRoom, joinResultMsg);
 			}
 
 			ws.on("message", async (raw: any) => {
@@ -91,14 +87,14 @@ export async function registerWSRoutes(app: FastifyInstance) {
 							const resultmsg = await RoomWSHandler(data.action, context);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
-							else broadcast(context.joinedRoom, resultmsg);
+							else wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
 							const resultmsg = await MatchWSHandler(data, context);
 							if (resultmsg.data.type === "error")
 								ws.send(JSON.stringify(resultmsg));
-							else broadcast(context.joinedRoom, resultmsg);
+							else wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 					}
@@ -115,15 +111,15 @@ export async function registerWSRoutes(app: FastifyInstance) {
 					) {
 						resultmsg = await RoomWSHandler("DELETE", context);
 						if (resultmsg.status !== "error") {
-							broadcast(context.joinedRoom, resultmsg);
-							leaveAllfromRoom(context.joinedRoom);
+							wsManager.broadcast(context.joinedRoom, resultmsg);
+							wsManager.leaveAllfromRoom(context.joinedRoom);
 							return;
 						}
 					} else {
 						resultmsg = await LeaveRoomWS(context);
 						if (resultmsg.status !== "error") {
-							removeWebSocketFromRoom(context.joinedRoom, ws);
-							broadcast(context.joinedRoom, resultmsg);
+							wsManager.removeWebSocketFromRoom(context.joinedRoom, ws);
+							wsManager.broadcast(context.joinedRoom, resultmsg);
 							return;
 						}
 					}

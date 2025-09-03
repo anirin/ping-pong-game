@@ -10,13 +10,13 @@ import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEn
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { v4 as uuidv4 } from "uuid";
+import { wsManager } from "@presentation/websocket/ws-helper.js"; // やばい実装 アーキテクチャ違反には目を瞑る
 
 // コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
-
+// todo : 全体的に broadcast の room id を持たない場合の処理がない
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
-	private broadcastCallback?: (tournamentId: TournamentId, data: any) => void; // これが謎すぎる
 
 	constructor() {
 		this.tournamentRepository = new TypeORMTournamentRepository(
@@ -25,27 +25,6 @@ export class TournamentService {
 		this.matchRepository = new TypeORMMatchRepository(
 			AppDataSource.getRepository(MatchEntity),
 		);
-	}
-
-	setBroadcastCallback(
-		callback: (tournamentId: TournamentId, data: any) => void,
-	) {
-		this.broadcastCallback = callback;
-	}
-
-	private async handleMatchFinished(data: {
-		matchId: string;
-		winnerId: string; // これ不要
-	}) {
-		try {
-			const match = await this.matchRepository.findById(data.matchId);
-			if (!match) {
-				throw new Error("Match not found");
-			}
-			await this.processAfterMatch(match.tournamentId);
-		} catch (error) {
-			throw new Error("Failed to process after match");
-		}
 	}
 
 	async startTournament(
@@ -89,14 +68,17 @@ export class TournamentService {
 			throw new Error("Next match not found");
 		}
 
-		this.broadcastTournament(tournamentId, {
-			type: "tournament_started",
-			tournament_id: tournamentId,
-			room_id,
-			participants,
-			matches,
-			next_match_id: nextMatch.id,
-		});
+		if (wsManager.hasRoom(room_id)) {
+			wsManager.broadcast(room_id, {
+				status: "Tournament",
+				data: {
+					next_match_id: nextMatch.id,
+					matches: matches,
+					current_round: tournament.currentRound,
+					winner_id: null,
+				}
+			});
+		}
 	}
 
 	async processAfterMatch(tournamentId: TournamentId) {
@@ -125,13 +107,17 @@ export class TournamentService {
 		);
 		if (scheduledMatch) {
 			// broadcast
-			this.broadcastTournament(tournamentId, {
-				type: "tournament_status",
-				next_match_id: scheduledMatch.id,
-				current_round: tournament.currentRound,
-				tournament_id: tournamentId,
-				matches: tournament!.matches,
-			});
+			if (wsManager.hasRoom(tournament.room_id)) {
+				wsManager.broadcast(tournament.room_id, {
+					status: "Tournament",
+					data: {
+						next_match_id: scheduledMatch.id,
+						matches: tournament!.matches,
+						current_round: tournament.currentRound,
+						winner_id: null,
+					}
+				});
+			}
 			return;
 		}
 
@@ -152,14 +138,17 @@ export class TournamentService {
 				throw new Error("Next match not found");
 			}
 
-			// tournament を broadcast
-			this.broadcastTournament(tournamentId, {
-				type: "tournament_status",
-				next_match_id: nextMatch.id,
-				current_round: tournament.currentRound,
-				tournament_id: tournamentId,
-				matches: tournament!.matches,
-			});
+			if (wsManager.hasRoom(tournament.room_id)) {
+				wsManager.broadcast(tournament.room_id, {
+					status: "Tournament",
+					data: {
+						next_match_id: nextMatch.id,
+						matches: tournament!.matches,
+						current_round: tournament.currentRound,
+						winner_id: null,
+					}
+				});
+			}
 		} else {
 			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
 			// tournament finish を broadcast
@@ -183,17 +172,16 @@ export class TournamentService {
 		}
 
 		// broadcast
-		this.broadcastTournament(tournamentId, {
-			type: "tournament_finished",
-			tournament_id: tournamentId,
-			winner_id: winnerId,
-		});
-	}
-
-	// 型定義しないとな
-	private broadcastTournament(tournamentId: TournamentId, data: any) {
-		if (this.broadcastCallback) {
-			this.broadcastCallback(tournamentId, data);
+		if (wsManager.hasRoom(tournament.room_id)) {
+			wsManager.broadcast(tournament.room_id, {
+				status: "Tournament",
+				data: {
+					next_match_id: "", // トーナメント終了のため空
+					matches: tournament.matches,
+					current_round: tournament.currentRound,
+					winner_id: tournament.winner_id,
+				}
+			});
 		}
 	}
 }

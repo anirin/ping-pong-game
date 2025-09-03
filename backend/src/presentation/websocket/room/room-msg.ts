@@ -8,4 +8,7 @@ export type RoomIncomingMsg = {
 export type RoomOutgoingMsg = {
 	status: "Room";
 	data: WSRoomData;
+} | {
+	status: "Room";
+	msg: string;
 };
