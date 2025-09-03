@@ -1,5 +1,21 @@
 import setupHtml from "./setup.html?raw";
 
+function decodeJwt(token: string): any {
+	try {
+		const base64Url = token.split(".")[1];
+		const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+		const jsonPayload = decodeURIComponent(
+			atob(base64)
+				.split("")
+				.map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+				.join(""),
+		);
+		return JSON.parse(jsonPayload);
+	} catch (e) {
+		return null;
+	}
+}
+
 // ユーザーが入力したコードを検証し、最終的なログインを行う関数
 async function handleVerifyAndLogin(event: SubmitEvent) {
 	event.preventDefault();
@@ -30,15 +46,38 @@ async function handleVerifyAndLogin(event: SubmitEvent) {
 
 		if (response.ok) {
 			const data = await response.json(); // { token: "..." } が返ってくる
+			const accessToken = data.token;
 
-			if (data.token) {
-				// 最終的なJWTトークンをlocalStorageに保存
-				// 保存するキー名は 'accessToken' のままでOKです
-				localStorage.setItem("accessToken", data.token);
+			if (accessToken) {
+				localStorage.setItem("accessToken", accessToken);
 
-				sessionStorage.removeItem("2fa_pending_email"); // 一時保存したemailを削除
+				const decodedToken = decodeJwt(accessToken);
+				const userId = decodedToken?.id || decodedToken?.sub;
+				if (!userId) {
+					throw new Error("トークンからユーザーIDを取得できませんでした。");
+				}
+
+				const userProfileResponse = await fetch(
+					`https://localhost:8080/users/${userId}`,
+					{
+						headers: {
+							Authorization: `Bearer ${accessToken}`,
+						},
+					},
+				);
+
+				if (!userProfileResponse.ok) {
+					throw new Error("ユーザー情報の取得に失敗しました。");
+				}
+				const userProfile = await userProfileResponse.json();
+
+				localStorage.setItem("user", JSON.stringify(userProfile));
+
+				window.dispatchEvent(new Event("userStateChanged"));
+
+				sessionStorage.removeItem("2fa_pending_email");
 				alert("二段階認証に成功しました！ホームページに移動します。");
-				window.location.href = "/home"; // ログイン完了、ホームページへ
+				window.location.href = "/home";
 			} else {
 				throw new Error("サーバーから認証トークンが返されませんでした。");
 			}
