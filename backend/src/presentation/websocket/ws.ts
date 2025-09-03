@@ -1,6 +1,5 @@
 import {
 	RoomService,
-	RoomUserService,
 } from "@application/services/rooms/RoomService.js";
 import type WebSocket from "@fastify/websocket";
 import { type FastifyInstance } from "fastify";
@@ -26,24 +25,34 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const url = new URL(req.url, "https://localhost:8080/socket");
 
 			const roomService = new RoomService(); // todo : route dir の中に閉じ込める
-			const roomUserService = new RoomUserService(); // todo : route dir の中に閉じ込める
 
 			let token: string | undefined;
 
 			const authHeader = req.headers["authorization"];
-			if (authHeader?.startsWith("Bearer ")) {
-				token = authHeader.substring(7);
-			}
-			if (!token) {
-				token = url.searchParams.get("token") ?? undefined;
-			}
+			token = authHeader;
 
-			if (!token) {
-				ws.close(4001, "user authorization failed: token not found");
-				return;
-			}
+			// todo : bearer を websocket で使えない気がしている
+			// // debug
+			// console.log("header : ", authHeader);
 
-			const authedUser = decodeJWT(app, token);
+			// if (authHeader?.startsWith("Bearer ")) {
+			// 	token = authHeader.substring(7);
+			// }
+			// // debug
+			// console.log("token : ", token);
+
+			// if (!token) {
+			// 	token = url.searchParams.get("token") ?? undefined;
+			// }
+			// // debug
+			// console.log("token : ", token);
+
+			// if (!token) {
+			// 	ws.close(4001, "user authorization failed: token not found");
+			// 	return;
+			// }
+
+			const authedUser = decodeJWT(app, token!);
 			if (!authedUser) {
 				ws.close(4001, "user authorization failed");
 				return;
