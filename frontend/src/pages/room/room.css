@@ -1,0 +1,175 @@
+/* --- 共通レイアウトスタイル --- */
+#page-layout-container {
+	display: flex;
+	height: 100vh;
+	background-color: #f8f9fa; /* 背景色 */
+}
+
+.main-content-area {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden; /* ヘッダーを固定し、mainコンテンツのみスクロールさせる */
+}
+
+.content-body {
+	flex-grow: 1;
+	padding: 20px 40px;
+	overflow-y: auto; /* コンテンツが多い場合にスクロール */
+}
+
+/* --- change_usernameページから流用した基本スタイル --- */
+.room-widget-container {
+	background-color: #ffffff;
+	padding: 25px 30px;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border: 1px solid #e9e9e9;
+	width: 100%;
+	max-width: 600px; /* 最大幅を設定 */
+	margin: 0 auto; /* ページ中央に配置 */
+	box-sizing: border-box;
+}
+
+.room-widget-container h2,
+.room-widget-container h3 {
+	margin-top: 0;
+	font-size: 24px;
+	color: #333;
+}
+
+.btn {
+	width: 100%;
+	padding: 15px;
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	text-align: center;
+	transition: background-color 0.2s;
+}
+
+.btn:disabled {
+	background-color: #a0a0a0;
+	cursor: not-allowed;
+}
+
+.btn-primary {
+	background-color: #007bff;
+}
+.btn-primary:hover:not(:disabled) {
+	background-color: #0069d9;
+}
+
+.separator {
+	margin: 25px 0;
+	border: none;
+	border-top: 1px solid #eee;
+}
+
+#message-area {
+	margin-top: 15px;
+	font-weight: bold;
+	text-align: center;
+	min-height: 1.2em;
+	color: #dc3545; /* エラー用 */
+}
+
+/* --- ルームページ専用の追加スタイル --- */
+
+.room-header h2 {
+	margin-bottom: 10px;
+}
+.header-value {
+	font-family: monospace;
+	font-size: 0.8em;
+	color: #666;
+}
+.room-info-display {
+	font-size: 16px;
+}
+.room-info-display .label {
+	color: #6c757d;
+	font-weight: bold;
+}
+.room-info-display .value {
+	margin-left: 10px;
+	color: #343a40;
+	font-weight: 500;
+}
+
+.participants-section h3 {
+	padding-bottom: 15px;
+	border-bottom: 2px solid #f0f0f0;
+	margin-bottom: 15px;
+}
+
+.participants-list {
+	list-style: none;
+	padding: 0;
+	max-height: 250px; /* 参加者が多くなった場合にスクロール */
+	overflow-y: auto;
+}
+
+.participant-item {
+	display: flex;
+	align-items: center;
+	padding: 10px;
+	border-radius: 5px;
+	transition: background-color 0.2s;
+}
+.participant-item:not(:last-child) {
+	border-bottom: 1px solid #f0f0f0;
+}
+.participant-item:hover {
+	background-color: #f8f9fa;
+}
+
+.participant-item-empty {
+	color: #888;
+	padding: 10px;
+	text-align: center;
+}
+
+.participant-avatar {
+	width: 45px;
+	height: 45px;
+	border-radius: 50%;
+	margin-right: 15px;
+	object-fit: cover;
+	border: 2px solid #ddd;
+}
+
+.participant-name {
+	font-weight: bold;
+	color: #333;
+}
+
+.room-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+/* 削除ボタン用のスタイル */
+.btn.delete {
+	background-color: #dc3545;
+}
+.btn.delete:hover:not(:disabled) {
+	background-color: #c82333;
+}
+
+/* 退出ボタン用のスタイル */
+.btn.leave {
+	background-color: #6c757d;
+}
+.btn.leave:hover:not(:disabled) {
+	background-color: #5a6268;
+}
+
+/* hidden属性を持つ要素を非表示にする */
+[hidden] {
+	display: none !important;
+}

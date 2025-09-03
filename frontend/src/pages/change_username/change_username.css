@@ -1,0 +1,128 @@
+/* frontend/src/pages/change_username/ui/change_username.css (新規作成) */
+
+/* --- 共通レイアウトスタイル --- */
+#page-layout-container {
+	display: flex;
+	height: 100vh;
+	background-color: #f8f9fa; /* 明るい背景色 */
+}
+
+.main-content-area {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.content-body {
+	flex-grow: 1;
+	padding: 20px 40px;
+	overflow-y: auto;
+}
+/* --- ここまで共通レイアウトスタイル --- */
+
+/* --- 設定ページ専用のコンテンツラッパー --- */
+#settings-content-wrapper {
+	display: flex;
+	justify-content: center;
+	gap: 40px;
+	align-items: flex-start;
+	width: 100%;
+}
+
+/* --- 元のHTMLから持ってきたフォーム関連のスタイル --- */
+.settings-container {
+	background-color: #ffffff;
+	padding: 25px 30px;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border: 1px solid #e9e9e9;
+	width: 450px;
+	flex-shrink: 0;
+}
+
+.settings-container h2 {
+	margin-top: 0;
+	margin-bottom: 25px;
+	text-align: left;
+	border-bottom: 2px solid #f0f0f0;
+	padding-bottom: 15px;
+	font-size: 24px;
+	color: #333;
+}
+
+.form-group {
+	margin-bottom: 20px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: bold;
+	color: #555;
+}
+
+.form-group input {
+	width: 100%;
+	padding: 12px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	box-sizing: border-box;
+	font-size: 16px;
+}
+
+.form-group input:focus {
+	border-color: #007bff;
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.btn {
+	width: 100%;
+	padding: 15px;
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	text-align: center;
+	display: block;
+	text-decoration: none;
+	transition: background-color 0.2s;
+}
+
+.btn-primary {
+	background-color: #007bff;
+}
+
+.btn-primary:hover {
+	background-color: #0069d9;
+}
+
+#response-message {
+	margin-top: 15px;
+	font-weight: bold;
+	text-align: center;
+	min-height: 1.2em;
+}
+
+.current-username-display {
+	margin-bottom: 25px;
+	font-size: 16px;
+	text-align: left;
+	padding: 10px;
+	background-color: #f8f9fa;
+	border-radius: 5px;
+}
+
+.current-username-display .label {
+	color: #6c757d;
+	font-weight: bold;
+}
+
+.current-username-display .value {
+	margin-left: 10px;
+	color: #343a40;
+	font-weight: 500;
+}

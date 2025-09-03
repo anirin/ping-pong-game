@@ -80,7 +80,22 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const roomService = new RoomService();
 			const roomUserService = new RoomUserService();
 
-			const authedUser = await authorizeUser(app, req.headers["authorization"]);
+			let token: string | undefined;
+
+			const authHeader = req.headers["authorization"];
+			if (authHeader?.startsWith("Bearer ")) {
+				token = authHeader.substring(7);
+			}
+			if (!token) {
+				token = url.searchParams.get("token") ?? undefined;
+			}
+
+			if (!token) {
+				ws.close(4001, "user authorization failed: token not found");
+				return;
+			}
+
+			const authedUser = decodeJWT(app, token);
 			if (!authedUser) {
 				ws.close(4001, "user authorization failed");
 				return;
@@ -96,7 +111,11 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				joinedRoom: joinedRoom,
 			};
 
-			const joinResultMsg = await JoinRoomWS(roomUserService, context);
+			const joinResultMsg = await JoinRoomWS(
+				roomUserService,
+				roomService,
+				context,
+			);
 			if (joinResultMsg.status === "error") {
 				ws.send(JSON.stringify(joinResultMsg));
 				ws.close();

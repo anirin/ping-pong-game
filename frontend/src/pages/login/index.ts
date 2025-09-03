@@ -23,9 +23,6 @@ async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 			body: JSON.stringify(loginData),
 		});
 
-		// ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
-		// ログイン成功時の処理をここから変更します
-		// ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 		if (response.ok) {
 			// Email/Passwordの認証が成功した
 			alert("認証に成功しました。次に二段階認証を行ってください。");
