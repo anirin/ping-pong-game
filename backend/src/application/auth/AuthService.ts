@@ -24,7 +24,7 @@ export class AuthService {
 		email: string,
 		username: string,
 		password: string,
-	): Promise<string> {
+	): Promise<{ success: boolean }> {
 		const existingUserByEmail = await this.userRepo.findByEmail(email);
 		if (existingUserByEmail) throw new Error("Email already exists");
 
@@ -48,23 +48,17 @@ export class AuthService {
 
 		await this.userRepo.save(user);
 
-		const payload = {
-			id: user.id,
-			email: user.email,
-			username: user.username.value,
-		};
-
-		const token = this.tokenService.sign(payload, JWT_SECRET, {
-			expiresIn: "24h",
-		});
-		return token;
+		return { success: true };
 	}
 
-	// ログイン
 	async login(
 		email: string,
 		password: string,
-	): Promise<{ token?: string; twoFARequired?: boolean }> {
+	): Promise<{
+		twoFARequired: boolean;
+		token?: string;
+		tempToken?: string;
+	}> {
 		const user = await this.userRepo.findByEmail(email);
 		if (!user) throw new Error("User not found");
 
@@ -72,19 +66,21 @@ export class AuthService {
 		if (!isMatch) throw new Error("Password mismatch");
 
 		if (user.isTwoFAEnabled()) {
-			return { twoFARequired: true };
+			const tempPayload = { id: user.id, type: "2fa-pending" };
+			const tempToken = this.tokenService.sign(tempPayload, JWT_SECRET, {
+				expiresIn: "5m",
+			}); // 5分間有効
+			return { twoFARequired: true, tempToken };
 		}
-
 		const payload = {
 			id: user.id,
 			email: user.email,
 			username: user.username.value,
 		};
-
 		const token = this.tokenService.sign(payload, JWT_SECRET, {
 			expiresIn: "24h",
 		});
-		return { token };
+		return { twoFARequired: false, token };
 	}
 
 	// 2FA セットアップ
@@ -93,7 +89,7 @@ export class AuthService {
 		if (!user) throw new Error("User not found");
 
 		const secret = this.twoFAService.generateSecret();
-		user.setTwoFA(secret, false); // enabled=false
+		user.setTwoFA(secret, false);
 		await this.userRepo.update(user);
 
 		const otpauth = this.twoFAService.keyuri(email, "MyApp", secret);
@@ -102,26 +98,27 @@ export class AuthService {
 		return { secret, otpauth_url: otpauth, qrCodeImageUrl };
 	}
 
-	// 2FA 確認
+	// 2FA 検証
 	async verify2FA(email: string, token: string) {
 		const user = await this.userRepo.findByEmail(email);
 		if (!user) throw new Error("User not found");
 
 		const secret = user.getTwoFASecret();
-		if (!secret) throw new Error("2FA not setup");
+		if (!secret) throw new Error("2FA is not set up for this user");
 
 		const isValid = this.twoFAService.verify(token, secret);
 		if (!isValid) throw new Error("Invalid 2FA token");
 
-		user.setTwoFA(secret, true); // enabled=true
-		await this.userRepo.update(user);
+		if (!user.isTwoFAEnabled()) {
+			user.setTwoFA(secret, true);
+			await this.userRepo.update(user);
+		}
 
 		const payload = {
 			id: user.id,
 			email: user.email,
 			username: user.username.value,
 		};
-
 		const jwtToken = this.tokenService.sign(payload, JWT_SECRET, {
 			expiresIn: "24h",
 		});
