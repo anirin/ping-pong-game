@@ -42,6 +42,7 @@ export class RoomService {
 
 		// tournament event を発火
 		const participants: UserId[] = room.allParticipants.map((p) => p.id);
+		console.log("participants: ", participants);
 		
 		// 参加者が4人未満の場合はトーナメントを開始しない
 		if (participants.length < 4) {
@@ -50,7 +51,7 @@ export class RoomService {
 		}
 		
 		const ownerid: UserId = room.ownerId;
-		globalEventEmitter.emit("room.started", { roomid, participants, ownerid });
+		globalEventEmitter.emit("room.started", roomid, participants, ownerid);
 		return false;
 	}
 
