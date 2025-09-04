@@ -35,17 +35,18 @@ export class RoomService {
 	}
 
 	async startRoom(roomid: string, userid: UserId): Promise<boolean> {
+		console.log("RoomService.startRoom has called: ", roomid, userid);
 		const room = await this.roomRepository.findById(roomid);
 		if (room === null) return false;
-		if (room.ownerId === userid && room.status === "waiting")
-			return this.roomRepository.start(roomid);
+		if (room.ownerId === userid)
+			this.roomRepository.start(roomid);
 
-		// tournament event を発火
 		const participants: UserId[] = room.allParticipants.map((p) => p.id);
 		console.log("participants: ", participants);
 		
 		// 参加者が4人未満の場合はトーナメントを開始しない
 		if (participants.length < 4) {
+			console.log("Cannot start tournament: insufficient participants");
 			console.warn(`Cannot start tournament: insufficient participants (${participants.length}/4) for room ${roomid}`);
 			return false;
 		}

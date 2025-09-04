@@ -189,17 +189,19 @@ function handleLeaveOrDelete() {
 	}
 }
 
-// クリーンアップ関数を追加
+// クリーンアップ関数を修正
 function cleanupRoomPage() {
     if (roomMessageHandler) {
         wsManager.removeMessageHandler("Room", roomMessageHandler);
         roomMessageHandler = null;
     }
-    // WebSocket接続を切断
-    wsManager.disconnect();
+    // WebSocket接続は切断しない（tournamentで再利用するため）
+    // wsManager.disconnect(); // この行を削除または条件付きにする
     state.isWsConnected = false;
-    console.log("ルームページのクリーンアップ完了");
+    console.log("ルームページのクリーンアップ完了（WebSocket接続は維持）");
 }
+
+
 
 // ページ離脱時のイベントリスナーを追加
 window.addEventListener('beforeunload', cleanupRoomPage);
