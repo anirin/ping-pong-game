@@ -1,271 +1,108 @@
-import type {
-	IncomingMsg,
-	OutgoingMsg,
-	TournamentState,
-} from "../model/model.js";
+import {
+	WebSocketManager,
+	type WebSocketMessage,
+} from "../../../shared/websocket/WebSocketManager";
 
-export class TournamentWebSocketAPI {
-	private ws: WebSocket | null = null;
-	private state: TournamentState;
-	private onStateChange: ((state: TournamentState) => void) | null = null;
+// トーナメント関連の型定義
+export interface TournamentMatch {
+	id: string;
+	player1Id: string; // player1_id → player1Id に修正
+	player2Id: string; // player2_id → player2Id に修正
+	score1: number;
+	score2: number;
+	winnerId: string | null; // winner_id → winnerId に修正
+	status: string;
+	round: number;
+}
+export interface TournamentData {
+	next_match_id: string;
+	matches: TournamentMatch[];
+	current_round: number;
+	winner_id: string | null;
+}
+
+// トーナメント専用のメッセージ型
+export interface TournamentMessage extends WebSocketMessage {
+	status: "Tournament";
+	action: "get_status";
+	data: TournamentData;
+}
+
+export class TournamentAPI {
+	private tournamentData: TournamentData | null = null;
+
+	// data類 api に置くのは適切でない
+	private match1: TournamentMatch | null = null; // round1
+	private match2: TournamentMatch | null = null; // round1
+	private match3: TournamentMatch | null = null; // rooud2 （決勝）
+
+	// todo : avator 含め定義する backend も調整必要 (最後)
+	// private player1: Player | null = null;
+	// private player2: Player | null = null;
+	// private player3: Player | null = null;
+	// private player4: Player | null = null;
+
+	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 
 	constructor() {
-		this.state = {
-			tournament: null,
-			currentMatch: null,
-			participants: [],
-			roomId: null,
-			userId: null,
-			isConnected: false,
-			isLoading: false,
-			error: null,
-		};
+		this.wsManager.addCallback(this.handleMessage.bind(this));
 	}
 
-	// 状態変更のコールバックを設定
-	setStateChangeCallback(callback: (state: TournamentState) => void) {
-		this.onStateChange = callback;
-	}
-
-	// 状態を更新してコールバックを呼び出し
-	private updateState(updates: Partial<TournamentState>) {
-		this.state = { ...this.state, ...updates };
-		if (this.onStateChange) {
-			this.onStateChange(this.state);
+	// トーナメントメッセージの処理(受信)
+	private handleMessage(message: WebSocketMessage): void {
+		// TODO : 検討
+		if (message.status !== "Tournament") {
+			return;
 		}
-	}
 
-	// WebSocket接続を確立
-	connect(roomId: string, userId: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			try {
-				// バックエンドがHTTPSで動作しているため、WSSを使用
-				const wsUrl = `wss://localhost:8080/ws/tournament`;
-				console.log("WebSocket接続を試行中:", wsUrl);
+		if (message.data) {
+			this.tournamentData = message.data as TournamentData;
 
-				// WebSocket接続を確立（バックエンドのエンドポイントに合わせる）
-				this.ws = new WebSocket(wsUrl);
+			// デバッグ用ログを追加
+			console.log(
+				"Frontend received tournament data:",
+				JSON.stringify(message.data, null, 2),
+			);
 
-				// 接続タイムアウトを設定
-				const connectionTimeout = setTimeout(() => {
-					if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-						console.error("WebSocket接続タイムアウト");
-						this.ws.close();
-						reject(new Error("WebSocket接続タイムアウト"));
-					}
-				}, 10000); // 10秒
-
-				this.ws.onopen = () => {
-					console.log("WebSocket接続が確立されました");
-					clearTimeout(connectionTimeout);
-					this.updateState({
-						isConnected: true,
-						roomId,
-						userId,
-						error: null,
-					});
-
-					// ルームにサブスクライブ
-					this.sendMessage({
-						action: "subscribe",
-						room_id: roomId,
-						user_id: userId,
-					});
-
-					resolve();
-				};
-
-				this.ws.onmessage = (event) => {
-					try {
-						const message: OutgoingMsg = JSON.parse(event.data);
-						this.handleMessage(message);
-					} catch (error) {
-						console.error("メッセージの解析に失敗しました:", error);
-						this.updateState({ error: "メッセージの解析に失敗しました" });
-					}
-				};
-
-				this.ws.onerror = (error) => {
-					console.error("WebSocketエラー:", error);
-					console.error(
-						"WebSocket接続URL:",
-						`wss://localhost:8080/ws/tournament`,
-					);
-					console.error("WebSocket readyState:", this.ws?.readyState);
-					clearTimeout(connectionTimeout);
-					this.updateState({
-						isConnected: false,
-						error:
-							"WebSocket接続エラー - バックエンドが起動しているか確認してください",
-					});
-					reject(error);
-				};
-
-				this.ws.onclose = () => {
-					console.log("WebSocket接続が閉じられました");
-					this.updateState({ isConnected: false });
-				};
-			} catch (error) {
-				console.error("WebSocket接続の確立に失敗しました:", error);
-				this.updateState({
-					isConnected: false,
-					error: "WebSocket接続の確立に失敗しました",
-				});
-				reject(error);
+			// match1, match2, match3 を更新
+			this.match1 = this.tournamentData.matches[0];
+			this.match2 = this.tournamentData.matches[1];
+			// match3 はない場合がある
+			if (this.tournamentData.matches.length > 2) {
+				this.match3 = this.tournamentData.matches[2];
 			}
-		});
-	}
-
-	// メッセージを送信
-	private sendMessage(message: IncomingMsg) {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(JSON.stringify(message));
 		} else {
-			console.error("WebSocketが接続されていません");
-			this.updateState({ error: "WebSocketが接続されていません" });
+			console.error("Tournament data is null");
 		}
 	}
 
-	// 受信メッセージを処理
-	private handleMessage(message: OutgoingMsg) {
-		switch (message.type) {
-			case "subscribed":
-				console.log("ルームにサブスクライブしました:", message);
-				break;
-
-			case "tournament_started":
-				console.log("トーナメントが開始されました:", message);
-				this.updateState({
-					tournament: message.tournament,
-					currentMatch: message.next_match,
-					isLoading: false,
-					error: null,
-				});
-				break;
-
-			case "round_generated":
-				console.log("次のラウンドが生成されました:", message);
-				this.updateState({
-					tournament: message.tournament,
-					currentMatch: message.next_match,
-					isLoading: false,
-					error: null,
-				});
-				break;
-
-			case "tournament_finished":
-				console.log("トーナメントが終了しました:", message);
-				this.updateState({
-					tournament: message.tournament,
-					currentMatch: null,
-					isLoading: false,
-					error: null,
-				});
-				break;
-
-			case "next_match":
-				console.log("次のマッチ情報:", message);
-				this.updateState({
-					currentMatch: message.next_match,
-					isLoading: false,
-					error: null,
-				});
-				break;
-
-			case "error":
-				console.error("サーバーエラー:", message.message);
-				this.updateState({
-					error: message.message,
-					isLoading: false,
-				});
-				break;
-
-			default:
-				console.warn("未知のメッセージタイプ:", message);
-		}
-	}
-
-	// トーナメントを開始
-	startTournament(participants: string[], createdBy: string) {
-		if (!this.state.roomId) {
-			this.updateState({ error: "ルームIDが設定されていません" });
-			return;
-		}
-
-		this.updateState({ isLoading: true, participants });
-
-		this.sendMessage({
-			action: "start_tournament",
-			room_id: this.state.roomId,
-			created_by: createdBy,
-			participants,
+	// トーナメントデータの取得(送信)
+	public getTournamentData(): void {
+		console.log("TournamentAPI: トーナメントデータを要求");
+		this.wsManager.sendMessage({
+			status: "Tournament",
+			action: "get_status",
 		});
 	}
 
-	// 次のラウンドを生成
-	generateNextRound(tournamentId: string) {
-		if (!this.state.roomId) {
-			this.updateState({ error: "ルームIDが設定されていません" });
-			return;
-		}
-
-		this.updateState({ isLoading: true });
-
-		this.sendMessage({
-			action: "next_round",
-			tournament_id: tournamentId,
-			room_id: this.state.roomId,
-		});
+	public destroy(): void {
+		this.wsManager.removeCallback(this.handleMessage.bind(this));
+		console.log("TournamentAPI: 破棄");
 	}
 
-	// 次のマッチを取得
-	getNextMatch(tournamentId: string) {
-		if (!this.state.roomId) {
-			this.updateState({ error: "ルームIDが設定されていません" });
-			return;
-		}
-
-		this.updateState({ isLoading: true });
-
-		this.sendMessage({
-			action: "get_next_match",
-			tournament_id: tournamentId,
-			room_id: this.state.roomId,
-		});
+	// データ取得メソッド : frontend用 : apiと関係はないので置き場所検討
+	public getCurrentTournament(): TournamentData | null {
+		return this.tournamentData;
 	}
-
-	// トーナメントを終了
-	finishTournament(tournamentId: string, winnerId: string) {
-		if (!this.state.roomId) {
-			this.updateState({ error: "ルームIDが設定されていません" });
-			return;
-		}
-
-		this.updateState({ isLoading: true });
-
-		this.sendMessage({
-			action: "finish_tournament",
-			tournament_id: tournamentId,
-			room_id: this.state.roomId,
-			winner_id: winnerId,
-		});
+	public getMatch1(): TournamentMatch | null {
+		return this.match1;
 	}
-
-	// 接続を切断
-	disconnect() {
-		if (this.ws) {
-			this.ws.close();
-			this.ws = null;
-		}
-		this.updateState({
-			isConnected: false,
-			tournament: null,
-			currentMatch: null,
-		});
+	public getMatch2(): TournamentMatch | null {
+		return this.match2;
 	}
-
-	// 現在の状態を取得
-	getState(): TournamentState {
-		return { ...this.state };
+	public getMatch3(): TournamentMatch | null {
+		return this.match3;
 	}
 }
+
+export const tournamentAPI = new TournamentAPI();

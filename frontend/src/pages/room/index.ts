@@ -3,6 +3,7 @@ import "./room.css";
 import { HeaderWidget } from "@widgets/header";
 import { SidebarWidget } from "@widgets/sidebar";
 import { navigate } from "../../app/routing";
+import { WebSocketManager } from "../../shared/websocket/WebSocketManager";
 import type { RoomUser } from "../../types/types";
 import type {
 	WSIncomingMsg,
@@ -19,7 +20,7 @@ const state = {
 	isWsConnected: false,
 };
 
-let websocket: WebSocket | null = null;
+const wsManager = WebSocketManager.getInstance();
 
 // --- ヘルパー関数 ---
 function decodeJwt(token: string): any {
@@ -104,69 +105,73 @@ function updateUI() {
 
 // --- WebSocket ---
 function sendWsMessage(message: WSIncomingMsg) {
-	if (websocket && websocket.readyState === WebSocket.OPEN) {
-		websocket.send(JSON.stringify(message));
+	if (wsManager.isConnected()) {
+		wsManager.sendMessage(message);
 	} else {
 		console.error("WebSocket is not connected.");
 	}
 }
 
-function handleWsMessage(event: MessageEvent) {
+function handleWsMessage(message: WSOutgoingMsg) {
 	try {
-		const message = JSON.parse(event.data) as WSOutgoingMsg;
 		console.log("Received WS message:", message);
 
-		if (message.status === "Room" && message.data.action === "USER") {
+		if (message.status === "Room") {
+			if (message.data.action === "START") {
+				console.log("Room started, navigating to tournament");
+				navigate("/tournament");
+				return;
+			}
+
 			const roomData = message.data as WSRoomData;
 			state.participants = roomData.users;
 
 			// WebSocketから受け取ったroomInfoで状態を更新
 			if (roomData.roomInfo) {
 				state.roomInfo = roomData.roomInfo;
-				state.isOwner = state.roomInfo.ownerId === state.myUserId;
+				state.isOwner = roomData.roomInfo.ownerId === state.myUserId;
 			}
 
 			updateUI();
-		} else if (message.status === "Room" && message.data.action === "DELETE") {
-			alert("The room has been deleted by the owner.");
-			navigate("/lobby");
+		} else if (message.status === "Tournament") {
+			// トーナメントの状態更新メッセージは無視する（ルームページでは不要）
+			console.log("Tournament status update received, ignoring in room page");
+			return;
+		} else {
+			// その他のメッセージタイプの場合のみエラーを表示
+			console.warn("Unknown message status:", message.status);
+			// エラーメッセージは表示しない（トーナメントメッセージが原因でエラーが表示されるのを防ぐ）
 		}
 	} catch (err) {
 		console.error("Failed to parse WebSocket message:", err);
 	}
 }
 
-function setupWebSocket(roomId: string, token: string) {
-	if (
-		websocket &&
-		(websocket.readyState === WebSocket.OPEN ||
-			websocket.readyState === WebSocket.CONNECTING)
-	) {
-		return;
-	}
+// メッセージハンドラーの参照を保存
+let roomMessageHandler: ((message: any) => void) | null = null;
 
-	const wsUrl = `wss://localhost:8080/socket?room=${roomId}&token=${token}`;
-	websocket = new WebSocket(wsUrl);
+async function setupWebSocket(roomId: string) {
+	try {
+		await wsManager.connect(roomId);
 
-	websocket.onopen = () => {
-		console.log("WebSocket connected!");
+		if (!wsManager.isConnected()) {
+			throw new Error("WebSocket connection failed");
+		}
+
+		// メッセージハンドラーを設定
+		roomMessageHandler = (message: any) => {
+			console.log("WebSocket incoming message:", message);
+
+			handleWsMessage(message as WSOutgoingMsg);
+		};
+
+		wsManager.addCallback(roomMessageHandler);
+
 		state.isWsConnected = true;
-		// 接続が確立してもすぐにはUIを更新しない。
-		// 最初のUSERメッセージ受信時に完全な情報でUIを更新するため。
-	};
-
-	websocket.onmessage = handleWsMessage;
-
-	websocket.onclose = (event) => {
-		console.log("WebSocket disconnected:", event.reason);
+	} catch (error) {
+		console.error("WebSocket connection error:", error);
 		state.isWsConnected = false;
-		websocket = null;
-		updateUI(); // 切断されたらUIを更新
-	};
-
-	websocket.onerror = (error) => {
-		console.error("WebSocket error:", error);
-	};
+	}
 }
 
 // --- イベントハンドラ ---
@@ -180,42 +185,29 @@ function handleLeaveOrDelete() {
 			sendWsMessage({ status: "Room", action: "DELETE" });
 		}
 	} else {
-		if (websocket) {
-			websocket.close();
+		// WebSocketのメッセージハンドラーを削除
+		if (roomMessageHandler) {
+			wsManager.removeCallback(roomMessageHandler); // 同じものが削除できるのか？
 		}
 		navigate("/lobby");
 	}
 }
 
+// クリーンアップ関数を修正
 function cleanupRoomPage() {
-	console.log("Cleaning up Room Page state and WebSocket...");
-
-	// 既存のWebSocket接続があれば、イベントリスナーを削除してから閉じる
-	if (websocket) {
-		websocket.onopen = null;
-		websocket.onmessage = null;
-		websocket.onclose = null;
-		websocket.onerror = null;
-		if (websocket.readyState === WebSocket.OPEN) {
-			websocket.close();
-		}
-		websocket = null;
+	if (roomMessageHandler) {
+		wsManager.removeCallback(roomMessageHandler);
+		roomMessageHandler = null;
 	}
-
-	// イベントリスナーを削除
-	const button = document.getElementById("leave-delete-button");
-	if (button) button.replaceWith(button.cloneNode(true));
-	const startGameButton = document.getElementById("start-game-button");
-	if (startGameButton)
-		startGameButton.replaceWith(startGameButton.cloneNode(true));
-
-	// stateオブジェクトを初期状態にリセット
-	state.myUserId = null;
-	state.roomInfo = null;
-	state.participants = [];
-	state.isOwner = false;
+	// WebSocket接続は切断しない（tournamentで再利用するため）
+	// wsManager.disconnect(); // この行を削除または条件付きにする
 	state.isWsConnected = false;
+	console.log("ルームページのクリーンアップ完了（WebSocket接続は維持）");
 }
+
+// ページ離脱時のイベントリスナーを追加
+window.addEventListener("beforeunload", cleanupRoomPage);
+window.addEventListener("pagehide", cleanupRoomPage);
 
 // --- メイン関数 ---
 export function renderRoomPage(params?: { [key: string]: string }) {
@@ -251,7 +243,7 @@ export function renderRoomPage(params?: { [key: string]: string }) {
 	updateUI();
 
 	// すぐにWebSocket接続を開始
-	setupWebSocket(roomId, token);
+	setupWebSocket(roomId);
 
 	const button = document.getElementById("leave-delete-button");
 	if (button) button.addEventListener("click", handleLeaveOrDelete);

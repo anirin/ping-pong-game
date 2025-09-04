@@ -21,9 +21,9 @@ export type FrameState = {
 };
 
 export class MatchRule {
-	private readonly PADDLE_HEIGHT = 100;
-	private readonly PADDLE_WIDTH = 10;
-	private readonly BALL_RADIUS = 10;
+	public readonly PADDLE_HEIGHT = 100;
+	public readonly PADDLE_WIDTH = 10;
+	public readonly BALL_RADIUS = 10;
 
 	public readonly pointToWin: number;
 	public readonly initialBallSpeed: {
@@ -51,68 +51,6 @@ export class MatchRule {
 			initialBallSpeed.vx ** 2 + initialBallSpeed.vy ** 2,
 		);
 		Object.freeze(this);
-	}
-
-	public calculateNextFrame(state: FrameState): {
-		nextBallState: BallState;
-		scorer?: UserId;
-	} {
-		const nextBall = { ...state.ball };
-		const { player1Paddle, player2Paddle } = state;
-
-		nextBall.x += nextBall.vx;
-		nextBall.y += nextBall.vy;
-
-		if (
-			nextBall.y - this.BALL_RADIUS <= 0 ||
-			nextBall.y + this.BALL_RADIUS >= this.fieldSize.height
-		) {
-			nextBall.vy *= -1;
-		}
-		let hit = false;
-
-		if (
-			nextBall.vx < 0 &&
-			nextBall.x - this.BALL_RADIUS < this.PADDLE_WIDTH &&
-			nextBall.y > player1Paddle.y - this.PADDLE_HEIGHT / 2 &&
-			nextBall.y < player1Paddle.y + this.PADDLE_HEIGHT / 2
-		) {
-			const intersectY =
-				(player1Paddle.y - nextBall.y) / (this.PADDLE_HEIGHT / 2);
-
-			const MAX_BOUNCE_ANGLE = (5 * Math.PI) / 12;
-			const bounceAngle = intersectY * MAX_BOUNCE_ANGLE;
-
-			nextBall.vx = this.totalSpeed * Math.cos(bounceAngle);
-			nextBall.vy = this.totalSpeed * -Math.sin(bounceAngle);
-			hit = true;
-		} else if (
-			nextBall.vx > 0 &&
-			nextBall.x + this.BALL_RADIUS > this.fieldSize.width - this.PADDLE_WIDTH
-		) {
-			if (
-				nextBall.y > player2Paddle.y - this.PADDLE_HEIGHT / 2 &&
-				nextBall.y < player2Paddle.y + this.PADDLE_HEIGHT / 2
-			) {
-				const intersectY =
-					(player2Paddle.y - nextBall.y) / (this.PADDLE_HEIGHT / 2);
-				const MAX_BOUNCE_ANGLE = (5 * Math.PI) / 12;
-				const bounceAngle = intersectY * MAX_BOUNCE_ANGLE;
-
-				nextBall.vx = -this.totalSpeed * Math.cos(bounceAngle);
-				nextBall.vy = this.totalSpeed * -Math.sin(bounceAngle);
-				hit = true;
-			}
-		}
-
-		if (nextBall.x - this.BALL_RADIUS < 0) {
-			return { nextBallState: nextBall, scorer: "player2" as UserId };
-		}
-		if (nextBall.x + this.BALL_RADIUS > this.fieldSize.width) {
-			return { nextBallState: nextBall, scorer: "player1" as UserId };
-		}
-
-		return { nextBallState: nextBall };
 	}
 }
 
