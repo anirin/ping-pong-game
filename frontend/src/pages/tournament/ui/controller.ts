@@ -3,7 +3,6 @@ import {
 	type TournamentMatch,
 	tournamentAPI,
 } from "../api/api";
-import { navigate } from "../../../app/routing/index";
 
 export class TournamentController {
 	private tournamentData: TournamentData | null = null;
