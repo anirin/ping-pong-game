@@ -1,6 +1,6 @@
 import { renderChangeUsernamePage } from "@pages/change_username/index";
 import { renderAuthPage } from "@pages/first_page/index";
-import { renderGamePage } from "@pages/game/index";
+// import { renderGamePage } from "@pages/game/index";
 import { renderHomePage } from "@pages/home/index";
 import { renderLobbyPage } from "@pages/lobby";
 import { renderGuestTournamentPage } from "@pages/lobby_guest";
@@ -53,10 +53,10 @@ const routes: Route[] = [
 		path: "/users/changeusername",
 		handler: renderChangeUsernamePage,
 	},
-	{
-		path: "/game/:matchId",
-		handler: renderGamePage,
-	},
+	// {
+	// 	path: "/game/:matchId",
+	// 	handler: renderGamePage,
+	// },
 	{
 		path: "/tournament", // id が必要かも
 		handler: renderTournamentPage,
