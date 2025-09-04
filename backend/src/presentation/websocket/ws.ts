@@ -95,9 +95,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 						}
 						case "Tournament": {
 							const resultmsg = await TournamentWSHandler(data, context);
-							if (resultmsg.status === "error")
-								ws.send(JSON.stringify(resultmsg));
-							else wsManager.broadcast(context.joinedRoom, resultmsg);
+							wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
