@@ -143,20 +143,27 @@ function handleWsMessage(message: WSOutgoingMsg) {
 	}
 }
 
+// メッセージハンドラーの参照を保存
+let roomMessageHandler: ((message: any) => void) | null = null;
+
 async function setupWebSocket(roomId: string) {
 	try {
-		console.log("Room : connect to room");
 		await wsManager.connect(roomId);
+
+		if (!wsManager.isConnected()) {
+			throw new Error("WebSocket connection failed");
+		}
 		
 		// メッセージハンドラーを設定
-		wsManager.setMessageHandler((message: any) => {
+		roomMessageHandler = (message: any) => {
 			console.log("WebSocket incoming message:", message);
 			
 			handleWsMessage(message as WSOutgoingMsg);
-		});
+		};
+		
+		wsManager.addMessageHandler("Room", roomMessageHandler);
 		
 		state.isWsConnected = true;
-		console.log("WebSocket connected!");
 	} catch (error) {
 		console.error("WebSocket connection error:", error);
 		state.isWsConnected = false;
@@ -175,31 +182,28 @@ function handleLeaveOrDelete() {
 		}
 	} else {
 		// WebSocketのメッセージハンドラーを削除
-		wsManager.removeMessageHandler();
+		if (roomMessageHandler) {
+			wsManager.removeMessageHandler("Room", roomMessageHandler);
+		}
 		navigate("/lobby");
 	}
 }
 
+// クリーンアップ関数を追加
 function cleanupRoomPage() {
-	console.log("Cleaning up Room Page state and WebSocket...");
-
-	// WebSocketのメッセージハンドラーを削除
-	wsManager.removeMessageHandler();
-
-	// イベントリスナーを削除
-	const button = document.getElementById("leave-delete-button");
-	if (button) button.replaceWith(button.cloneNode(true));
-	const startGameButton = document.getElementById("start-game-button");
-	if (startGameButton)
-		startGameButton.replaceWith(startGameButton.cloneNode(true));
-
-	// stateオブジェクトを初期状態にリセット
-	state.myUserId = null;
-	state.roomInfo = null;
-	state.participants = [];
-	state.isOwner = false;
-	state.isWsConnected = false;
+    if (roomMessageHandler) {
+        wsManager.removeMessageHandler("Room", roomMessageHandler);
+        roomMessageHandler = null;
+    }
+    // WebSocket接続を切断
+    wsManager.disconnect();
+    state.isWsConnected = false;
+    console.log("ルームページのクリーンアップ完了");
 }
+
+// ページ離脱時のイベントリスナーを追加
+window.addEventListener('beforeunload', cleanupRoomPage);
+window.addEventListener('pagehide', cleanupRoomPage);
 
 // --- メイン関数 ---
 export function renderRoomPage(params?: { [key: string]: string }) {

@@ -115,6 +115,10 @@ export class MatchService {
 			throw new Error("Failed to save match");
 		}
 
+		// tournament event を発火
+		const tournamentId: TournamentId = savedMatch!.tournamentId;
+		globalEventEmitter.emit("match.finished", tournamentId);
+
 		if (wsManager.hasRoom(roomId)) {
 			wsManager.broadcast(roomId, {
 				status: "Match",
@@ -125,10 +129,6 @@ export class MatchService {
 				}
 			});
 		}
-
-		// tournament event を発火
-		const tournamentId: TournamentId = savedMatch!.tournamentId;
-		globalEventEmitter.emit("match.finished", tournamentId);
 	}
 
 	async handlePlayerInput(

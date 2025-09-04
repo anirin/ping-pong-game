@@ -56,12 +56,12 @@ export async function RoomWSHandler(
 			if (
 				await room_service.startRoom(context.joinedRoom, context.authedUser)
 			) {
-				return {
-					status: "Room",
-					data: {
-						action: "START",
-					},
-				} satisfies WSOutgoingMsg;
+				// return {
+				// 	status: "Room",
+				// 	data: {
+				// 		action: "START",
+				// 	},
+				// } satisfies WSOutgoingMsg;
 			} else {
 				return {
 					status: "error",

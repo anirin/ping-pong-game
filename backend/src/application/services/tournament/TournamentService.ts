@@ -10,6 +10,7 @@ import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEn
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { v4 as uuidv4 } from "uuid";
+import { wsManager } from "@presentation/websocket/ws-manager.js";
 
 // コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
 export class TournamentService {
@@ -64,6 +65,14 @@ export class TournamentService {
 		} catch (error) {
 			throw new Error("Failed to save tournament");
 		}
+
+		// 対処療法
+		wsManager.broadcast(room_id, {
+			status: "Room",
+			data: {
+				action: "START",
+			},
+		});
 	}
 
 	async processAfterMatch(tournamentId: TournamentId) {
