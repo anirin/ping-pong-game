@@ -31,6 +31,14 @@ export async function MatchWSHandler(
 					context.authedUser,
 					msg.data.y,
 				);
+				// todo : return 絶対削除
+				return {
+					status: "Match",
+					data: {
+						type: "match_started",
+						matchId: msg.matchId,
+					},
+				};
 			}
 			default: {
 				return {
