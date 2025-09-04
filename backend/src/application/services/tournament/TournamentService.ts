@@ -189,4 +189,31 @@ export class TournamentService {
 			});
 		}
 	}
+
+	async getTournamentStatus(roomId: RoomId) {
+		try {
+			const tournament = await this.tournamentRepository.findByRoomId(roomId);
+			if (!tournament) {
+				throw new Error("Tournament not found for this room");
+			}
+
+			const matches = await this.matchRepository.findByTournamentId(tournament.id);
+			if (!matches) {
+				throw new Error("Matches not found for tournament");
+			}
+
+			tournament.matches = matches;
+			const nextMatch = tournament.getNextMatch();
+
+			return {
+				status: tournament.status,
+				next_match_id: nextMatch?.id || "",
+				matches: tournament.matches,
+				current_round: tournament.currentRound,
+				winner_id: tournament.winner_id,
+			};
+		} catch (error) {
+			throw new Error("Failed to get tournament status");
+		}
+	}
 }

@@ -9,6 +9,9 @@ import {
 	RoomWSHandler,
 } from "../route/room/roomRoutes.js";
 import {
+	TournamentWSHandler,
+} from "../route/tournament/tournamentRoutes.js";
+import {
 	wsManager,
 	type WebSocketContext,
 } from "./ws-helper.js";
@@ -85,6 +88,13 @@ export async function registerWSRoutes(app: FastifyInstance) {
 					switch (data.status) {
 						case "Room": {
 							const resultmsg = await RoomWSHandler(data.action, context);
+							if (resultmsg.status === "error")
+								ws.send(JSON.stringify(resultmsg));
+							else wsManager.broadcast(context.joinedRoom, resultmsg);
+							break;
+						}
+						case "Tournament": {
+							const resultmsg = await TournamentWSHandler(data, context);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
 							else wsManager.broadcast(context.joinedRoom, resultmsg);
