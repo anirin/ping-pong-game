@@ -10,10 +10,8 @@ import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEn
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { v4 as uuidv4 } from "uuid";
-import { wsManager } from "@presentation/websocket/ws-manager.js"; // やばい実装 アーキテクチャ違反には目を瞑る
 
 // コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
-// todo : 全体的に broadcast の room id を持たない場合の処理がない
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
