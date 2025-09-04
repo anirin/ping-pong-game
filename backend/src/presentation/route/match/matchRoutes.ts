@@ -31,12 +31,10 @@ export async function MatchWSHandler(
 					context.authedUser,
 					msg.data.y,
 				);
-				// todo : return 絶対削除
-				return {
+				return { // 本来不要　エラー時は注意
 					status: "Match",
 					data: {
-						type: "match_started",
-						matchId: msg.matchId,
+						type: "none",
 					},
 				};
 			}

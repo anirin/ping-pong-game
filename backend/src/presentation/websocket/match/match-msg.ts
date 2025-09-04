@@ -65,6 +65,12 @@ export type MatchOutgoingMsg =
 	| {
 			status: "Match";
 			data: {
+				type: "none";
+			};
+	  }
+	| {
+			status: "Match";
+			data: {
 				type: "match_finished";
 				matchId: MatchId;
 				winnerId: UserId;

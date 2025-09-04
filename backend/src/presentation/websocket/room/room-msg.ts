@@ -15,4 +15,10 @@ export type RoomOutgoingMsg =
 			data: {
 				action: "START";
 			};
+	  }
+	| {
+			status: "Room";
+			data: {
+				type: "none";
+			};
 	  };
