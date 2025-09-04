@@ -3,11 +3,11 @@ import { WebSocketManager, type WebSocketMessage } from "../../../shared/websock
 // トーナメント関連の型定義
 export interface TournamentMatch {
 	id: string;
-	player1_id: string;
-	player2_id: string;
+	player1Id: string;  // player1_id → player1Id に修正
+	player2Id: string;  // player2_id → player2Id に修正
 	score1: number;
 	score2: number;
-	winner_id: string | null;
+	winnerId: string | null;  // winner_id → winnerId に修正
 	status: string;
 	round: number;
 }
@@ -57,10 +57,6 @@ export class TournamentAPI {
 			
 			// デバッグ用ログを追加
 			console.log("Frontend received tournament data:", JSON.stringify(message.data, null, 2));
-			console.log("Matches received:", this.tournamentData.matches);
-			if (this.tournamentData.matches.length > 0) {
-				console.log("First match received:", JSON.stringify(this.tournamentData.matches[0], null, 2));
-			}
 
 			// match1, match2, match3 を更新
 			this.match1 = this.tournamentData.matches[0];
