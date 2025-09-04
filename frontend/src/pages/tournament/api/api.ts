@@ -51,32 +51,26 @@ export class TournamentAPI {
 		if (message.status !== "Tournament") {
 			return;
 		}
-
-		console.log("TournamentAPI: トーナメントメッセージを処理:", message.action);
 		
-		switch (message.action) {
-			case "get_status":
-				if (message.data) {
-					this.tournamentData = message.data as TournamentData;
-					
-					// デバッグ用ログを追加
-					console.log("Frontend received tournament data:", JSON.stringify(message.data, null, 2));
-					console.log("Matches received:", this.tournamentData.matches);
-					if (this.tournamentData.matches.length > 0) {
-						console.log("First match received:", JSON.stringify(this.tournamentData.matches[0], null, 2));
-					}
+		if (message.data) {
+			this.tournamentData = message.data as TournamentData;
+			
+			// デバッグ用ログを追加
+			console.log("Frontend received tournament data:", JSON.stringify(message.data, null, 2));
+			console.log("Matches received:", this.tournamentData.matches);
+			if (this.tournamentData.matches.length > 0) {
+				console.log("First match received:", JSON.stringify(this.tournamentData.matches[0], null, 2));
+			}
 
-					// match1, match2, match3 を更新
-					this.match1 = this.tournamentData.matches[0];
-					this.match2 = this.tournamentData.matches[1];
-					// match3 はない場合がある
-					if (this.tournamentData.matches.length > 2) {
-						this.match3 = this.tournamentData.matches[2];
-					}
-				}
-				break;
-			default:
-				console.warn("TournamentAPI: 未対応のアクション:", message.action);
+			// match1, match2, match3 を更新
+			this.match1 = this.tournamentData.matches[0];
+			this.match2 = this.tournamentData.matches[1];
+			// match3 はない場合がある
+			if (this.tournamentData.matches.length > 2) {
+				this.match3 = this.tournamentData.matches[2];
+			}
+		} else {
+			console.error("Tournament data is null");
 		}
 	}
 

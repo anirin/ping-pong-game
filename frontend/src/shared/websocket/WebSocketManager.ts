@@ -143,14 +143,15 @@ export class WebSocketManager {
 	}
 
 	public disconnect(): void {
-		if (this.ws) {
-			console.log("WebSocket接続を切断します");
-			this.ws.close(1000, "正常終了");
-			this.ws = null;
-		}
-		this.currentRoomId = null; // ルームIDもリセット
-		this.messageCallbacks.clear(); // コールバックもクリア
-		console.log("WebSocket接続とメッセージコールバックをクリアしました");
+		// todo : 適切なものを考える 謎に呼ばれて消されている
+		// if (this.ws) {
+		// 	console.log("WebSocket接続を切断します");
+		// 	this.ws.close(1000, "正常終了");
+		// 	this.ws = null;
+		// }
+		// this.currentRoomId = null; // ルームIDもリセット
+		// this.messageCallbacks.clear(); // コールバックもクリア
+		// console.log("WebSocket接続とメッセージコールバックをクリアしました");
 	}
 
 	public getConnectionState(): string {
