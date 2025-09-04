@@ -3,13 +3,15 @@ import type {
 	OutgoingMsg,
 	TournamentState,
 } from "../model/model.js";
+import { WebSocketManager } from "../../../shared/websocket/WebSocketManager";
 
 export class TournamentWebSocketAPI {
-	private ws: WebSocket | null = null;
+	private wsManager: WebSocketManager;
 	private state: TournamentState;
 	private onStateChange: ((state: TournamentState) => void) | null = null;
 
 	constructor() {
+		this.wsManager = WebSocketManager.getInstance();
 		this.state = {
 			tournament: null,
 			currentMatch: null,
@@ -36,90 +38,51 @@ export class TournamentWebSocketAPI {
 	}
 
 	// WebSocket接続を確立
-	connect(roomId: string, userId: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			try {
-				// バックエンドがHTTPSで動作しているため、WSSを使用
-				const wsUrl = `wss://localhost:8080/ws/tournament`;
-				console.log("WebSocket接続を試行中:", wsUrl);
+	async connect(roomId: string, userId: string): Promise<void> {
+		try {
 
-				// WebSocket接続を確立（バックエンドのエンドポイントに合わせる）
-				this.ws = new WebSocket(wsUrl);
+			// todo : room id を渡す connect を使いまわす
+			await this.wsManager.connect(roomId); // そもそも 同じ instance を共有しているので connect する必要はない
+			
+			this.updateState({
+				isConnected: true,
+				roomId,
+				userId,
+				error: null,
+			});
 
-				// 接続タイムアウトを設定
-				const connectionTimeout = setTimeout(() => {
-					if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-						console.error("WebSocket接続タイムアウト");
-						this.ws.close();
-						reject(new Error("WebSocket接続タイムアウト"));
-					}
-				}, 10000); // 10秒
+			// トーナメントルームにサブスクライブ
+			this.wsManager.sendMessage({
+				action: "subscribe_tournament",
+				room_id: roomId,
+				user_id: userId,
+			});
 
-				this.ws.onopen = () => {
-					console.log("WebSocket接続が確立されました");
-					clearTimeout(connectionTimeout);
-					this.updateState({
-						isConnected: true,
-						roomId,
-						userId,
-						error: null,
-					});
+			// メッセージハンドラーを登録
+			this.wsManager.subscribe("*", (message: any) => {
+				try {
+					this.handleMessage(message as OutgoingMsg);
+				} catch (error) {
+					console.error("メッセージの解析に失敗しました:", error);
+					this.updateState({ error: "メッセージの解析に失敗しました" });
+				}
+			});
 
-					// ルームにサブスクライブ
-					this.sendMessage({
-						action: "subscribe",
-						room_id: roomId,
-						user_id: userId,
-					});
-
-					resolve();
-				};
-
-				this.ws.onmessage = (event) => {
-					try {
-						const message: OutgoingMsg = JSON.parse(event.data);
-						this.handleMessage(message);
-					} catch (error) {
-						console.error("メッセージの解析に失敗しました:", error);
-						this.updateState({ error: "メッセージの解析に失敗しました" });
-					}
-				};
-
-				this.ws.onerror = (error) => {
-					console.error("WebSocketエラー:", error);
-					console.error(
-						"WebSocket接続URL:",
-						`wss://localhost:8080/ws/tournament`,
-					);
-					console.error("WebSocket readyState:", this.ws?.readyState);
-					clearTimeout(connectionTimeout);
-					this.updateState({
-						isConnected: false,
-						error:
-							"WebSocket接続エラー - バックエンドが起動しているか確認してください",
-					});
-					reject(error);
-				};
-
-				this.ws.onclose = () => {
-					console.log("WebSocket接続が閉じられました");
-					this.updateState({ isConnected: false });
-				};
-			} catch (error) {
-				console.error("WebSocket接続の確立に失敗しました:", error);
-				this.updateState({
-					isConnected: false,
-					error: "WebSocket接続の確立に失敗しました",
-				});
-				reject(error);
-			}
-		});
+			console.log("WebSocket接続が確立されました");
+		} catch (error) {
+			console.error("WebSocket接続エラー:", error);
+			this.updateState({
+				isConnected: false,
+				error: "WebSocket接続エラー - バックエンドが起動しているか確認してください",
+			});
+			throw error;
+		}
 	}
 
 	// メッセージを送信
 	private sendMessage(message: IncomingMsg) {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(JSON.stringify(message));
+		if (this.wsManager.isConnected()) {
+			this.wsManager.sendMessage(message);
 		} else {
 			console.error("WebSocketが接続されていません");
 			this.updateState({ error: "WebSocketが接続されていません" });
@@ -253,10 +216,15 @@ export class TournamentWebSocketAPI {
 
 	// 接続を切断
 	disconnect() {
-		if (this.ws) {
-			this.ws.close();
-			this.ws = null;
-		}
+		// WebSocketの購読を解除
+		this.wsManager.unsubscribe("*", (message: any) => {
+			try {
+				this.handleMessage(message as OutgoingMsg);
+			} catch (error) {
+				console.error("メッセージの解析に失敗しました:", error);
+			}
+		});
+		
 		this.updateState({
 			isConnected: false,
 			tournament: null,

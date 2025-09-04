@@ -9,6 +9,7 @@ import type {
 	WSOutgoingMsg,
 	WSRoomData,
 } from "../../types/ws-types";
+import { WebSocketManager } from "../../shared/websocket/WebSocketManager";
 
 // --- グローバル状態管理 ---
 const state = {
@@ -19,7 +20,7 @@ const state = {
 	isWsConnected: false,
 };
 
-let websocket: WebSocket | null = null;
+const wsManager = WebSocketManager.getInstance();
 
 // --- ヘルパー関数 ---
 function decodeJwt(token: string): any {
@@ -104,16 +105,15 @@ function updateUI() {
 
 // --- WebSocket ---
 function sendWsMessage(message: WSIncomingMsg) {
-	if (websocket && websocket.readyState === WebSocket.OPEN) {
-		websocket.send(JSON.stringify(message));
+	if (wsManager.isConnected()) {
+		wsManager.sendMessage(message);
 	} else {
 		console.error("WebSocket is not connected.");
 	}
 }
 
-function handleWsMessage(event: MessageEvent) {
+function handleWsMessage(message: WSOutgoingMsg) {
 	try {
-		const message = JSON.parse(event.data) as WSOutgoingMsg;
 		console.log("Received WS message:", message);
 
 		if (message.status === "Room" && message.data.action === "USER") {
@@ -123,7 +123,7 @@ function handleWsMessage(event: MessageEvent) {
 			// WebSocketから受け取ったroomInfoで状態を更新
 			if (roomData.roomInfo) {
 				state.roomInfo = roomData.roomInfo;
-				state.isOwner = state.roomInfo.ownerId === state.myUserId;
+				state.isOwner = roomData.roomInfo.ownerId === state.myUserId;
 			}
 
 			updateUI();
@@ -136,37 +136,28 @@ function handleWsMessage(event: MessageEvent) {
 	}
 }
 
-function setupWebSocket(roomId: string, token: string) {
-	if (
-		websocket &&
-		(websocket.readyState === WebSocket.OPEN ||
-			websocket.readyState === WebSocket.CONNECTING)
-	) {
-		return;
-	}
-
-	const wsUrl = `wss://localhost:8080/socket?room=${roomId}&token=${token}`;
-	websocket = new WebSocket(wsUrl);
-
-	websocket.onopen = () => {
-		console.log("WebSocket connected!");
+async function setupWebSocket(roomId: string) {
+	try {
+		console.log("Room : connect to room");
+		await wsManager.connect(roomId);
+		
+		// メッセージハンドラーを登録 - statusとactionの両方をチェック
+		wsManager.subscribe("*", (message: any) => {
+			console.log("WebSocket incoming message (All):", message);
+			
+			// Roomステータスのメッセージを処理
+			if (message.status === "Room") {
+				console.log("Room message received:", message);
+				handleWsMessage(message as WSOutgoingMsg);
+			}
+		});
+		
 		state.isWsConnected = true;
-		// 接続が確立してもすぐにはUIを更新しない。
-		// 最初のUSERメッセージ受信時に完全な情報でUIを更新するため。
-	};
-
-	websocket.onmessage = handleWsMessage;
-
-	websocket.onclose = (event) => {
-		console.log("WebSocket disconnected:", event.reason);
+		console.log("WebSocket connected!");
+	} catch (error) {
+		console.error("WebSocket connection error:", error);
 		state.isWsConnected = false;
-		websocket = null;
-		updateUI(); // 切断されたらUIを更新
-	};
-
-	websocket.onerror = (error) => {
-		console.error("WebSocket error:", error);
-	};
+	}
 }
 
 // --- イベントハンドラ ---
@@ -180,9 +171,8 @@ function handleLeaveOrDelete() {
 			sendWsMessage({ status: "Room", action: "DELETE" });
 		}
 	} else {
-		if (websocket) {
-			websocket.close();
-		}
+		// WebSocketの購読を解除
+		wsManager.unsubscribe("Room", (message: any) => handleWsMessage(message as WSOutgoingMsg));
 		navigate("/lobby");
 	}
 }
@@ -190,17 +180,8 @@ function handleLeaveOrDelete() {
 function cleanupRoomPage() {
 	console.log("Cleaning up Room Page state and WebSocket...");
 
-	// 既存のWebSocket接続があれば、イベントリスナーを削除してから閉じる
-	if (websocket) {
-		websocket.onopen = null;
-		websocket.onmessage = null;
-		websocket.onclose = null;
-		websocket.onerror = null;
-		if (websocket.readyState === WebSocket.OPEN) {
-			websocket.close();
-		}
-		websocket = null;
-	}
+	// WebSocketの購読を解除
+	wsManager.unsubscribe("Room", (message: any) => handleWsMessage(message as WSOutgoingMsg));
 
 	// イベントリスナーを削除
 	const button = document.getElementById("leave-delete-button");
@@ -251,7 +232,7 @@ export function renderRoomPage(params?: { [key: string]: string }) {
 	updateUI();
 
 	// すぐにWebSocket接続を開始
-	setupWebSocket(roomId, token);
+	setupWebSocket(roomId);
 
 	const button = document.getElementById("leave-delete-button");
 	if (button) button.addEventListener("click", handleLeaveOrDelete);

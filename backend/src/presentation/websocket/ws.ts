@@ -30,7 +30,6 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			let token: string | undefined;
 
 			const authHeader = req.headers["authorization"];
-			token = authHeader;
 
 			if (authHeader?.startsWith("Bearer ")) {
 				token = authHeader.substring(7);
@@ -67,11 +66,13 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close();
 				return;
 			} else {
+				console.log("joinResultMsg: ", joinResultMsg);
 				wsManager.addWebSocketToRoom(context.joinedRoom, ws);
 				wsManager.broadcast(context.joinedRoom, joinResultMsg);
 			}
 
 			ws.on("message", async (raw: any) => {
+				console.log("message received: ", raw);
 				let data: WSIncomingMsg;
 				try {
 					data = JSON.parse(raw.toString());
@@ -87,6 +88,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				try {
 					switch (data.status) {
 						case "Room": {
+							console.log("Room received: ", data);
 							const resultmsg = await RoomWSHandler(data.action, context);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
@@ -94,11 +96,13 @@ export async function registerWSRoutes(app: FastifyInstance) {
 							break;
 						}
 						case "Tournament": {
+							console.log("Tournament received: ", data);
 							const resultmsg = await TournamentWSHandler(data, context);
 							wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
+							console.log("Match received: ", data);
 							const resultmsg = await MatchWSHandler(data, context);
 							if (resultmsg.data.type === "error")
 								ws.send(JSON.stringify(resultmsg));

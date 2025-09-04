@@ -55,9 +55,9 @@ export function decodeJWT(
 	token: string,
 ): string | null {
 	try {
-		console.log("token:", token);
+		// console.log("token:", token);
 		const decoded = fastify.jwt.decode(token) as { id: string };
-		console.log("Decoded JWT payload from token:", decoded);
+		// console.log("Decoded JWT payload from token:", decoded);
 		return decoded.id;
 	} catch (err) {
 		return null;

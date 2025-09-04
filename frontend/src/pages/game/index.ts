@@ -1,4 +1,5 @@
 import gameHtml from "./game.html?raw";
+import { WebSocketManager } from "../../shared/websocket/WebSocketManager";
 
 type PaddleStateDto = {
 	id: string;
@@ -21,7 +22,7 @@ type RealtimeMatchStateDto = {
 class GamePage {
 	private app: HTMLElement;
 	private matchId: string | null = null;
-	private socket: WebSocket | null = null;
+	private wsManager: WebSocketManager;
 	private animationFrameId: number | null = null;
 
 	// ゲームの状態とUI要素
@@ -41,6 +42,7 @@ class GamePage {
 		if (params && params.matchId) {
 			this.matchId = params.matchId;
 		}
+		this.wsManager = WebSocketManager.getInstance();
 		this.handleKeyDownRef = this.handleKeyDown.bind(this);
 		this.handleKeyUpRef = this.handleKeyUp.bind(this);
 	}
@@ -71,10 +73,8 @@ class GamePage {
 
 	private cleanup(): void {
 		console.log("Cleaning up game resources...");
-		if (this.socket) {
-			this.socket.close();
-			this.socket = null;
-		}
+		// WebSocketの購読を解除
+		this.wsManager.unsubscribe("Match", this.handleMatchMessage.bind(this));
 		if (this.animationFrameId) {
 			cancelAnimationFrame(this.animationFrameId);
 			this.animationFrameId = null;
@@ -83,7 +83,7 @@ class GamePage {
 		window.removeEventListener("keyup", this.handleKeyUpRef);
 	}
 
-	private connectToWebSocket(): void {
+	private async connectToWebSocket(): Promise<void> {
 		const matchId = this.matchId;
 		const token = localStorage.getItem("accessToken");
 
@@ -102,37 +102,48 @@ class GamePage {
 			return;
 		}
 
-		const url = `wss://localhost:8080/ws/game/${matchId}?token=${token}`;
-		this.socket = new WebSocket(url);
+		try {
+			// todo : room id を渡す
+			const roomId = "";
+			await this.wsManager.connect(roomId); // そもそも 同じ instance を共有しているので connect する必要はない
+			
+			// ゲームルームにサブスクライブ
+			this.wsManager.sendMessage({
+				action: "subscribe_game",
+				match_id: matchId,
+				user_id: this.myUserId
+			});
 
-		this.socket.onopen = () =>
+			// マッチメッセージのハンドラーを登録
+			this.wsManager.subscribe("Match", this.handleMatchMessage.bind(this));
+			
 			console.log("Game WebSocket connection established.");
-		this.socket.onclose = () =>
-			console.log("Game WebSocket connection closed.");
-		this.socket.onmessage = (event) => {
-			const message = JSON.parse(event.data);
-			if (message.status === "Match") {
-				this.serverState = message.data;
-				if (this.serverState && this.myPlayerNumber === null) {
-					if (this.myUserId === this.serverState.paddles.player1.id) {
-						this.myPlayerNumber = "player1";
+		} catch (error) {
+			console.error("WebSocket接続エラー:", error);
+			alert("WebSocket接続に失敗しました。");
+		}
+	}
 
-						// 自分のユーザーIDと、サーバーからのプレイヤー2のIDを比較
-					} else if (this.myUserId === this.serverState.paddles.player2.id) {
-						this.myPlayerNumber = "player2";
-					} else {
-						// どちらでもない場合は観戦者
-						this.myPlayerNumber = null;
-					}
-
-					console.log(
-						`You are assigned as ${this.myPlayerNumber || "spectator"}`,
-					);
+	private handleMatchMessage(message: any): void {
+		if (message.status === "Match") {
+			this.serverState = message.data;
+			if (this.serverState && this.myPlayerNumber === null) {
+				if (this.myUserId === this.serverState.paddles.player1.id) {
+					this.myPlayerNumber = "player1";
+				} else if (this.myUserId === this.serverState.paddles.player2.id) {
+					this.myPlayerNumber = "player2";
 				} else {
-					console.error("Player IDs are missing in the data from the server.");
+					// どちらでもない場合は観戦者
+					this.myPlayerNumber = null;
 				}
+
+				console.log(
+					`You are assigned as ${this.myPlayerNumber || "spectator"}`,
+				);
+			} else {
+				console.error("Player IDs are missing in the data from the server.");
 			}
-		};
+		}
 	}
 
 	// --- イベントリスナーのセットアップとクリーンアップのための修正 ---
@@ -199,14 +210,12 @@ class GamePage {
 			Math.min(600 - 50, this.myPredictedPaddleY),
 		);
 
-		if (hasMoved && this.socket?.readyState === WebSocket.OPEN) {
-			this.socket.send(
-				JSON.stringify({
-					status: "Match",
-					action: "Move",
-					position: { y: this.myPredictedPaddleY },
-				}),
-			);
+		if (hasMoved && this.wsManager.isConnected()) {
+			this.wsManager.sendMessage({
+				status: "Match",
+				action: "Move",
+				position: { y: this.myPredictedPaddleY },
+			});
 		}
 	}
 
