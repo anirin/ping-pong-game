@@ -1,0 +1,143 @@
+.friend-list-content {
+	margin-top: 30px;
+	margin-left: 250px;
+	min-height: 100vh;
+	display: flex;
+	height: auto;
+	overflow-y: auto;
+}
+
+#friend-contents {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+#friend-request-body {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #f0f0f0;
+	width: 100%;
+}
+
+.friend-request-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	padding: 2rem;
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	width: min(1100px, 100%);
+}
+
+.input-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	width: 280px;
+}
+
+.input-group input {
+	padding: 8px;
+	border: 1px solid #aaa;
+	border-radius: 5px;
+}
+
+.friend-card {
+	display: grid;
+	align-items: center;
+	gap: 1rem;
+	padding: 1rem;
+	border-radius: 8px;
+	grid-template-columns: 30%, 60%, 10%;
+	background-color: #ff99ff;
+	flex: 0 1 900px;
+	width: 100%;
+	max-width: 100%;
+}
+
+.friend-card .avatar {
+	grid-column: 1;
+	flex: 0 0 30%;
+	width: 100%;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.friend-card .friend-info {
+	grid-column: 2;
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+
+.submit-btn {
+	grid-column: 3;
+	background-color: #6a5acd;
+	color: white;
+	padding: 0.5rem 1.2rem;
+	border: none;
+	border-radius: 20px;
+	cursor: pointer;
+	width: 100%;
+	white-space: normal;
+}
+
+.submit-btn:hover {
+	background-color: #5a4abf;
+}
+
+#search-result {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	margin-top: 1rem;
+}
+
+.friend-card .friend-info .row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+	margin: 0;
+}
+.friend-card .friend-info .label {
+	white-space: nowrap;
+	flex: 0 0 auto;
+}
+
+.username {
+	max-inline-size: min(30ch, 100%);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+}
+
+.status {
+	white-space: nowrap;
+}
+
+.username {
+	max-inline-size: min(30ch, 100%);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+	.friend-card {
+		grid-template-columns: 30% 70%;
+	}
+	.submit-btn {
+		grid-column: 1 / -1;
+		justify-content: end;
+		width: auto;
+	}
+}

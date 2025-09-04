@@ -55,17 +55,18 @@ export function decodeJWT(
 	token: string,
 ): string | null {
 	try {
-		// console.log("token:", token);
 		const decoded = fastify.jwt.decode(token) as { id: string };
-		// console.log("Decoded JWT payload from token:", decoded);
+		if (!decoded || !decoded.id) {
+			return null;
+		}
 		return decoded.id;
 	} catch (err) {
+		console.error("Error decoding JWT:", err);
 		return null;
 	}
 }
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
-	// 新規登録
 	fastify.post<{ Body: RegisterBody }>("/register", async (request, reply) => {
 		const { email, username, password } = request.body;
 
@@ -80,8 +81,8 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 		}
 
 		try {
-			const token = await authService.register(email, username, password);
-			return { token };
+			const result = await authService.register(email, username, password);
+			return result;
 		} catch (err: any) {
 			return reply.code(400).send({ message: err.message });
 		}

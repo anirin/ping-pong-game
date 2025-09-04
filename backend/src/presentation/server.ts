@@ -7,6 +7,7 @@ import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
 import authRoutes from "./route/auth/authRoutes.js";
+import { registerFriendRoutes } from "./route/friends/friendRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
 import { registerWSRoutes } from "./websocket/ws.js";
@@ -60,6 +61,7 @@ export async function buildServer() {
 
 	// webSocketのrouting
 	await registerWSRoutes(app);
+	await registerFriendRoutes(app);
 
 	return app;
 }
