@@ -46,6 +46,9 @@ export class MatchService {
 		}
 
 		// 60fpsでゲームループを開始
+		let lastScore1 = match.score1;
+		let lastScore2 = match.score2;
+		
 		const interval = setInterval(async () => {
 			match.advanceFrame();
 
@@ -62,12 +65,16 @@ export class MatchService {
 				});
 			}
 
-			// scoreが変更された場合、データベースに保存
-			if (match.status === "playing") {
+			// scoreが変更された場合のみ、データベースに保存
+			if (match.status === "playing" && 
+				(match.score1 !== lastScore1 || match.score2 !== lastScore2)) {
 				try {
 					await this.matchRepository.save(match);
+					lastScore1 = match.score1;
+					lastScore2 = match.score2;
+					console.log(`Score updated: ${match.score1} - ${match.score2}`);
 				} catch (error) {
-					throw new Error("Failed to save match");
+					console.error("Failed to save match score:", error);
 				}
 			}
 
@@ -112,7 +119,7 @@ export class MatchService {
 		try {
 			await this.matchRepository.save(match);
 			savedMatch = await this.matchRepository.findById(matchId);
-			if (savedMatch) {
+			if (!savedMatch) {  // 保存が失敗した場合
 				throw new Error("Failed to verify saved match");
 			}
 		} catch (error) {
@@ -120,7 +127,7 @@ export class MatchService {
 		}
 
 		// tournament event を発火
-		const tournamentId: TournamentId = savedMatch!.tournamentId;
+		const tournamentId: TournamentId = savedMatch.tournamentId;
 		globalEventEmitter.emit("match.finished", tournamentId);
 
 		if (wsManager.hasRoom(roomId)) {
