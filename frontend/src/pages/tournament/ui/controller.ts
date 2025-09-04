@@ -172,7 +172,7 @@ export class TournamentController {
 	}
 
 	private goToNextMatch(matchId: string): void {
-		navigate(`/match/${matchId}`);
+		tournamentAPI.navigateToMatch(matchId);
 	}
 
 	private async updateWinnerDisplay(): Promise<void> {

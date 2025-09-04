@@ -41,6 +41,16 @@ export async function TournamentWSHandler(
 					},
 				} as TournamentOutgoingMsg;
 			}
+			case "navigate_to_match": {
+				console.log("TournamentAPI: マッチに遷移", msg.matchId);
+				return {
+					status: "Tournament",
+					data: {
+						type: "navigate_to_match",
+						matchId: msg.matchId,
+					},
+				};
+			}
 			default: {
 				throw new Error("Unknown action");
 			}

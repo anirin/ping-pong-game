@@ -1,7 +1,6 @@
 import { matchAPI, type RealtimeMatchStateDto } from "../api/api";
 
 export class MatchController {
-	private app: HTMLElement;
 	private matchId: string | null = null;
 	private animationFrameId: number | null = null;
 
@@ -17,7 +16,6 @@ export class MatchController {
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 
 	constructor(params?: { [key: string]: string }) {
-		this.app = document.getElementById("app")!;
 		if (params && params.matchId) {
 			this.matchId = params.matchId;
 		}

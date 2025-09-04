@@ -2,6 +2,7 @@ import {
 	WebSocketManager,
 	type WebSocketMessage,
 } from "../../../shared/websocket/WebSocketManager";
+import { navigate } from "../../../app/routing/index.js";
 
 // トーナメント関連の型定義
 export interface TournamentMatch {
@@ -56,6 +57,13 @@ export class TournamentAPI {
 		}
 
 		if (message.data) {
+			// navigate_to_matchメッセージの処理
+			if ('type' in message.data && message.data.type === "navigate_to_match") {
+				navigate(`/match/${message.data.matchId}`);
+				return;
+			}
+
+			// 通常のトーナメントデータの処理
 			this.tournamentData = message.data as TournamentData;
 
 			// デバッグ用ログを追加
@@ -82,6 +90,15 @@ export class TournamentAPI {
 		this.wsManager.sendMessage({
 			status: "Tournament",
 			action: "get_status",
+		});
+	}
+
+	public navigateToMatch(matchId: string): void {
+		console.log("TournamentAPI: マッチに遷移", matchId);
+		this.wsManager.sendMessage({
+			status: "Tournament",
+			action: "navigate_to_match",
+			matchId: matchId,
 		});
 	}
 
