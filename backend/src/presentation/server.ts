@@ -15,7 +15,7 @@ import { registerFriendRoutes } from "./route/friends/friendRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerTournamentWs } from "./route/tournament/ws.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
-import { registerWSWebSocket } from "./route/websocket/ws.js";
+import { registerWSRoutes } from "./route/websocket/ws.js";
 
 export async function buildServer() {
 	if (
@@ -65,7 +65,7 @@ export async function buildServer() {
 	await registerRoomRoutes(app);
 	await registerUserChange(app);
 	await registerTournamentWs(app);
-	await registerWSWebSocket(app);
+	await registerWSRoutes(app);
 	await registerFriendRoutes(app);
 	await app.register(authRoutes, { prefix: "/auth" });
 	await app.register(gameRoutes, {
