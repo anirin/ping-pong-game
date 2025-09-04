@@ -11,6 +11,7 @@ import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
 import authRoutes from "./route/auth/authRoutes.js";
+import { registerFriendRoutes } from "./route/friends/friendRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerTournamentWs } from "./route/tournament/ws.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
@@ -65,6 +66,7 @@ export async function buildServer() {
 	await registerUserChange(app);
 	await registerTournamentWs(app);
 	await registerWSRoutes(app);
+	await registerFriendRoutes(app);
 	await app.register(authRoutes, { prefix: "/auth" });
 	await app.register(gameRoutes, {
 		gameService,

@@ -10,8 +10,13 @@ import { renderRoomPage } from "@pages/room";
 import { renderSetupPage } from "@pages/setup/index";
 import { renderTournamentPage } from "@pages/tournament";
 import { isLoggedIn } from "@/app/auth";
+import { renderFriendListPage } from "@/pages/friends";
 
 let currentCleanup: (() => void) | null = null;
+
+import { renderFriendPendingPage } from "@/pages/friend_pending";
+import { renderFriendProfilePage } from "@/pages/friend_profile";
+import { renderFriendRequestPage } from "@/pages/friend_request";
 
 interface Route {
 	path: string;
@@ -55,6 +60,22 @@ const routes: Route[] = [
 	{
 		path: "/tournament", // id が必要かも
 		handler: renderTournamentPage,
+	},
+	{
+		path: "/friends",
+		handler: renderFriendListPage,
+	},
+	{
+		path: "/friend/request",
+		handler: renderFriendRequestPage,
+	},
+	{
+		path: "/friend/pending",
+		handler: renderFriendPendingPage,
+	},
+	{
+		path: "/friend/:id",
+		handler: renderFriendProfilePage,
 	},
 	{
 		path: "/rooms/:roomId",
