@@ -1,4 +1,101 @@
 services:
+  setup:
+    container_name: setup
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    env_file:
+      - .env
+    volumes:
+      - elk_certs:/usr/share/elasticsearch/config/certs
+      - ./elk/setup.sh:/usr/local/bin/setup.sh:ro
+    user: "0"
+    command: ["bash", "/usr/local/bin/setup.sh"]
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    volumes:
+      - elk_certs:/usr/share/elasticsearch/config/certs
+      - esdata:/usr/share/elasticsearch/data
+    depends_on:
+      - setup
+    ports:
+      - "9200:9200"
+    environment:
+      - cluster.name=${CLUSTER_NAME}
+      - xpack.license.self_generated.type=${LICENSE}
+    env_file:
+      - ./elk/elasticsearch/.env
+    networks:
+      - elasticsearch
+    secrets:
+      - elastic_password
+
+  logstash:
+    container_name: logstash
+    image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
+    user: root
+    volumes:
+      - elk_certs:/usr/share/logstash/certs
+      - logstashdata:/usr/share/logstash/data
+      - ./elk/logstash/logstash_ingest_data/:/usr/share/logstash/ingest_data/
+      - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    env_file:
+      - ./elk/logstash/.env
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+    secrets:
+      - elastic_password
+    # networks:
+    #   - logstash
+
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    env_file:
+      - ./elk/kibana/.env
+    environment:
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+    volumes:
+      - elk_certs:/usr/share/kibana/config/certs
+      - kibanadata:/usr/share/kibana/data
+    #   - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - "5601:5601"
+    secrets:
+      - kibana_password
+    depends_on:
+      - elasticsearch
+    networks:
+      - elasticsearch
+
+  filebeat:
+    container_name: filebeat
+    image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
+    user: root
+    env_file:
+      - ./elk/filebeat/.env
+    environment:
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+
+    volumes:
+      - elk_certs:/usr/share/filebeat/certs
+      - filebeatdata:/usr/share/filebeat/data
+      - ./elk/filebeat/filebeat_ingest_data/:/usr/share/filebeat/ingest_data/
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - logstash
+    # networks:
+    #   - logstash
+
   frontend:
     container_name: frontend
     build: ./frontend
@@ -15,6 +112,8 @@ services:
     build: ./backend
     ports:
       - "8080:8080"
+    depends_on:
+      - logstash
     volumes:
       - ./backend:/app
       - backend_modules:/app/node_modules
@@ -22,13 +121,33 @@ services:
       - server_certificate
       - server_key
 
-
 volumes:
   frontend_modules:
   backend_modules:
+  elk_certs:
+  esdata:
+  logstashdata:
+  kibanadata:
+  filebeatdata:
+
+networks:
+  elasticsearch:
+    driver: bridge
+  # logstash:
+  #   driver: bridge
 
 secrets:
   server_certificate:
     file: ./backend/secrets/cert.pem
   server_key:
     file: ./backend/secrets/key.pem
+  elastic_certificate:
+    file: ./elk/secrets/cert.pem
+  elastic_key:
+    file: ./elk/secrets/key.pem
+  elastic_password:
+    environment: ELASTIC_PASSWORD
+  kibana_password:
+    environment: KIBANA_PASSWORD
+  kibana_key:
+    environment: ENCRYPTION_KEY
