@@ -3,6 +3,7 @@ import {
 	type TournamentMatch,
 	tournamentAPI,
 } from "../api/api";
+import { navigate } from "../../../app/routing/index";
 
 export class TournamentController {
 	private tournamentData: TournamentData | null = null;
@@ -158,10 +159,20 @@ export class TournamentController {
 				nextMatchRound.textContent = `${match.round}回戦`;
 				// プロパティ名を修正
 				nextMatchPlayers.textContent = `${match.player1Id} vs ${match.player2Id}`;
+				
+				// ボタンのonclickイベントを設定
+				const goToMatchBtn = document.getElementById("go-to-match-btn");
+				if (goToMatchBtn) {
+					goToMatchBtn.onclick = () => this.goToNextMatch(match.id);
+				}
 			}
 		} catch (error) {
 			console.error("次のマッチ表示の更新に失敗しました:", error);
 		}
+	}
+
+	private goToNextMatch(matchId: string): void {
+		navigate(`/match/${matchId}`);
 	}
 
 	private async updateWinnerDisplay(): Promise<void> {

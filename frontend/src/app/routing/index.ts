@@ -11,6 +11,7 @@ import { renderSetupPage } from "@pages/setup/index";
 import { renderTournamentPage } from "@pages/tournament";
 import { isLoggedIn } from "@/app/auth";
 import { renderFriendListPage } from "@/pages/friends";
+import { renderMatchPage } from "@/pages/match";
 
 let currentCleanup: (() => void) | null = null;
 
@@ -90,6 +91,10 @@ const routes: Route[] = [
 				return renderGuestTournamentPage();
 			}
 		},
+	},
+	{
+		path: "/match/:matchId",
+		handler: renderMatchPage,
 	},
 ];
 
