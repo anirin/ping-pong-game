@@ -5,7 +5,7 @@ import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import { globalEventEmitter } from "./globalEventEmitter.js";
-import { wsManager } from "../websocket/ws-helper.js";
+import { wsManager } from "../websocket/ws-manager.js";
 
 globalEventEmitter.on(
 	"room.started",

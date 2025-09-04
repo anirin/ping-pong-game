@@ -3,7 +3,7 @@ import type {
 	MatchIncomingMsg,
 	MatchOutgoingMsg,
 } from "@presentation/websocket/match/match-msg.js";
-import type { WebSocketContext } from "../../websocket/ws-helper.js";
+import type { WebSocketContext } from "../../websocket/ws-manager.js";
 
 export async function MatchWSHandler(
 	msg: MatchIncomingMsg,

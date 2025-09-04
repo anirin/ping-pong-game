@@ -14,7 +14,7 @@ import {
 import {
 	wsManager,
 	type WebSocketContext,
-} from "./ws-helper.js";
+} from "./ws-manager.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 export async function registerWSRoutes(app: FastifyInstance) {

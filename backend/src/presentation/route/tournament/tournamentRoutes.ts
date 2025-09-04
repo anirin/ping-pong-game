@@ -3,7 +3,7 @@ import type {
 	TournamentIncomingMsg,
 	TournamentOutgoingMsg,
 } from "@presentation/websocket/tournament/tournament-msg.js";
-import type { WebSocketContext } from "../../websocket/ws-helper.js";
+import type { WebSocketContext } from "../../websocket/ws-manager.js";
 
 export async function TournamentWSHandler(
 	msg: TournamentIncomingMsg,

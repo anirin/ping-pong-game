@@ -8,7 +8,7 @@ import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
-import { wsManager } from "@presentation/websocket/ws-helper.js";
+import { wsManager } from "@presentation/websocket/ws-manager.js";
 import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js";
 
 type Info = {
