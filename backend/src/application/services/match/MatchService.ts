@@ -65,9 +65,7 @@ export class MatchService {
 				});
 			}
 
-			// scoreが変更された場合のみ、データベースに保存
-			if (match.status === "playing" && 
-				(match.score1 !== lastScore1 || match.score2 !== lastScore2)) {
+			if (match.score1 !== lastScore1 || match.score2 !== lastScore2) {
 				try {
 					await this.matchRepository.save(match);
 					lastScore1 = match.score1;
@@ -84,6 +82,7 @@ export class MatchService {
 				try {
 					await this.finishMatch(matchId, roomId, match.winnerId!);
 				} catch (error) {
+					console.error(`[MatchService] Error in finishMatch for match ${matchId}:`, error);
 					throw new Error("Failed to finish match");
 				}
 				return;
@@ -108,11 +107,14 @@ export class MatchService {
 	): Promise<void> {
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
+			console.error(`[MatchService] Match not found for matchId: ${matchId}`);
 			throw new Error("Match not found");
 		}
 
 		// 試合が終了した時点で、現在のscoreを保存
-		match.finish(winnerId);
+		if (match.status !== 'finished') {
+			match.finish(winnerId);
+		}
 
 		// データベースに保存
 		let savedMatch: Match | null = null;
@@ -120,9 +122,11 @@ export class MatchService {
 			await this.matchRepository.save(match);
 			savedMatch = await this.matchRepository.findById(matchId);
 			if (!savedMatch) {  // 保存が失敗した場合
+				console.error(`[MatchService] Failed to verify saved match for matchId: ${matchId}`);
 				throw new Error("Failed to verify saved match");
 			}
 		} catch (error) {
+			console.error(`[MatchService] Database operation failed for matchId: ${matchId}:`, error);
 			throw new Error("Failed to save match");
 		}
 
