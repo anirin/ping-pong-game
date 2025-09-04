@@ -100,10 +100,6 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close(4001, "user authorization failed");
 				return;
 			}
-			if (!authedUser) {
-				ws.close(4001, "user authorization failed");
-				return;
-			}
 			const joinedRoom = await specifyRoom(url);
 			if (!joinedRoom) {
 				ws.close(4001, "room specification failed");

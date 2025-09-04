@@ -50,7 +50,6 @@ export async function registerUserRoutes(app: FastifyInstance) {
 				avatar: user.avatar?.value ?? null,
 			});
 		} catch (error: any) {
-			console.error("GET /users/:id failed:", error); // ← エラー内容を全部
 			return reply.status(500).send({ error: error.message });
 		}
 	});

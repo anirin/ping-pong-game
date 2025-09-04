@@ -77,10 +77,6 @@ const routes: Route[] = [
 		path: "/friend/:id",
 		handler: renderFriendProfilePage,
 	},
-	// {
-	// 	path: "/online/room/:id",
-	// 	handler: renderOnlineRoomPage,
-	// },
 	{
 		path: "/rooms/:roomId",
 		handler: renderRoomPage,
