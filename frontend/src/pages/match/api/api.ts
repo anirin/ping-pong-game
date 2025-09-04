@@ -2,6 +2,7 @@ import {
 	WebSocketManager,
 	type WebSocketMessage,
 } from "../../../shared/websocket/WebSocketManager";
+import { navigate } from "../../../app/routing";
 
 // マッチ関連の型定義
 export interface PaddleStateDto {
@@ -57,6 +58,8 @@ export class MatchAPI {
 			console.log("Match started:", message.data.matchId);
 		} else if (message.data && message.data.type === "match_finished") {
 			console.log("Match finished, winner:", message.data.winnerId);
+			// マッチ終了時にtournamentページにナビゲート
+			navigate("/tournament");
 		} else if (message.data && message.data.type === "error") {
 			console.error("Match error:", message.data.message);
 		}
