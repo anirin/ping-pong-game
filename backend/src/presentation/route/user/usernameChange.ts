@@ -34,8 +34,13 @@ export async function registerUserChange(app: FastifyInstance) {
 					avatar: user.avatar?.value ?? null,
 				});
 			} catch (error: any) {
-                if (error.code === "SQLITE_CONSTRAINT" && error.message.includes("users.username"))
-                    return reply.status(409).send({ error: "This username is already in use" });
+				if (
+					error.code === "SQLITE_CONSTRAINT" &&
+					error.message.includes("users.username")
+				)
+					return reply
+						.status(409)
+						.send({ error: "This username is already in use" });
 			}
 		},
 	);
