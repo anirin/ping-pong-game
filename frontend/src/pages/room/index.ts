@@ -141,15 +141,20 @@ async function setupWebSocket(roomId: string) {
 		console.log("Room : connect to room");
 		await wsManager.connect(roomId);
 		
-		// メッセージハンドラーを登録 - statusとactionの両方をチェック
-		wsManager.subscribe("*", (message: any) => {
-			console.log("WebSocket incoming message (All):", message);
+		// メッセージハンドラーを設定
+		wsManager.setMessageHandler((message: any) => {
+			console.log("WebSocket incoming message:", message);
 			
-			// Roomステータスのメッセージを処理
+			// message.statusで振り分け
 			if (message.status === "Room") {
 				console.log("Room message received:", message);
 				handleWsMessage(message as WSOutgoingMsg);
+			} else if (message.status === "Game") {
+			} else if (message.status === "Match") {
+			} else {
+				console.log("Unknown message status:", message.status);
 			}
+			// todo この画面では Game と Match は不要
 		});
 		
 		state.isWsConnected = true;
@@ -171,8 +176,8 @@ function handleLeaveOrDelete() {
 			sendWsMessage({ status: "Room", action: "DELETE" });
 		}
 	} else {
-		// WebSocketの購読を解除
-		wsManager.unsubscribe("Room", (message: any) => handleWsMessage(message as WSOutgoingMsg));
+		// WebSocketのメッセージハンドラーを削除
+		wsManager.removeMessageHandler();
 		navigate("/lobby");
 	}
 }
@@ -180,8 +185,8 @@ function handleLeaveOrDelete() {
 function cleanupRoomPage() {
 	console.log("Cleaning up Room Page state and WebSocket...");
 
-	// WebSocketの購読を解除
-	wsManager.unsubscribe("Room", (message: any) => handleWsMessage(message as WSOutgoingMsg));
+	// WebSocketのメッセージハンドラーを削除
+	wsManager.removeMessageHandler();
 
 	// イベントリスナーを削除
 	const button = document.getElementById("leave-delete-button");

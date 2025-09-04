@@ -1,5 +1,6 @@
 export type WebSocketMessage = {
-	action: string;
+	status: string;
+	action?: string;
 	[key: string]: any;
 };
 
@@ -10,7 +11,7 @@ export class WebSocketManager {
 	private ws: WebSocket | null = null;
 	private isConnecting: boolean = false;
 	private connectionPromise: Promise<void> | null = null;
-	private eventHandlers: Map<string, Set<WebSocketEventHandler>> = new Map();
+	private messageHandler: WebSocketEventHandler | null = null;
 
 	private constructor() {}
 
@@ -55,7 +56,6 @@ export class WebSocketManager {
 			url.searchParams.set("token", token);
 			this.ws = new WebSocket(url.toString());
 
-
 			// todo : 本番では time out の実装が必要　
 
 			this.ws.onopen = () => {
@@ -68,7 +68,11 @@ export class WebSocketManager {
 					const message: WebSocketMessage = JSON.parse(event.data);
 					console.log("WebSocket raw message received:", event.data);
 					console.log("WebSocket parsed message:", message);
-					this.handleMessage(message);
+					
+					// メッセージハンドラーが設定されている場合は実行
+					if (this.messageHandler) {
+						this.messageHandler(message);
+					}
 				} catch (error) {
 					console.error("メッセージの解析に失敗しました:", error);
 				}
@@ -86,45 +90,12 @@ export class WebSocketManager {
 		});
 	}
 
-
-
-	private handleMessage(message: WebSocketMessage): void {
-		// 特定のアクションに対するハンドラーを実行
-		if (message.action && this.eventHandlers.has(message.action)) {
-			const handlers = this.eventHandlers.get(message.action)!;
-			handlers.forEach(handler => {
-				try {
-					handler(message);
-				} catch (error) {
-					console.error(`ハンドラー実行エラー (${message.action}):`, error);
-				}
-			});
-		}
-
-		// 汎用メッセージハンドラーも実行
-		if (this.eventHandlers.has("*")) {
-			const handlers = this.eventHandlers.get("*")!;
-			handlers.forEach(handler => {
-				try {
-					handler(message);
-				} catch (error) {
-					console.error("汎用ハンドラー実行エラー:", error);
-				}
-			});
-		}
+	public setMessageHandler(handler: WebSocketEventHandler): void {
+		this.messageHandler = handler;
 	}
 
-	public subscribe(action: string, handler: WebSocketEventHandler): void {
-		if (!this.eventHandlers.has(action)) {
-			this.eventHandlers.set(action, new Set());
-		}
-		this.eventHandlers.get(action)!.add(handler);
-	}
-
-	public unsubscribe(action: string, handler: WebSocketEventHandler): void {
-		if (this.eventHandlers.has(action)) {
-			this.eventHandlers.get(action)!.delete(handler);
-		}
+	public removeMessageHandler(): void {
+		this.messageHandler = null;
 	}
 
 	public sendMessage(message: WebSocketMessage): void {
@@ -144,7 +115,7 @@ export class WebSocketManager {
 			this.ws.close(1000, "正常終了");
 			this.ws = null;
 		}
-		this.eventHandlers.clear();
+		this.messageHandler = null;
 	}
 
 	public getConnectionState(): string {
