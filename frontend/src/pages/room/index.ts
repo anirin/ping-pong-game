@@ -116,7 +116,13 @@ function handleWsMessage(message: WSOutgoingMsg) {
 	try {
 		console.log("Received WS message:", message);
 
-		if (message.status === "Room" && message.data.action === "USER") {
+		if (message.status === "Room") {
+			if (message.data.action === "START") {
+				console.log("Room started, navigating to tournament");
+				navigate("/tournament");
+				return;
+			}
+
 			const roomData = message.data as WSRoomData;
 			state.participants = roomData.users;
 
@@ -127,7 +133,8 @@ function handleWsMessage(message: WSOutgoingMsg) {
 			}
 
 			updateUI();
-		} else if (message.status === "Room" && message.data.action === "DELETE") {
+		} else {
+			// else がいるのか？ delete は存在するのか？
 			alert("The room has been deleted by the owner.");
 			navigate("/lobby");
 		}
@@ -145,16 +152,7 @@ async function setupWebSocket(roomId: string) {
 		wsManager.setMessageHandler((message: any) => {
 			console.log("WebSocket incoming message:", message);
 			
-			// message.statusで振り分け
-			if (message.status === "Room") {
-				console.log("Room message received:", message);
-				handleWsMessage(message as WSOutgoingMsg);
-			} else if (message.status === "Game") {
-			} else if (message.status === "Match") {
-			} else {
-				console.log("Unknown message status:", message.status);
-			}
-			// todo この画面では Game と Match は不要
+			handleWsMessage(message as WSOutgoingMsg);
 		});
 		
 		state.isWsConnected = true;
