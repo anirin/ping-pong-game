@@ -161,7 +161,7 @@ async function setupWebSocket(roomId: string) {
 			handleWsMessage(message as WSOutgoingMsg);
 		};
 		
-		wsManager.addMessageHandler("Room", roomMessageHandler);
+		wsManager.addCallback(roomMessageHandler);
 		
 		state.isWsConnected = true;
 	} catch (error) {
@@ -183,7 +183,7 @@ function handleLeaveOrDelete() {
 	} else {
 		// WebSocketのメッセージハンドラーを削除
 		if (roomMessageHandler) {
-			wsManager.removeMessageHandler("Room", roomMessageHandler);
+			wsManager.removeCallback(roomMessageHandler); // 同じものが削除できるのか？
 		}
 		navigate("/lobby");
 	}
@@ -192,7 +192,7 @@ function handleLeaveOrDelete() {
 // クリーンアップ関数を修正
 function cleanupRoomPage() {
     if (roomMessageHandler) {
-        wsManager.removeMessageHandler("Room", roomMessageHandler);
+        wsManager.removeCallback(roomMessageHandler);
         roomMessageHandler = null;
     }
     // WebSocket接続は切断しない（tournamentで再利用するため）

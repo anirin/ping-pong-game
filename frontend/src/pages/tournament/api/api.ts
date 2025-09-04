@@ -5,11 +5,12 @@ export interface TournamentMatch {
 	id: string;
 	player1_id: string;
 	player2_id: string;
+	score1: number;
+	score2: number;
 	winner_id: string | null;
 	status: string;
 	round: number;
 }
-
 export interface TournamentData {
 	next_match_id: string;
 	matches: TournamentMatch[];
@@ -17,125 +18,95 @@ export interface TournamentData {
 	winner_id: string | null;
 }
 
-export interface TournamentIncomingMessage {
+// トーナメント専用のメッセージ型
+export interface TournamentMessage extends WebSocketMessage {
 	status: "Tournament";
 	action: "get_status";
-}
-
-export interface TournamentOutgoingMessage {
-	status: "Tournament";
 	data: TournamentData;
 }
 
-// トーナメントAPIクラス
 export class TournamentAPI {
-	private wsManager: WebSocketManager;
-	private messageHandler: ((data: TournamentData) => void) | null = null;
-	private tournamentMessageHandler: ((message: WebSocketMessage) => void) | null = null;
+	private tournamentData: TournamentData | null = null;
+
+	// data類 api に置くのは適切でない
+	private match1: TournamentMatch | null = null; // round1
+	private match2: TournamentMatch | null = null; // round1
+	private match3: TournamentMatch | null = null; // rooud2 （決勝）
+
+	// todo : avator 含め定義する backend も調整必要 (最後)
+	// private player1: Player | null = null;
+	// private player2: Player | null = null;
+	// private player3: Player | null = null;
+	// private player4: Player | null = null;
+
+	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 
 	constructor() {
-		this.wsManager = WebSocketManager.getInstance();
-		this.setupMessageHandler();
+		this.wsManager.addCallback(this.handleMessage.bind(this));
 	}
 
-	/**
-	 * メッセージハンドラーを設定
-	 */
-	private setupMessageHandler(): void {
-		this.tournamentMessageHandler = this.handleTournamentMessage.bind(this);
-		this.wsManager.addMessageHandler("Tournament", this.tournamentMessageHandler);
-	}
+	// トーナメントメッセージの処理(受信)
+	private handleMessage(message: WebSocketMessage): void {
+		// TODO : 検討
+		if (message.status !== "Tournament") {
+			return;
+		}
 
-	/**
-	 * トーナメントの状態を取得
-	 * @returns Promise<void>
-	 */
-	async getTournamentStatus(): Promise<void> {
-		try {
-			// 既存のWebSocket接続を使用（接続済みを前提）
-			if (!this.wsManager.isConnected()) {
-				throw new Error("WebSocketが接続されていません");
-			}
+		console.log("TournamentAPI: トーナメントメッセージを処理:", message.action);
+		
+		switch (message.action) {
+			case "get_status":
+				if (message.data) {
+					this.tournamentData = message.data as TournamentData;
+					
+					// デバッグ用ログを追加
+					console.log("Frontend received tournament data:", JSON.stringify(message.data, null, 2));
+					console.log("Matches received:", this.tournamentData.matches);
+					if (this.tournamentData.matches.length > 0) {
+						console.log("First match received:", JSON.stringify(this.tournamentData.matches[0], null, 2));
+					}
 
-			// トーナメントの状態を要求
-			const message: TournamentIncomingMessage = {
-				status: "Tournament",
-				action: "get_status",
-			};
-
-			this.wsManager.sendMessage(message);
-		} catch (error) {
-			console.error("トーナメントの状態取得に失敗しました:", error);
-			throw error;
+					// match1, match2, match3 を更新
+					this.match1 = this.tournamentData.matches[0];
+					this.match2 = this.tournamentData.matches[1];
+					// match3 はない場合がある
+					if (this.tournamentData.matches.length > 2) {
+						this.match3 = this.tournamentData.matches[2];
+					}
+				}
+				break;
+			default:
+				console.warn("TournamentAPI: 未対応のアクション:", message.action);
 		}
 	}
 
-	/**
-	 * トーナメントデータの更新を受け取るためのハンドラーを設定
-	 * @param handler データ更新時のコールバック関数
-	 */
-	onTournamentUpdate(handler: (data: TournamentData) => void): void {
-		this.messageHandler = handler;
+	// トーナメントデータの取得(送信)
+	public getTournamentData(): void {
+		console.log("TournamentAPI: トーナメントデータを要求");
+		this.wsManager.sendMessage({
+			status: "Tournament",
+			action: "get_status"
+		});
 	}
 
-	/**
-	 * トーナメントデータの更新ハンドラーを削除
-	 */
-	removeTournamentUpdateHandler(): void {
-		this.messageHandler = null;
-		// メッセージハンドラーも削除
-		if (this.tournamentMessageHandler) {
-			this.wsManager.removeMessageHandler("Tournament", this.tournamentMessageHandler);
-			this.tournamentMessageHandler = null;
-		}
+	public destroy(): void {
+		this.wsManager.removeCallback(this.handleMessage.bind(this));
+		console.log("TournamentAPI: 破棄");
 	}
 
-	/**
-	 * トーナメントメッセージを処理する内部メソッド
-	 */
-	private handleTournamentMessage(message: WebSocketMessage): void {
-		if (message.data) {
-			const tournamentData: TournamentData = {
-				next_match_id: message.data.next_match_id,
-				matches: message.data.matches,
-				current_round: message.data.current_round,
-				winner_id: message.data.winner_id,
-			};
-
-			if (this.messageHandler) {
-				this.messageHandler(tournamentData);
-			}
-		}
+	// データ取得メソッド : frontend用 : apiと関係はないので置き場所検討
+	public getCurrentTournament(): TournamentData | null {
+		return this.tournamentData;
 	}
-
-	/**
-	 * WebSocket接続を切断
-	 */
-	disconnect(): void {
-		// メッセージハンドラーを削除
-		if (this.tournamentMessageHandler) {
-			this.wsManager.removeMessageHandler("Tournament", this.tournamentMessageHandler);
-			this.tournamentMessageHandler = null;
-		}
-		this.wsManager.disconnect();
+	public getMatch1(): TournamentMatch | null {
+		return this.match1;
 	}
-
-	/**
-	 * 接続状態を取得
-	 * @returns 接続状態の文字列
-	 */
-	getConnectionState(): string {
-		return this.wsManager.getConnectionState();
+	public getMatch2(): TournamentMatch | null {
+		return this.match2;
 	}
-
-	/**
-	 * 接続されているかどうかを確認
-	 * @returns 接続状態
-	 */
-	isConnected(): boolean {
-		return this.wsManager.isConnected();
+	public getMatch3(): TournamentMatch | null {
+		return this.match3;
 	}
 }
 
-// シングルトンインスタンスをエクスポート
 export const tournamentAPI = new TournamentAPI();

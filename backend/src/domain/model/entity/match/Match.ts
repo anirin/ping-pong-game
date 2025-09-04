@@ -266,4 +266,19 @@ export class Match {
 
 		return match;
 	}
+
+	// JSONシリアライゼーション用のメソッド
+	public toJSON(): object {
+		return {
+			id: this.id,
+			tournamentId: this.tournamentId,
+			player1Id: this.player1Id,
+			player2Id: this.player2Id,
+			round: this.round,
+			status: this.status,
+			score1: this.score1,
+			score2: this.score2,
+			winnerId: this.winnerId,
+		};
+	}
 }
