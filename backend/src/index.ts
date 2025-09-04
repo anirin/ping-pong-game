@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { buildServer } from "@presentation/server.js";
 import dotenv from "dotenv";
-import "@presentation/event/recieveEvent.js"; // todo : 場所が適切か検討
+import "@presentation/event/handleEvent.js"; // todo : 場所が適切か検討
 
 // Load environment variables from .env file
 dotenv.config();
