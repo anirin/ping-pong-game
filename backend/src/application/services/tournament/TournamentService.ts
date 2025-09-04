@@ -66,24 +66,6 @@ export class TournamentService {
 		} catch (error) {
 			throw new Error("Failed to save tournament");
 		}
-
-		// まず最初の試合も送る
-		const nextMatch = tournament.getNextMatch();
-		if (!nextMatch) {
-			throw new Error("Next match not found");
-		}
-
-		if (wsManager.hasRoom(room_id)) {
-			wsManager.broadcast(room_id, {
-				status: "Tournament",
-				data: {
-					next_match_id: nextMatch.id,
-					matches: matches,
-					current_round: tournament.currentRound,
-					winner_id: null,
-				}
-			});
-		}
 	}
 
 	async processAfterMatch(tournamentId: TournamentId) {
@@ -111,18 +93,6 @@ export class TournamentService {
 				match.status === "scheduled" && match.round === tournament.currentRound,
 		);
 		if (scheduledMatch) {
-			// broadcast
-			if (wsManager.hasRoom(tournament.room_id)) {
-				wsManager.broadcast(tournament.room_id, {
-					status: "Tournament",
-					data: {
-						next_match_id: scheduledMatch.id,
-						matches: tournament!.matches,
-						current_round: tournament.currentRound,
-						winner_id: null,
-					}
-				});
-			}
 			return;
 		}
 
@@ -136,23 +106,6 @@ export class TournamentService {
 				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
 			} catch (error) {
 				throw new Error("Failed to save matches");
-			}
-
-			const nextMatch = tournament!.getNextMatch();
-			if (!nextMatch) {
-				throw new Error("Next match not found");
-			}
-
-			if (wsManager.hasRoom(tournament.room_id)) {
-				wsManager.broadcast(tournament.room_id, {
-					status: "Tournament",
-					data: {
-						next_match_id: nextMatch.id,
-						matches: tournament!.matches,
-						current_round: tournament.currentRound,
-						winner_id: null,
-					}
-				});
 			}
 		} else {
 			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
@@ -175,19 +128,6 @@ export class TournamentService {
 		} catch (error) {
 			throw new Error("Failed to save tournament");
 		}
-
-		// broadcast
-		if (wsManager.hasRoom(tournament.room_id)) {
-			wsManager.broadcast(tournament.room_id, {
-				status: "Tournament",
-				data: {
-					next_match_id: "", // トーナメント終了のため空
-					matches: tournament.matches,
-					current_round: tournament.currentRound,
-					winner_id: tournament.winner_id,
-				}
-			});
-		}
 	}
 
 	async getTournamentStatus(roomId: RoomId) {
@@ -195,6 +135,16 @@ export class TournamentService {
 			const tournament = await this.tournamentRepository.findByRoomId(roomId);
 			if (!tournament) {
 				throw new Error("Tournament not found for this room");
+			}
+
+			if (tournament.status === "finished") {
+				return {
+					status: tournament.status,
+					next_match_id: "",
+					matches: tournament.matches,
+					current_round: tournament.currentRound,
+					winner_id: tournament.winner_id,
+				};
 			}
 
 			const matches = await this.matchRepository.findByTournamentId(tournament.id);

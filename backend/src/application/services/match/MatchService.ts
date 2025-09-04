@@ -75,7 +75,7 @@ export class MatchService {
 				clearInterval(interval);
 				this.intervals.delete(matchId);
 				try {
-					await this.finishMatch(matchId, match.winnerId!);
+					await this.finishMatch(matchId, roomId, match.winnerId!);
 				} catch (error) {
 					throw new Error("Failed to finish match");
 				}
@@ -94,7 +94,7 @@ export class MatchService {
 		}
 	}
 
-	async finishMatch(matchId: MatchId, winnerId: UserId): Promise<void> {
+	async finishMatch(matchId: MatchId, roomId: RoomId, winnerId: UserId): Promise<void> {
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
 			throw new Error("Match not found");
@@ -113,6 +113,17 @@ export class MatchService {
 			}
 		} catch (error) {
 			throw new Error("Failed to save match");
+		}
+
+		if (wsManager.hasRoom(roomId)) {
+			wsManager.broadcast(roomId, {
+				status: "Match",
+				data: {
+					type: "match_finished",
+					matchId: matchId,
+					winnerId: winnerId,
+				}
+			});
 		}
 
 		// tournament event を発火
