@@ -106,7 +106,7 @@
 // 			// todo : room id を渡す
 // 			const roomId = "";
 // 			await this.wsManager.connect(roomId); // そもそも 同じ instance を共有しているので connect する必要はない
-			
+
 // 			// ゲームルームにサブスクライブ
 // 			this.wsManager.sendMessage({
 // 				action: "subscribe_game",
@@ -116,7 +116,7 @@
 
 // 			// マッチメッセージのハンドラーを登録
 // 			this.wsManager.subscribe("Match", this.handleMatchMessage.bind(this));
-			
+
 // 			console.log("Game WebSocket connection established.");
 // 		} catch (error) {
 // 			console.error("WebSocket接続エラー:", error);

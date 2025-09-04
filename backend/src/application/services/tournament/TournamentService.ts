@@ -9,8 +9,8 @@ import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
-import { v4 as uuidv4 } from "uuid";
 import { wsManager } from "@presentation/websocket/ws-manager.js";
+import { v4 as uuidv4 } from "uuid";
 
 // コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
 export class TournamentService {
@@ -33,7 +33,9 @@ export class TournamentService {
 	) {
 		// 参加者数の検証
 		if (!participants || participants.length !== 4) {
-			throw new Error(`Tournament requires exactly 4 participants, got ${participants?.length || 0}`);
+			throw new Error(
+				`Tournament requires exactly 4 participants, got ${participants?.length || 0}`,
+			);
 		}
 
 		const tournamentId = uuidv4();
@@ -154,7 +156,9 @@ export class TournamentService {
 				};
 			}
 
-			const matches = await this.matchRepository.findByTournamentId(tournament.id);
+			const matches = await this.matchRepository.findByTournamentId(
+				tournament.id,
+			);
 			if (!matches) {
 				throw new Error("Matches not found for tournament");
 			}

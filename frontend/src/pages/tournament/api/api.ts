@@ -1,13 +1,16 @@
-import { WebSocketManager, type WebSocketMessage } from "../../../shared/websocket/WebSocketManager";
+import {
+	WebSocketManager,
+	type WebSocketMessage,
+} from "../../../shared/websocket/WebSocketManager";
 
 // トーナメント関連の型定義
 export interface TournamentMatch {
 	id: string;
-	player1Id: string;  // player1_id → player1Id に修正
-	player2Id: string;  // player2_id → player2Id に修正
+	player1Id: string; // player1_id → player1Id に修正
+	player2Id: string; // player2_id → player2Id に修正
 	score1: number;
 	score2: number;
-	winnerId: string | null;  // winner_id → winnerId に修正
+	winnerId: string | null; // winner_id → winnerId に修正
 	status: string;
 	round: number;
 }
@@ -51,12 +54,15 @@ export class TournamentAPI {
 		if (message.status !== "Tournament") {
 			return;
 		}
-		
+
 		if (message.data) {
 			this.tournamentData = message.data as TournamentData;
-			
+
 			// デバッグ用ログを追加
-			console.log("Frontend received tournament data:", JSON.stringify(message.data, null, 2));
+			console.log(
+				"Frontend received tournament data:",
+				JSON.stringify(message.data, null, 2),
+			);
 
 			// match1, match2, match3 を更新
 			this.match1 = this.tournamentData.matches[0];
@@ -75,7 +81,7 @@ export class TournamentAPI {
 		console.log("TournamentAPI: トーナメントデータを要求");
 		this.wsManager.sendMessage({
 			status: "Tournament",
-			action: "get_status"
+			action: "get_status",
 		});
 	}
 

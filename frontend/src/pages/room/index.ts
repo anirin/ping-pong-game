@@ -3,13 +3,13 @@ import "./room.css";
 import { HeaderWidget } from "@widgets/header";
 import { SidebarWidget } from "@widgets/sidebar";
 import { navigate } from "../../app/routing";
+import { WebSocketManager } from "../../shared/websocket/WebSocketManager";
 import type { RoomUser } from "../../types/types";
 import type {
 	WSIncomingMsg,
 	WSOutgoingMsg,
 	WSRoomData,
 } from "../../types/ws-types";
-import { WebSocketManager } from "../../shared/websocket/WebSocketManager";
 
 // --- グローバル状態管理 ---
 const state = {
@@ -157,16 +157,16 @@ async function setupWebSocket(roomId: string) {
 		if (!wsManager.isConnected()) {
 			throw new Error("WebSocket connection failed");
 		}
-		
+
 		// メッセージハンドラーを設定
 		roomMessageHandler = (message: any) => {
 			console.log("WebSocket incoming message:", message);
-			
+
 			handleWsMessage(message as WSOutgoingMsg);
 		};
-		
+
 		wsManager.addCallback(roomMessageHandler);
-		
+
 		state.isWsConnected = true;
 	} catch (error) {
 		console.error("WebSocket connection error:", error);
@@ -195,21 +195,19 @@ function handleLeaveOrDelete() {
 
 // クリーンアップ関数を修正
 function cleanupRoomPage() {
-    if (roomMessageHandler) {
-        wsManager.removeCallback(roomMessageHandler);
-        roomMessageHandler = null;
-    }
-    // WebSocket接続は切断しない（tournamentで再利用するため）
-    // wsManager.disconnect(); // この行を削除または条件付きにする
-    state.isWsConnected = false;
-    console.log("ルームページのクリーンアップ完了（WebSocket接続は維持）");
+	if (roomMessageHandler) {
+		wsManager.removeCallback(roomMessageHandler);
+		roomMessageHandler = null;
+	}
+	// WebSocket接続は切断しない（tournamentで再利用するため）
+	// wsManager.disconnect(); // この行を削除または条件付きにする
+	state.isWsConnected = false;
+	console.log("ルームページのクリーンアップ完了（WebSocket接続は維持）");
 }
 
-
-
 // ページ離脱時のイベントリスナーを追加
-window.addEventListener('beforeunload', cleanupRoomPage);
-window.addEventListener('pagehide', cleanupRoomPage);
+window.addEventListener("beforeunload", cleanupRoomPage);
+window.addEventListener("pagehide", cleanupRoomPage);
 
 // --- メイン関数 ---
 export function renderRoomPage(params?: { [key: string]: string }) {

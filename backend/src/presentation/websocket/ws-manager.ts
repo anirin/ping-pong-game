@@ -60,10 +60,7 @@ export class WebSocketManager {
 		this.rooms.set(roomId, set);
 	}
 
-	removeWebSocketFromRoom(
-		roomId: RoomId,
-		ws: WebSocket.WebSocket,
-	) {
+	removeWebSocketFromRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
 		const roomSet = this.rooms.get(roomId);
 		if (roomSet) {
 			roomSet.delete(ws);

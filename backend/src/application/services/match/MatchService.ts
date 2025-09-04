@@ -8,8 +8,8 @@ import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
-import { wsManager } from "@presentation/websocket/ws-manager.js";
 import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js";
+import { wsManager } from "@presentation/websocket/ws-manager.js";
 
 type Info = {
 	interval: NodeJS.Timeout;
@@ -58,7 +58,7 @@ export class MatchService {
 						type: "match_state",
 						matchId: matchId,
 						state: state,
-					}
+					},
 				});
 			}
 
@@ -94,7 +94,11 @@ export class MatchService {
 		}
 	}
 
-	async finishMatch(matchId: MatchId, roomId: RoomId, winnerId: UserId): Promise<void> {
+	async finishMatch(
+		matchId: MatchId,
+		roomId: RoomId,
+		winnerId: UserId,
+	): Promise<void> {
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
 			throw new Error("Match not found");
@@ -126,7 +130,7 @@ export class MatchService {
 					type: "match_finished",
 					matchId: matchId,
 					winnerId: winnerId,
-				}
+				},
 			});
 		}
 	}

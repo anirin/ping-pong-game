@@ -38,7 +38,7 @@ export class WebSocketManager {
 
 	private handleMessage(message: WebSocketMessage): void {
 		console.log("WebSocketManager : handle message");
-		this.messageCallbacks.forEach(callback => {
+		this.messageCallbacks.forEach((callback) => {
 			try {
 				callback(message);
 			} catch (error) {
@@ -49,12 +49,14 @@ export class WebSocketManager {
 
 	public async connect(roomId: string): Promise<void> {
 		const baseUrl = "wss://localhost:8080";
-		
+
 		if (this.currentRoomId && this.currentRoomId !== roomId) {
-			console.log(`異なるルームに接続しようとしています。現在: ${this.currentRoomId}, 新しい: ${roomId}`);
+			console.log(
+				`異なるルームに接続しようとしています。現在: ${this.currentRoomId}, 新しい: ${roomId}`,
+			);
 			this.disconnect();
 		}
-		
+
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
 			console.log("既存のWebSocket接続を切断します");
 			this.disconnect();
@@ -67,9 +69,9 @@ export class WebSocketManager {
 
 		this.isConnecting = true;
 		const endpoint = `${baseUrl}/socket?room=${roomId}`;
-		
+
 		this.connectionPromise = this.createConnection(endpoint);
-		
+
 		try {
 			await this.connectionPromise;
 			this.currentRoomId = roomId; // 接続成功時にルームIDを設定
@@ -118,7 +120,7 @@ export class WebSocketManager {
 				console.error("WebSocketエラー:", error);
 				reject(new Error("WebSocket接続エラー"));
 			};
-			
+
 			// タイムアウト設定
 			setTimeout(() => {
 				if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
@@ -157,11 +159,16 @@ export class WebSocketManager {
 	public getConnectionState(): string {
 		if (!this.ws) return "disconnected";
 		switch (this.ws.readyState) {
-			case WebSocket.CONNECTING: return "connecting";
-			case WebSocket.OPEN: return "open";
-			case WebSocket.CLOSING: return "closing";
-			case WebSocket.CLOSED: return "closed";
-			default: return "unknown";
+			case WebSocket.CONNECTING:
+				return "connecting";
+			case WebSocket.OPEN:
+				return "open";
+			case WebSocket.CLOSING:
+				return "closing";
+			case WebSocket.CLOSED:
+				return "closed";
+			default:
+				return "unknown";
 		}
 	}
 }

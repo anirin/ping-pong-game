@@ -5,12 +5,14 @@ export type RoomIncomingMsg = {
 	action: "START" | "DELETE";
 };
 
-export type RoomOutgoingMsg = {
-	status: "Room";
-	data: WSRoomData;
-} | {
-	status: "Room";
-	data: {
-		action: "START";
-	};
-};
+export type RoomOutgoingMsg =
+	| {
+			status: "Room";
+			data: WSRoomData;
+	  }
+	| {
+			status: "Room";
+			data: {
+				action: "START";
+			};
+	  };

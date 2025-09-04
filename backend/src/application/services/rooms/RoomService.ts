@@ -38,19 +38,20 @@ export class RoomService {
 		console.log("RoomService.startRoom has called: ", roomid, userid);
 		const room = await this.roomRepository.findById(roomid);
 		if (room === null) return false;
-		if (room.ownerId === userid)
-			this.roomRepository.start(roomid);
+		if (room.ownerId === userid) this.roomRepository.start(roomid);
 
 		const participants: UserId[] = room.allParticipants.map((p) => p.id);
 		console.log("participants: ", participants);
-		
+
 		// 参加者が4人未満の場合はトーナメントを開始しない
 		if (participants.length < 4) {
 			console.log("Cannot start tournament: insufficient participants");
-			console.warn(`Cannot start tournament: insufficient participants (${participants.length}/4) for room ${roomid}`);
+			console.warn(
+				`Cannot start tournament: insufficient participants (${participants.length}/4) for room ${roomid}`,
+			);
 			return false;
 		}
-		
+
 		const ownerid: UserId = room.ownerId;
 		console.log("room.started event emitted");
 		globalEventEmitter.emit("room.started", roomid, participants, ownerid);

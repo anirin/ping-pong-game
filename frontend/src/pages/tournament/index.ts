@@ -15,7 +15,7 @@ export function renderTournamentPage() {
 
 		// トーナメントコントローラーを初期化
 		const tournamentController = createTournamentController();
-		
+
 		// ページを離れる際のクリーンアップを設定
 		const handleBeforeUnload = () => {
 			tournamentController.destroy();
@@ -28,16 +28,15 @@ export function renderTournamentPage() {
 			}
 		};
 
-		window.addEventListener('beforeunload', handleBeforeUnload);
-		document.addEventListener('visibilitychange', handleVisibilityChange);
+		window.addEventListener("beforeunload", handleBeforeUnload);
+		document.addEventListener("visibilitychange", handleVisibilityChange);
 
 		// クリーンアップ関数を返す（必要に応じて外部から呼び出し可能）
 		return () => {
-			window.removeEventListener('beforeunload', handleBeforeUnload);
-			document.removeEventListener('visibilitychange', handleVisibilityChange);
+			window.removeEventListener("beforeunload", handleBeforeUnload);
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
 			tournamentController.destroy();
 		};
-
 	} catch (error) {
 		console.error("トーナメントページの初期化に失敗しました:", error);
 		app.innerHTML = `

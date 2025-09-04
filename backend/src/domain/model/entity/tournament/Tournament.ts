@@ -41,7 +41,9 @@ export class Tournament {
 	// participants は4人と仮定する
 	generateFirstRound(): void {
 		if (!this.participants || this.participants.length !== 4) {
-			throw new Error(`Tournament requires exactly 4 participants, got ${this.participants?.length || 0}`);
+			throw new Error(
+				`Tournament requires exactly 4 participants, got ${this.participants?.length || 0}`,
+			);
 		}
 		if (this.status !== "waiting") {
 			throw new Error(

@@ -1,4 +1,8 @@
-import { tournamentAPI, type TournamentData, type TournamentMatch } from "../api/api";
+import {
+	type TournamentData,
+	type TournamentMatch,
+	tournamentAPI,
+} from "../api/api";
 
 export class TournamentController {
 	private tournamentData: TournamentData | null = null;
@@ -58,21 +62,40 @@ export class TournamentController {
 
 		try {
 			// left match - プロパティ名を修正
-			this.updateUserElement("user-a-span", this.match1.player1Id, this.match1.score1);
-			this.updateUserElement("user-b-span", this.match1.player2Id, this.match1.score2);
+			this.updateUserElement(
+				"user-a-span",
+				this.match1.player1Id,
+				this.match1.score1,
+			);
+			this.updateUserElement(
+				"user-b-span",
+				this.match1.player2Id,
+				this.match1.score2,
+			);
 			this.updateMatchPath("path-1", "path-2", this.match1);
 
 			// right match - プロパティ名を修正
-			this.updateUserElement("user-c-span", this.match2.player1Id, this.match2.score1);
-			this.updateUserElement("user-d-span", this.match2.player2Id, this.match2.score2);
+			this.updateUserElement(
+				"user-c-span",
+				this.match2.player1Id,
+				this.match2.score1,
+			);
+			this.updateUserElement(
+				"user-d-span",
+				this.match2.player2Id,
+				this.match2.score2,
+			);
 			this.updateMatchPath("path-3", "path-4", this.match2);
 		} catch (error) {
 			console.error("round1マッチ表示の更新に失敗しました:", error);
 		}
 	}
 
-
-	private updateUserElement(elementId: string, userId: string, score: number): void {
+	private updateUserElement(
+		elementId: string,
+		userId: string,
+		score: number,
+	): void {
 		const element = document.getElementById(elementId);
 		if (element) {
 			element.textContent = `${userId} (Score: ${score})`;
@@ -82,7 +105,11 @@ export class TournamentController {
 		// todo : アバター画像の更新
 	}
 
-	private updateMatchPath(path1Id: string, path2Id: string, match: TournamentMatch): void {
+	private updateMatchPath(
+		path1Id: string,
+		path2Id: string,
+		match: TournamentMatch,
+	): void {
 		const path1 = document.getElementById(path1Id) as unknown as SVGElement;
 		const path2 = document.getElementById(path2Id) as unknown as SVGElement;
 
@@ -109,7 +136,9 @@ export class TournamentController {
 			return;
 		}
 
-		const nextMatch = this.tournamentData.matches.find(m => m.id === this.tournamentData!.next_match_id);
+		const nextMatch = this.tournamentData.matches.find(
+			(m) => m.id === this.tournamentData!.next_match_id,
+		);
 		if (nextMatch) {
 			this.updateNextMatchDisplay(nextMatch);
 		}
@@ -147,7 +176,7 @@ export class TournamentController {
 			winnerSection.innerHTML = `
 				<h2>🏆 トーナメント優勝者 🏆</h2>
 				<div class="winner-info">
-					<img src="${this.tournamentData.winner_id || './src/pages/tournament/ui/avator.jpg'}" width="40" height="40">
+					<img src="${this.tournamentData.winner_id || "./src/pages/tournament/ui/avator.jpg"}" width="40" height="40">
 					<span>${this.tournamentData.winner_id}</span>
 				</div>
 			`;

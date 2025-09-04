@@ -8,13 +8,8 @@ import {
 	LeaveRoomWS,
 	RoomWSHandler,
 } from "../route/room/roomRoutes.js";
-import {
-	TournamentWSHandler,
-} from "../route/tournament/tournamentRoutes.js";
-import {
-	wsManager,
-	type WebSocketContext,
-} from "./ws-manager.js";
+import { TournamentWSHandler } from "../route/tournament/tournamentRoutes.js";
+import { type WebSocketContext, wsManager } from "./ws-manager.js";
 import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 export async function registerWSRoutes(app: FastifyInstance) {

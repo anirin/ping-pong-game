@@ -14,15 +14,23 @@ export async function TournamentWSHandler(
 	try {
 		switch (msg.action) {
 			case "get_status": {
-				const tournamentStatus = await tournamentService.getTournamentStatus(context.joinedRoom);
-				
+				const tournamentStatus = await tournamentService.getTournamentStatus(
+					context.joinedRoom,
+				);
+
 				// デバッグ用ログを追加
-				console.log("Tournament status response:", JSON.stringify(tournamentStatus, null, 2));
+				console.log(
+					"Tournament status response:",
+					JSON.stringify(tournamentStatus, null, 2),
+				);
 				console.log("Matches data:", tournamentStatus.matches);
 				if (tournamentStatus.matches.length > 0) {
-					console.log("First match structure:", JSON.stringify(tournamentStatus.matches[0], null, 2));
+					console.log(
+						"First match structure:",
+						JSON.stringify(tournamentStatus.matches[0], null, 2),
+					);
 				}
-				
+
 				return {
 					status: "Tournament",
 					data: {
