@@ -133,10 +133,14 @@ function handleWsMessage(message: WSOutgoingMsg) {
 			}
 
 			updateUI();
+		} else if (message.status === "Tournament") {
+			// トーナメントの状態更新メッセージは無視する（ルームページでは不要）
+			console.log("Tournament status update received, ignoring in room page");
+			return;
 		} else {
-			// else がいるのか？ delete は存在するのか？
-			alert("The room has been deleted by the owner.");
-			navigate("/lobby");
+			// その他のメッセージタイプの場合のみエラーを表示
+			console.warn("Unknown message status:", message.status);
+			// エラーメッセージは表示しない（トーナメントメッセージが原因でエラーが表示されるのを防ぐ）
 		}
 	} catch (err) {
 		console.error("Failed to parse WebSocket message:", err);
