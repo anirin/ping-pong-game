@@ -31,7 +31,8 @@ export async function MatchWSHandler(
 					context.authedUser,
 					msg.data.y,
 				);
-				return { // 本来不要　エラー時は注意
+				return {
+					// 本来不要　エラー時は注意
 					status: "Match",
 					data: {
 						type: "none",

@@ -56,7 +56,8 @@ export async function RoomWSHandler(
 			if (
 				await room_service.startRoom(context.joinedRoom, context.authedUser)
 			) {
-				return { // 本来不要　エラー時は注意
+				return {
+					// 本来不要　エラー時は注意
 					status: "Room",
 					data: {
 						type: "none",
