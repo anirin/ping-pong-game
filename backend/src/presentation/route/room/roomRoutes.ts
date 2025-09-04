@@ -58,7 +58,9 @@ export async function RoomWSHandler(
 			) {
 				return {
 					status: "Room",
-					msg: "room started",
+					data: {
+						action: "START",
+					},
 				} satisfies WSOutgoingMsg;
 			} else {
 				return {

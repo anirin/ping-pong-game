@@ -10,5 +10,7 @@ export type RoomOutgoingMsg = {
 	data: WSRoomData;
 } | {
 	status: "Room";
-	msg: string;
+	data: {
+		action: "START";
+	};
 };
