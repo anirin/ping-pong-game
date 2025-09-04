@@ -18,10 +18,10 @@ export class FriendEntity {
 	@Column("text")
 	friend_id!: string;
 
-	@Column("text", { default: "pending" })
+	@Column("text")
 	status!: FriendStatus;
 
-	@CreateDateColumn({ type: "text", default: () => "datetime('now')" })
+	@CreateDateColumn({ type: "text", nullable: true })
 	requested_at!: Date;
 
 	@Column({ type: "text", nullable: true })

@@ -1,0 +1,115 @@
+/* frontend/src/pages/lobby/ui/lobby.css (新規作成) */
+
+/* --- 共通レイアウトスタイル --- */
+#page-layout-container {
+	display: flex;
+	height: 100vh;
+	background-color: #f8f9fa;
+}
+
+.main-content-area {
+	flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.content-body {
+	flex-grow: 1;
+	padding: 20px 40px;
+	overflow-y: auto;
+}
+/* --- ここまで共通レイアウトスタイル --- */
+
+/* --- Lobbyページ専用スタイル --- */
+.lobby-widget-container {
+	background-color: #ffffff;
+	padding: 25px 30px;
+	border-radius: 10px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	border: 1px solid #e9e9e9;
+	width: 100%;
+	max-width: 800px; /* Roomページより少し広め */
+	margin: 0 auto;
+	box-sizing: border-box;
+}
+
+.lobby-header h2 {
+	margin-top: 0;
+	margin-bottom: 10px;
+	font-size: 24px;
+	color: #333;
+}
+
+.lobby-header p {
+	color: #666;
+	font-size: 16px;
+	margin-bottom: 0;
+}
+
+.separator {
+	margin: 25px 0;
+	border: none;
+	border-top: 1px solid #eee;
+}
+
+.lobby-actions {
+	text-align: center;
+}
+
+.btn {
+	padding: 15px 30px;
+	font-size: 16px;
+	font-weight: bold;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.btn-primary {
+	background-color: #28a745; /* 少し違う緑色 */
+}
+.btn-primary:hover {
+	background-color: #218838;
+}
+
+.btn-join {
+	background-color: #007bff;
+}
+.btn-join:hover {
+	background-color: #0069d9;
+}
+
+.join-room-section h3 {
+	margin-top: 0;
+	margin-bottom: 15px;
+	font-size: 20px;
+	color: #333;
+}
+
+.join-room-form {
+	display: flex;
+	gap: 10px;
+}
+
+.join-room-form input {
+	flex-grow: 1; /* 入力欄が可能な限り幅を取る */
+	padding: 12px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	font-size: 16px;
+	font-family: monospace; /* IDが見やすいように */
+}
+
+.join-room-form input:focus {
+	border-color: #007bff;
+	outline: none;
+	box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.join-room-form button {
+	flex-shrink: 0; /* ボタンが縮まないようにする */
+	width: 120px; /* ボタンの幅を固定 */
+}

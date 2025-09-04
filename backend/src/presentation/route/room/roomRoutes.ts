@@ -1,12 +1,11 @@
 import {
 	RoomService,
-	type RoomUserService,
+	type RoomUserService, // RoomUserServiceもインポートされていることを確認
 } from "@application/services/rooms/RoomService.js";
 import { UserService } from "@application/services/users/UserService.js";
 import type { WSRoomData } from "@domain/model/value-object/room/Room.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
-import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { FastifyInstance } from "fastify";
 import { decodeJWT } from "../auth/authRoutes.js";
@@ -14,16 +13,14 @@ import type { WebSocketContext } from "../websocket/ws.js";
 import type { WSOutgoingMsg } from "../websocket/ws-msg.js";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
-	const roomRepository = new TypeOrmRoomRepository(
-		AppDataSource.getRepository("RoomEntity"),
-	);
+	// 各サービスは自身でリポジトリを初期化するスタイルに変更
+	const roomService = new RoomService();
 	const userRepository = new TypeOrmUserRepository(
 		AppDataSource.getRepository("UserEntity"),
 	);
-	const roomService = new RoomService();
 	const userService = new UserService(userRepository);
 
-	// POST /rooms: ルーム作成
+	// POST /rooms: ルーム作成 (変更なし)
 	app.post<{ Body: { mode?: string } }>("/rooms", async (request, reply) => {
 		const token = request.headers.authorization?.replace("Bearer ", "");
 		try {
@@ -34,7 +31,6 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 					.status(400)
 					.send({ error: "invalid JWT or non existing user" });
 			}
-			const { mode } = request.body;
 			const room = await roomService.createRoom(owner_id);
 			return reply.status(201).send({
 				id: room.id,
@@ -96,6 +92,7 @@ export async function RoomWSHandler(
 
 export async function JoinRoomWS(
 	room_user_service: RoomUserService,
+	room_service: RoomService,
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
 	try {
@@ -103,30 +100,35 @@ export async function JoinRoomWS(
 			context.authedUser,
 			context.joinedRoom,
 		);
-		if (succeeded)
+
+		if (succeeded) {
+			// 参加成功後、ルーム情報を取得
+			const room = await room_service.getRoomById(context.joinedRoom);
+			if (!room) {
+				throw new Error("Failed to retrieve room info after joining.");
+			}
+
+			// レスポンスに users と roomInfo の両方を含める
 			return {
 				status: "Room",
 				data: {
 					action: "USER",
 					users: await room_user_service.getAllRoomUsers(context.joinedRoom),
-				} satisfies WSRoomData,
-			} satisfies WSOutgoingMsg;
-		else
-			return {
-				status: "error",
-				msg: "failed to join room",
-			} satisfies WSOutgoingMsg;
+					roomInfo: {
+						id: room.id,
+						ownerId: room.ownerId,
+						status: room.status,
+					},
+				} as WSRoomData, // 型定義を更新するまでは as でキャスト
+			};
+		} else {
+			return { status: "error", msg: "failed to join room" };
+		}
 	} catch (error) {
 		if (error instanceof Error) {
-			return {
-				status: "error",
-				msg: error.message,
-			} satisfies WSOutgoingMsg;
+			return { status: "error", msg: error.message };
 		}
-		return {
-			status: "error",
-			msg: "unexpected error",
-		};
+		return { status: "error", msg: "unexpected error" };
 	}
 }
 
@@ -142,19 +144,12 @@ export async function LeaveRoomWS(
 				data: {
 					action: "USER",
 					users: await room_user_service.getAllRoomUsers(context.joinedRoom),
-				} satisfies WSRoomData,
-			} satisfies WSOutgoingMsg;
-		else
-			return {
-				status: "error",
-				msg: "failed to join room",
-			} satisfies WSOutgoingMsg;
+				},
+			};
+		else return { status: "error", msg: "failed to leave room" };
 	} catch (error) {
 		if (error instanceof Error) {
-			return {
-				status: "error",
-				msg: error.message,
-			} satisfies WSOutgoingMsg;
+			return { status: "error", msg: error.message };
 		}
 		throw Error("unexpected error");
 	}

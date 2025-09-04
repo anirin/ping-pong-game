@@ -2,7 +2,7 @@ import "./ui/friend_list.css";
 import "./ui/friend_header.css";
 import { HeaderWidget } from "@/widgets/header";
 import { SidebarWidget } from "@/widgets/sidebar";
-import { mountFriendProfile } from "./ui/controller";
+import { mountFriendList } from "./ui/controller";
 import html from "./ui/friend_list.html?raw";
 
 export function renderFriendListPage() {
@@ -19,12 +19,13 @@ export function renderFriendListPage() {
 	const friend_header = app.querySelector("#friend-header") as HTMLElement;
 	friend_header.innerHTML = `
 		<button id="friend-list">フレンド一覧</button>
-		<button id="friend-add">フレンド追加</button>
+		<button id="friend-request">フレンド追加</button>
+		<button id="friend-pending">承認待ち</button>
 	`;
 
 	const root = app?.querySelector("#friend-list-body") as HTMLElement;
 
-	mountFriendProfile(root, (path) => {
+	mountFriendList(root, (path) => {
 		history.pushState(null, "", path);
 		dispatchEvent(new PopStateEvent("popstate"));
 	});
@@ -37,9 +38,15 @@ export function renderFriendListPage() {
 		}
 	});
 
-	document.getElementById("friend-add")?.addEventListener("click", () => {
-		if (window.location.pathname !== "/friend/add") {
-			history.pushState(null, "", "/friend/add");
+	document.getElementById("friend-request")?.addEventListener("click", () => {
+		if (window.location.pathname !== "/friend/request") {
+			history.pushState(null, "", "/friend/request");
+			dispatchEvent(new PopStateEvent("popstate"));
+		}
+	});
+	document.getElementById("friend-pending")?.addEventListener("click", () => {
+		if (window.location.pathname !== "/friend/pending") {
+			history.pushState(null, "", "/friend/pending");
 			dispatchEvent(new PopStateEvent("popstate"));
 		}
 	});

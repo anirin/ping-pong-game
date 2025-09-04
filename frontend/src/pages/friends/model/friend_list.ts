@@ -27,7 +27,6 @@ export async function fetchFriends(): Promise<Result<Friend[]>> {
 		);
 		return { ok: true, value: res };
 	} catch (e) {
-		console.error("Friends Error: ", e);
 		return { ok: false, error: "フレンド取得に失敗" };
 	}
 }

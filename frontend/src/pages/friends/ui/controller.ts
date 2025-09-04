@@ -1,6 +1,6 @@
 import { fetchFriends } from "../model/friend_list";
 
-export async function mountFriendProfile(
+export async function mountFriendList(
 	root: HTMLElement,
 	navigate: (path: string) => void,
 ) {

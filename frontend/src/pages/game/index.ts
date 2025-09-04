@@ -182,7 +182,7 @@ class GamePage {
 	}
 
 	private updateMyPaddle(): void {
-		const PADDLE_SPEED = 5;
+		const PADDLE_SPEED = 7;
 		let hasMoved = false;
 
 		if (this.movingUp) {
