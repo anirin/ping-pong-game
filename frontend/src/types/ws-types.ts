@@ -6,7 +6,7 @@ type MatchPosition = { y: number };
 export type WSIncomingMsg =
 	| {
 			status: "Room";
-			action: "START" | "DELETE";
+			action: "START" | "DELETE" | "LEAVE";
 	  }
 	| {
 			status: "Match";

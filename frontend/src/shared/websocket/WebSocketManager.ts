@@ -139,6 +139,14 @@ export class WebSocketManager {
 		this.messageCallbacks.clear();
 	}
 
+	public getCallbackCount(): number {
+		return this.messageCallbacks.size;
+	}
+
+	public hasCallback(callback: WebSocketMessageCallback): boolean {
+		return this.messageCallbacks.has(callback);
+	}
+
 	public reset(): void {
 		this.disconnect();
 		this.clearCallbacks();

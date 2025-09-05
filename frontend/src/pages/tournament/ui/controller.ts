@@ -1,7 +1,7 @@
 import {
 	type TournamentData,
 	type TournamentMatch,
-	tournamentAPI,
+	getTournamentAPI,
 } from "../api/api";
 
 export class TournamentController {
@@ -9,17 +9,18 @@ export class TournamentController {
 	private match1: TournamentMatch | null = null;
 	private match2: TournamentMatch | null = null;
 	private dataUpdateCallback: () => void;
+	private tournamentAPI = getTournamentAPI();
 
 	constructor() {
-		tournamentAPI.reset();
+		this.tournamentAPI.reset();
 		this.dataUpdateCallback = this.handleDataUpdate.bind(this);
-		tournamentAPI.addDataUpdateCallback(this.dataUpdateCallback);
+		this.tournamentAPI.addDataUpdateCallback(this.dataUpdateCallback);
 		this.initialize();
 	}
 
 	private async initialize(): Promise<void> {
 		await this.waitForWebSocketConnection();
-		tournamentAPI.getTournamentData();
+		this.tournamentAPI.getTournamentData();
 		await this.waitForTournamentData();
 		this.updateTournamentDisplay();
 	}
@@ -27,7 +28,7 @@ export class TournamentController {
 	private async waitForWebSocketConnection(): Promise<void> {
 		return new Promise((resolve) => {
 			const checkConnection = () => {
-				const wsManager = tournamentAPI['wsManager'];
+				const wsManager = this.tournamentAPI['wsManager'];
 				if (wsManager.isConnected()) {
 					console.log("WebSocket is connected, proceeding with tournament data request");
 					resolve();
@@ -43,7 +44,7 @@ export class TournamentController {
 	private async waitForTournamentData(): Promise<void> {
 		return new Promise((resolve) => {
 			const checkData = () => {
-				if (tournamentAPI.getCurrentTournament()) {
+				if (this.tournamentAPI.getCurrentTournament()) {
 					this.updateLocalData();
 					resolve();
 				} else {
@@ -55,9 +56,9 @@ export class TournamentController {
 	}
 
 	private updateLocalData(): void {
-		this.tournamentData = tournamentAPI.getCurrentTournament();
-		this.match1 = tournamentAPI.getMatch1();
-		this.match2 = tournamentAPI.getMatch2();
+		this.tournamentData = this.tournamentAPI.getCurrentTournament();
+		this.match1 = this.tournamentAPI.getMatch1();
+		this.match2 = this.tournamentAPI.getMatch2();
 	}
 
 	private handleDataUpdate(): void {
@@ -189,7 +190,7 @@ export class TournamentController {
 	}
 
 	private goToNextMatch(matchId: string): void {
-		tournamentAPI.navigateToMatch(matchId);
+		this.tournamentAPI.navigateToMatch(matchId);
 	}
 
 	private async handleTournamentFinished(): Promise<void> {
@@ -267,8 +268,8 @@ export class TournamentController {
 	}
 
 	public destroy(): void {
-		tournamentAPI.removeDataUpdateCallback(this.dataUpdateCallback);
-		tournamentAPI.destroy();
+		this.tournamentAPI.removeDataUpdateCallback(this.dataUpdateCallback);
+		this.tournamentAPI.destroy();
 	}
 }
 

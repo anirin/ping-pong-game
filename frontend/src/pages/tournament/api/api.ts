@@ -29,6 +29,7 @@ export interface TournamentMessage extends WebSocketMessage {
 }
 
 export class TournamentAPI {
+	private static instance: TournamentAPI | null = null;
 	private tournamentData: TournamentData | null = null;
 
 	private match1: TournamentMatch | null = null;
@@ -38,10 +39,27 @@ export class TournamentAPI {
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 	private messageHandler: (message: WebSocketMessage) => void;
 	private dataUpdateCallbacks: Set<() => void> = new Set();
+	private isInitialized: boolean = false;
 
-	constructor() {
+	private constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
+	}
+
+	public static getInstance(): TournamentAPI {
+		if (!TournamentAPI.instance) {
+			TournamentAPI.instance = new TournamentAPI();
+		}
+		return TournamentAPI.instance;
+	}
+
+	public initialize(): void {
+		if (this.isInitialized) {
+			console.warn("TournamentAPI is already initialized");
+			return;
+		}
 		this.wsManager.addCallback(this.messageHandler);
+		this.isInitialized = true;
+		console.log("TournamentAPI initialized");
 	}
 
 	private handleMessage(message: WebSocketMessage): void {
@@ -51,6 +69,8 @@ export class TournamentAPI {
 
 		if (message.data) {
 			if ('type' in message.data && message.data.type === "navigate_to_match") {
+				// 遷移前にコールバックをクリアして重複を防ぐ
+				this.wsManager.clearCallbacks();
 				navigate(`/match/${message.data.matchId}`);
 				return;
 			}
@@ -147,6 +167,7 @@ export class TournamentAPI {
 
 	public navigateToMatch(matchId: string): void {
 		console.log("TournamentAPI: マッチに遷移", matchId);
+		// サーバーからの応答を受信するためにコールバックをクリアしない
 		this.wsManager.sendMessage({
 			status: "Tournament",
 			action: "navigate_to_match",
@@ -155,28 +176,32 @@ export class TournamentAPI {
 	}
 
 	public destroy(): void {
+		if (!this.isInitialized) {
+			console.warn("TournamentAPI is not initialized");
+			return;
+		}
 		this.wsManager.removeCallback(this.messageHandler);
 		this.dataUpdateCallbacks.clear();
 		this.tournamentData = null;
 		this.match1 = null;
 		this.match2 = null;
 		this.match3 = null;
-		console.log("TournamentAPI: 破棄");
+		this.isInitialized = false;
+		console.log("TournamentAPI destroyed");
 	}
 
 	public reset(): void {
 		console.log("TournamentAPI: リセット開始");
-		this.wsManager.removeCallback(this.messageHandler);
-		this.dataUpdateCallbacks.clear();
-		
-		this.tournamentData = null;
-		this.match1 = null;
-		this.match2 = null;
-		this.match3 = null;
-		
-		this.messageHandler = this.handleMessage.bind(this);
-		this.wsManager.addCallback(this.messageHandler);
+		this.destroy();
+		this.initialize();
 		console.log("TournamentAPI: リセット完了");
+	}
+
+	public static reset(): void {
+		if (TournamentAPI.instance) {
+			TournamentAPI.instance.destroy();
+			TournamentAPI.instance = null;
+		}
 	}
 
 	public addDataUpdateCallback(callback: () => void): void {
@@ -214,4 +239,7 @@ export class TournamentAPI {
 	}
 }
 
-export const tournamentAPI = new TournamentAPI();
+// シングルトンインスタンスの取得関数
+export function getTournamentAPI(): TournamentAPI {
+	return TournamentAPI.getInstance();
+}

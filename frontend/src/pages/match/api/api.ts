@@ -30,6 +30,7 @@ export interface MatchMessage extends WebSocketMessage {
 }
 
 export class MatchAPI {
+	private static instance: MatchAPI | null = null;
 	private matchData: RealtimeMatchStateDto | null = null;
 	private matchId: string | null = null;
 	private userId: string | null = null;
@@ -37,10 +38,27 @@ export class MatchAPI {
 	private readyPlayers: Set<string> = new Set();
 	private isReady: boolean = false;
 	private messageHandler: (message: WebSocketMessage) => void;
+	private isInitialized: boolean = false;
 
-	constructor() {
+	private constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
+	}
+
+	public static getInstance(): MatchAPI {
+		if (!MatchAPI.instance) {
+			MatchAPI.instance = new MatchAPI();
+		}
+		return MatchAPI.instance;
+	}
+
+	public initialize(): void {
+		if (this.isInitialized) {
+			console.warn("MatchAPI is already initialized");
+			return;
+		}
 		this.wsManager.addCallback(this.messageHandler);
+		this.isInitialized = true;
+		console.log("MatchAPI initialized");
 	}
 
 	private handleMessage(message: WebSocketMessage): void {
@@ -218,12 +236,28 @@ export class MatchAPI {
 	}
 
 	public destroy(): void {
+		if (!this.isInitialized) {
+			console.warn("MatchAPI is not initialized");
+			return;
+		}
 		this.wsManager.removeCallback(this.messageHandler);
 		this.resetReadyState();
 		this.matchData = null;
 		this.matchId = null;
 		this.userId = null;
+		this.isInitialized = false;
+		console.log("MatchAPI destroyed");
+	}
+
+	public static reset(): void {
+		if (MatchAPI.instance) {
+			MatchAPI.instance.destroy();
+			MatchAPI.instance = null;
+		}
 	}
 }
 
-export const matchAPI = new MatchAPI();
+// シングルトンインスタンスの取得関数
+export function getMatchAPI(): MatchAPI {
+	return MatchAPI.getInstance();
+}

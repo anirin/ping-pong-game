@@ -1,4 +1,4 @@
-import { matchAPI, type RealtimeMatchStateDto } from "../api/api";
+import { getMatchAPI, type RealtimeMatchStateDto } from "../api/api";
 
 export class MatchController {
 	private matchId: string | null = null;
@@ -11,6 +11,7 @@ export class MatchController {
 	private hasResetReadyState: boolean = false;
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
+	private matchAPI = getMatchAPI();
 
 	constructor(params?: { [key: string]: string }) {
 		if (params && params.matchId) {
@@ -34,6 +35,9 @@ export class MatchController {
 		this.myPredictedPaddleY = 300;
 		this.hasResetReadyState = false;
 
+		// MatchAPIを初期化
+		this.matchAPI.initialize();
+
 		window.addEventListener("popstate", this.cleanup.bind(this), {
 			once: true,
 		});
@@ -45,7 +49,7 @@ export class MatchController {
 	}
 
 	private cleanup(): void {
-		matchAPI.destroy();
+		this.matchAPI.destroy();
 		if (this.animationFrameId) {
 			cancelAnimationFrame(this.animationFrameId);
 			this.animationFrameId = null;
@@ -67,7 +71,7 @@ export class MatchController {
 		try {
 			const payload = JSON.parse(atob(token.split(".")[1]));
 			const userId = payload.id;
-			matchAPI.subscribeToMatch(matchId!, userId);
+			this.matchAPI.subscribeToMatch(matchId!, userId);
 		} catch (error) {
 			console.error("WebSocket接続エラー:", error);
 			alert("WebSocket接続に失敗しました。");
@@ -144,7 +148,7 @@ export class MatchController {
 		);
 
 		if (hasMoved) {
-			matchAPI.sendPaddleMove({ y: this.myPredictedPaddleY });
+			this.matchAPI.sendPaddleMove({ y: this.myPredictedPaddleY });
 		}
 	}
 
@@ -158,10 +162,10 @@ export class MatchController {
 	}
 
 	private updateMatchState(): void {
-		this.serverState = matchAPI.getMatchData();
+		this.serverState = this.matchAPI.getMatchData();
 		
 		if (this.serverState && this.myPlayerNumber === null) {
-			const role = matchAPI.getPlayerRole();
+			const role = this.matchAPI.getPlayerRole();
 			if (role === "player1" || role === "player2") {
 				this.myPlayerNumber = role;
 				this.updatePlayerInfo();
@@ -170,7 +174,7 @@ export class MatchController {
 		}
 
 		if (this.serverState && this.serverState.status === "finished" && !this.hasResetReadyState) {
-			matchAPI.resetReadyState();
+			this.matchAPI.resetReadyState();
 			this.hasResetReadyState = true;
 		}
 
@@ -187,13 +191,13 @@ export class MatchController {
 	private updateMatchStatus(): void {
 		const matchStatusEl = document.getElementById("match-status");
 		if (matchStatusEl) {
-			const status = matchAPI.getMatchStatus();
+			const status = this.matchAPI.getMatchStatus();
 			matchStatusEl.textContent = status ? `Status: ${status}` : "Waiting for match to start...";
 		}
 	}
 
 	private handleReadyButtonClick(): void {
-		matchAPI.toggleReadyState();
+		this.matchAPI.toggleReadyState();
 		this.updateReadyButton();
 		this.updateReadyCount();
 	}
@@ -202,9 +206,9 @@ export class MatchController {
 		const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
 		if (!readyButton) return;
 
-		const isReady = matchAPI.isCurrentUserReady();
-		const readyCount = matchAPI.getReadyPlayerCount();
-		const playerRole = matchAPI.getPlayerRole();
+		const isReady = this.matchAPI.isCurrentUserReady();
+		const readyCount = this.matchAPI.getReadyPlayerCount();
+		const playerRole = this.matchAPI.getPlayerRole();
 
 		if (!this.serverState) {
 			readyButton.disabled = true;
@@ -234,7 +238,7 @@ export class MatchController {
 	private updateReadyCount(): void {
 		const readyCountEl = document.getElementById("ready-count");
 		if (readyCountEl) {
-			const readyCount = matchAPI.getReadyPlayerCount();
+			const readyCount = this.matchAPI.getReadyPlayerCount();
 			readyCountEl.textContent = readyCount.toString();
 		}
 	}
