@@ -11,6 +11,7 @@ import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORM
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { wsManager } from "@presentation/websocket/ws-manager.js";
 import { v4 as uuidv4 } from "uuid";
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
 
 // コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
 export class TournamentService {
@@ -99,7 +100,7 @@ export class TournamentService {
 		});
 	}
 
-	async processAfterMatch(tournamentId: TournamentId) {
+	async processAfterMatch(tournamentId: TournamentId, matchId: MatchId, winnerId: UserId) {
 		let tournament: Tournament | null;
 
 		try {
@@ -124,24 +125,53 @@ export class TournamentService {
 				match.status === "scheduled" && match.round === tournament.currentRound,
 		);
 		if (scheduledMatch) {
+			console.log("case 1 : current round に scheduled の match がある場合");
+
+			wsManager.broadcast(this.roomId, {
+				status: "Match",
+				data: {
+					type: "match_finished",
+					matchId: matchId,
+					winnerId: winnerId,
+				},
+			});
 			return;
 		}
 
 		if (tournament!.canGenerateNextRound()) {
 			// case 2 : 全て finised で next round 生成可能な場合
+			console.log("case 2 : 全て finised で next round 生成可能な場合");
 			tournament!.generateNextRound();
 
 			// 各種 db 操作
 			try {
+				console.log("saveAll matches");
 				await this.matchRepository.saveAll(tournament!.matches);
+				console.log("save tournament currentRound : ", tournament!.currentRound);
 				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
+				
+				// debug
+				await this.tournamentRepository.findById(tournamentId);
+				console.log("tournament currentRound : ", tournament!.currentRound);
 			} catch (error) {
 				throw new Error("Failed to save matches");
 			}
 		} else {
 			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
 			// tournament finish を broadcast
+			console.log("case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了");
 			this.finishTournament(tournamentId, tournament.winner_id!);
+		}
+
+		if (wsManager.hasRoom(this.roomId)) {
+			wsManager.broadcast(this.roomId, {
+				status: "Match",
+				data: {
+					type: "match_finished",
+					matchId: matchId,
+					winnerId: winnerId,
+				},
+			});
 		}
 	}
 
@@ -159,6 +189,18 @@ export class TournamentService {
 		} catch (error) {
 			throw new Error("Failed to save tournament");
 		}
+
+		// トーナメント終了をフロントエンドに通知
+		if (wsManager.hasRoom(this.roomId)) {
+			wsManager.broadcast(this.roomId, {
+				status: "Tournament",
+				data: {
+					type: "tournament_finished",
+					winner_id: winnerId,
+					tournament_id: tournamentId,
+				},
+			});
+		}
 	}
 
 	async getTournamentStatus(roomId: RoomId) {
@@ -171,6 +213,8 @@ export class TournamentService {
 			if (!tournament) {
 				throw new Error("Tournament not found for this room");
 			}
+
+			console.log("get status : tournament currentRound : ", tournament.currentRound);
 
 			if (tournament.status === "finished") {
 				return {
@@ -189,7 +233,12 @@ export class TournamentService {
 				throw new Error("Matches not found for tournament");
 			}
 
+			// マッチを更新する前に、現在のcurrentRoundを保存
+			const currentRound = tournament.currentRound;
 			tournament.matches = matches;
+			// currentRoundを復元（データベースから取得した正しい値を使用）
+			tournament.currentRound = currentRound;
+			
 			const nextMatch = tournament.getNextMatch();
 
 			return {

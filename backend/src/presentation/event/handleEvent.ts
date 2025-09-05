@@ -4,8 +4,8 @@ import { TournamentService } from "@application/services/tournament/TournamentSe
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
-import { wsManager } from "../websocket/ws-manager.js";
 import { globalEventEmitter } from "./globalEventEmitter.js";
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
 
 globalEventEmitter.on(
 	"room.started",
@@ -23,7 +23,7 @@ globalEventEmitter.on(
 	},
 );
 
-globalEventEmitter.on("match.finished", async (tournamentId: TournamentId) => {
+globalEventEmitter.on("match.finished", async (tournamentId: TournamentId, matchId: MatchId, winnerId: UserId) => {
 	console.log("match event finished");
 
 	try {
@@ -44,7 +44,7 @@ globalEventEmitter.on("match.finished", async (tournamentId: TournamentId) => {
 		
 		// room idでシングルトンインスタンスを取得
 		const tournamentService = TournamentService.getInstance(roomId);
-		await tournamentService.processAfterMatch(tournamentId);
+		await tournamentService.processAfterMatch(tournamentId, matchId, winnerId);
 	} catch (error) {
 		console.error("Failed to process match finish:", error);
 		// エラーが発生してもサーバーは停止しない

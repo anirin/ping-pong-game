@@ -10,6 +10,7 @@ export class MatchController {
 	private myPlayerNumber: "player1" | "player2" | null = null;
 	private movingUp: boolean = false;
 	private movingDown: boolean = false;
+	private hasResetReadyState: boolean = false; // ready状態リセット済みフラグ
 
 	// キーボードイベントのハンドラをクラスのプロパティとして保持
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
@@ -35,6 +36,7 @@ export class MatchController {
 		}
 
 		this.myPredictedPaddleY = 300;
+		this.hasResetReadyState = false; // フラグをリセット
 
 		// 他のページに移動した際にリソースをクリーンアップするためのイベントリスナー
 		window.addEventListener("popstate", this.cleanup.bind(this), {
@@ -183,6 +185,13 @@ export class MatchController {
 			this.updateReadyButton();
 		}
 
+		// マッチが終了した場合、ready状態をリセット（一度だけ）
+		if (this.serverState && this.serverState.status === "finished" && !this.hasResetReadyState) {
+			console.log("Match finished, resetting ready state for next match");
+			matchAPI.resetReadyState();
+			this.hasResetReadyState = true; // フラグを設定して重複実行を防ぐ
+		}
+
 		// マッチの状態を更新
 		this.updateMatchStatus();
 	}
@@ -257,6 +266,7 @@ export class MatchController {
 		if (readyButton) {
 			readyButton.disabled = true; // マッチデータ受信まで無効化
 			readyButton.textContent = "Connecting...";
+			readyButton.classList.remove("ready"); // readyクラスを削除
 		}
 		this.updateReadyCount();
 	}

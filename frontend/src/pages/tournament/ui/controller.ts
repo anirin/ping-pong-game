@@ -8,12 +8,22 @@ export class TournamentController {
 	private tournamentData: TournamentData | null = null;
 	private match1: TournamentMatch | null = null;
 	private match2: TournamentMatch | null = null;
+	private dataUpdateCallback: () => void;
 
 	constructor() {
+		// TournamentAPI をリセットしてクリーンな状態にする
+		tournamentAPI.reset();
+		
+		// データ更新コールバックを設定
+		this.dataUpdateCallback = this.handleDataUpdate.bind(this);
+		tournamentAPI.addDataUpdateCallback(this.dataUpdateCallback);
 		this.initialize();
 	}
 
 	private async initialize(): Promise<void> {
+		// WebSocket接続を確認
+		await this.waitForWebSocketConnection();
+		
 		// WebSocketでデータを要求
 		tournamentAPI.getTournamentData();
 
@@ -24,13 +34,28 @@ export class TournamentController {
 		this.updateTournamentDisplay();
 	}
 
+	private async waitForWebSocketConnection(): Promise<void> {
+		return new Promise((resolve) => {
+			const checkConnection = () => {
+				const wsManager = tournamentAPI['wsManager'];
+				if (wsManager.isConnected()) {
+					console.log("WebSocket is connected, proceeding with tournament data request");
+					resolve();
+				} else {
+					console.log("WebSocket is not connected, waiting...");
+					// 100ms後に再チェック
+					setTimeout(checkConnection, 100);
+				}
+			};
+			checkConnection();
+		});
+	}
+
 	private async waitForTournamentData(): Promise<void> {
 		return new Promise((resolve) => {
 			const checkData = () => {
 				if (tournamentAPI.getCurrentTournament()) {
-					this.tournamentData = tournamentAPI.getCurrentTournament();
-					this.match1 = tournamentAPI.getMatch1();
-					this.match2 = tournamentAPI.getMatch2();
+					this.updateLocalData();
 					resolve();
 				} else {
 					// 100ms後に再チェック
@@ -41,12 +66,30 @@ export class TournamentController {
 		});
 	}
 
+	private updateLocalData(): void {
+		this.tournamentData = tournamentAPI.getCurrentTournament();
+		this.match1 = tournamentAPI.getMatch1();
+		this.match2 = tournamentAPI.getMatch2();
+	}
+
+	private handleDataUpdate(): void {
+		console.log("TournamentController: データ更新を受信");
+		this.updateLocalData();
+		this.updateTournamentDisplay();
+	}
+
 	private async updateTournamentDisplay(): Promise<void> {
 		if (!this.tournamentData) {
 			return;
 		}
 
 		try {
+			// トーナメントが終了している場合の特別処理
+			if (this.tournamentData.status === "finished") {
+				await this.handleTournamentFinished();
+				return;
+			}
+
 			await this.updateRound1Matches();
 			await this.updateNextMatchInfo();
 			await this.updateWinnerDisplay();
@@ -174,6 +217,59 @@ export class TournamentController {
 		tournamentAPI.navigateToMatch(matchId);
 	}
 
+	// トーナメント終了時の処理
+	private async handleTournamentFinished(): Promise<void> {
+		if (!this.tournamentData?.winner_id) {
+			return;
+		}
+
+		try {
+			// 勝利者表示を更新
+			await this.updateWinnerDisplay();
+			
+			// トーナメント終了メッセージを表示
+			this.showTournamentFinishedMessage();
+		} catch (error) {
+			console.error("トーナメント終了処理に失敗しました:", error);
+		}
+	}
+
+	// トーナメント終了メッセージの表示
+	private showTournamentFinishedMessage(): void {
+		const messageDiv = document.createElement("div");
+		messageDiv.className = "tournament-finished-message";
+		messageDiv.innerHTML = `
+			<div class="message-content">
+				<h2>🏆 トーナメント終了 🏆</h2>
+				<p>お疲れ様でした！</p>
+			</div>
+		`;
+		
+		// スタイルを追加
+		messageDiv.style.cssText = `
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background: rgba(0, 0, 0, 0.9);
+			color: white;
+			padding: 2rem;
+			border-radius: 10px;
+			text-align: center;
+			z-index: 1000;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+		`;
+		
+		document.body.appendChild(messageDiv);
+		
+		// 5秒後にメッセージを削除
+		setTimeout(() => {
+			if (messageDiv.parentNode) {
+				messageDiv.parentNode.removeChild(messageDiv);
+			}
+		}, 5000);
+	}
+
 	private async updateWinnerDisplay(): Promise<void> {
 		if (!this.tournamentData?.winner_id) {
 			return;
@@ -208,6 +304,7 @@ export class TournamentController {
 	}
 
 	public destroy(): void {
+		tournamentAPI.removeDataUpdateCallback(this.dataUpdateCallback);
 		tournamentAPI.destroy();
 	}
 }

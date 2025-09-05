@@ -154,6 +154,8 @@ export class MatchService {
 			clearInterval(info.interval);
 			this.intervals.delete(matchId);
 		}
+		// ready状態もクリア
+		this.clearReadyState(matchId);
 	}
 
 	async finishMatch(
@@ -190,20 +192,13 @@ export class MatchService {
 			throw new Error("Failed to save match");
 		}
 
+		// ready状態をクリア
+		this.clearReadyState(matchId);
+
 		// tournament event を発火
 		const tournamentId: TournamentId = savedMatch.tournamentId;
-		globalEventEmitter.emit("match.finished", tournamentId);
+		globalEventEmitter.emit("match.finished", tournamentId, this.roomId, winnerId, matchId);
 
-		if (wsManager.hasRoom(this.roomId)) {
-			wsManager.broadcast(this.roomId, {
-				status: "Match",
-				data: {
-					type: "match_finished",
-					matchId: matchId,
-					winnerId: winnerId,
-				},
-			});
-		}
 	}
 
 	async handlePlayerInput(
@@ -285,6 +280,12 @@ export class MatchService {
 				},
 			});
 		}
+	}
+
+	// マッチ終了時にready状態をクリア
+	public clearReadyState(matchId: MatchId): void {
+		this.readyPlayers.delete(matchId);
+		console.log(`Cleared ready state for match ${matchId}`);
 	}
 
 	// ready状態を取得

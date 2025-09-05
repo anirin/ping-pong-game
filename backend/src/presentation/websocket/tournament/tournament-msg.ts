@@ -23,4 +23,12 @@ export type TournamentOutgoingMsg =
 				type: "navigate_to_match";
 				matchId: MatchId;
 			};
+	  }
+	| {
+			status: "Tournament";
+			data: {
+				type: "tournament_finished";
+				winner_id: string;
+				tournament_id: string;
+			};
 	  };

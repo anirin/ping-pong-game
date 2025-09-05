@@ -38,9 +38,11 @@ export class MatchAPI {
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 	private readyPlayers: Set<string> = new Set();
 	private isReady: boolean = false;
+	private messageHandler: (message: WebSocketMessage) => void;
 
 	constructor() {
-		this.wsManager.addCallback(this.handleMessage.bind(this));
+		this.messageHandler = this.handleMessage.bind(this);
+		this.wsManager.addCallback(this.messageHandler);
 	}
 
 	// マッチメッセージの処理(受信)
@@ -74,6 +76,9 @@ export class MatchAPI {
 	public subscribeToMatch(matchId: string, userId: string): void {
 		this.matchId = matchId;
 		this.userId = userId;
+		
+		// 新しいマッチのため、ready状態をリセット
+		this.resetReadyState();
 		
 		console.log("MatchAPI: マッチにサブスクライブ", { matchId, userId });
 		
@@ -138,6 +143,18 @@ export class MatchAPI {
 		console.log(`Player ${userId} ready state: ${isReady}, Total ready: ${this.readyPlayers.size}`);
 	}
 
+	// ready状態をリセット
+	public resetReadyState(): void {
+		// 既にリセット済みの場合は何もしない
+		if (this.readyPlayers.size === 0 && !this.isReady) {
+			return;
+		}
+		
+		this.readyPlayers.clear();
+		this.isReady = false;
+		console.log("MatchAPI: Ready状態をリセットしました");
+	}
+
 	// 準備完了プレイヤー数を取得
 	public getReadyPlayerCount(): number {
 		return this.readyPlayers.size;
@@ -183,6 +200,8 @@ export class MatchAPI {
 
 	// バックエンドから受信したready状態を更新
 	private updateReadyStateFromServer(readyPlayers: string[], readyCount: number): void {
+		console.log("Updating ready state from server:", { readyPlayers, readyCount, currentUserId: this.userId });
+		
 		// ローカルのready状態を更新
 		this.readyPlayers.clear();
 		readyPlayers.forEach(playerId => this.readyPlayers.add(playerId));
@@ -190,6 +209,7 @@ export class MatchAPI {
 		// 現在のユーザーのready状態を更新
 		if (this.userId) {
 			this.isReady = this.readyPlayers.has(this.userId);
+			console.log(`User ${this.userId} ready state: ${this.isReady}`);
 		}
 
 		// 2人とも準備完了の場合、player1からのみマッチを開始
@@ -252,7 +272,13 @@ export class MatchAPI {
 	}
 
 	public destroy(): void {
-		this.wsManager.removeCallback(this.handleMessage.bind(this));
+		this.wsManager.removeCallback(this.messageHandler);
+		// ready状態もリセット
+		this.resetReadyState();
+		// マッチデータもクリア
+		this.matchData = null;
+		this.matchId = null;
+		this.userId = null;
 		console.log("MatchAPI: 破棄");
 	}
 }

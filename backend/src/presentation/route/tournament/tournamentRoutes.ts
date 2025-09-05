@@ -20,10 +20,10 @@ export async function TournamentWSHandler(
 				);
 
 				// デバッグ用ログを追加
-				// console.log(
-				// 	"Tournament status response:",
-				// 	JSON.stringify(tournamentStatus, null, 2),
-				// );
+				console.log(
+					"Tournament status response:",
+					JSON.stringify(tournamentStatus, null, 2),
+				);
 				// console.log("Matches data:", tournamentStatus.matches);
 				// if (tournamentStatus.matches.length > 0) {
 				// 	console.log(
@@ -35,6 +35,7 @@ export async function TournamentWSHandler(
 				return {
 					status: "Tournament",
 					data: {
+						status: tournamentStatus.status,
 						next_match_id: tournamentStatus.next_match_id,
 						matches: tournamentStatus.matches,
 						current_round: tournamentStatus.current_round,

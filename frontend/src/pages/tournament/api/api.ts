@@ -16,6 +16,7 @@ export interface TournamentMatch {
 	round: number;
 }
 export interface TournamentData {
+	status: string;
 	next_match_id: string;
 	matches: TournamentMatch[];
 	current_round: number;
@@ -44,9 +45,13 @@ export class TournamentAPI {
 	// private player4: Player | null = null;
 
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
+	private messageHandler: (message: WebSocketMessage) => void;
+	private dataUpdateCallbacks: Set<() => void> = new Set();
 
 	constructor() {
-		this.wsManager.addCallback(this.handleMessage.bind(this));
+		// メッセージハンドラーをプロパティとして保存
+		this.messageHandler = this.handleMessage.bind(this);
+		this.wsManager.addCallback(this.messageHandler);
 	}
 
 	// トーナメントメッセージの処理(受信)
@@ -60,6 +65,14 @@ export class TournamentAPI {
 			// navigate_to_matchメッセージの処理
 			if ('type' in message.data && message.data.type === "navigate_to_match") {
 				navigate(`/match/${message.data.matchId}`);
+				return;
+			}
+
+			// tournament_finishedメッセージの処理
+			if ('type' in message.data && message.data.type === "tournament_finished") {
+				console.log("Tournament finished, winner:", message.data.winner_id);
+				// トーナメント終了時の処理（勝利者表示、ルームページへの遷移など）
+				this.handleTournamentFinished(message.data.winner_id, message.data.tournament_id);
 				return;
 			}
 
@@ -79,14 +92,83 @@ export class TournamentAPI {
 			if (this.tournamentData.matches.length > 2) {
 				this.match3 = this.tournamentData.matches[2];
 			}
+
+			// データ更新を通知
+			this.notifyDataUpdate();
 		} else {
 			console.error("Tournament data is null");
 		}
 	}
 
+	// トーナメント終了時の処理
+	private handleTournamentFinished(winnerId: string, tournamentId: string): void {
+		// 勝利者情報を表示
+		this.showTournamentWinner(winnerId);
+		
+		// 3秒後にルームページに遷移
+		setTimeout(() => {
+			navigate("/room");
+		}, 3000);
+	}
+
+	// 勝利者表示
+	private showTournamentWinner(winnerId: string): void {
+		// 勝利者表示のモーダルまたはメッセージを表示
+		const winnerModal = document.createElement("div");
+		winnerModal.className = "tournament-winner-modal";
+		winnerModal.innerHTML = `
+			<div class="winner-content">
+				<h1>🏆 トーナメント終了 🏆</h1>
+				<h2>優勝者: ${winnerId}</h2>
+				<p>3秒後にルームページに戻ります...</p>
+			</div>
+		`;
+		
+		// スタイルを追加
+		winnerModal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.8);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+		
+		const content = winnerModal.querySelector('.winner-content') as HTMLElement;
+		if (content) {
+			content.style.cssText = `
+				background: white;
+				padding: 2rem;
+				border-radius: 10px;
+				text-align: center;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+			`;
+		}
+		
+		document.body.appendChild(winnerModal);
+		
+		// 3秒後にモーダルを削除
+		setTimeout(() => {
+			if (winnerModal.parentNode) {
+				winnerModal.parentNode.removeChild(winnerModal);
+			}
+		}, 3000);
+	}
+
 	// トーナメントデータの取得(送信)
 	public getTournamentData(): void {
 		console.log("TournamentAPI: トーナメントデータを要求");
+		
+		// WebSocket接続状態を確認
+		if (!this.wsManager.isConnected()) {
+			console.warn("WebSocket is not connected, cannot request tournament data");
+			return;
+		}
+		
 		this.wsManager.sendMessage({
 			status: "Tournament",
 			action: "get_status",
@@ -103,8 +185,52 @@ export class TournamentAPI {
 	}
 
 	public destroy(): void {
-		this.wsManager.removeCallback(this.handleMessage.bind(this));
+		this.wsManager.removeCallback(this.messageHandler);
+		this.dataUpdateCallbacks.clear();
+		// データをリセット
+		this.tournamentData = null;
+		this.match1 = null;
+		this.match2 = null;
+		this.match3 = null;
 		console.log("TournamentAPI: 破棄");
+	}
+
+	// データをリセットして新しいコールバックを登録
+	public reset(): void {
+		console.log("TournamentAPI: リセット開始");
+		// 既存のコールバックを削除
+		this.wsManager.removeCallback(this.messageHandler);
+		this.dataUpdateCallbacks.clear();
+		
+		// データをリセット
+		this.tournamentData = null;
+		this.match1 = null;
+		this.match2 = null;
+		this.match3 = null;
+		
+		// 新しいメッセージハンドラーを作成
+		this.messageHandler = this.handleMessage.bind(this);
+		this.wsManager.addCallback(this.messageHandler);
+		console.log("TournamentAPI: リセット完了");
+	}
+
+	// データ更新のコールバック管理
+	public addDataUpdateCallback(callback: () => void): void {
+		this.dataUpdateCallbacks.add(callback);
+	}
+
+	public removeDataUpdateCallback(callback: () => void): void {
+		this.dataUpdateCallbacks.delete(callback);
+	}
+
+	private notifyDataUpdate(): void {
+		this.dataUpdateCallbacks.forEach(callback => {
+			try {
+				callback();
+			} catch (error) {
+				console.error("Data update callback error:", error);
+			}
+		});
 	}
 
 	// データ取得メソッド : frontend用 : apiと関係はないので置き場所検討
