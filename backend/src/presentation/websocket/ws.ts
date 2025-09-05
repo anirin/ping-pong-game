@@ -20,7 +20,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const ws = connection;
 			const url = new URL(req.url, "https://localhost:8080/socket");
 
-			const roomService = new RoomService(); // todo : route dir の中に閉じ込める
+			// roomServiceは後でjoinedRoomが確定してから取得
 
 			let token: string | undefined;
 
@@ -61,13 +61,13 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close();
 				return;
 			} else {
-				console.log("joinResultMsg: ", joinResultMsg);
+				// console.log("joinResultMsg: ", joinResultMsg);
 				wsManager.addWebSocketToRoom(context.joinedRoom, ws);
 				wsManager.broadcast(context.joinedRoom, joinResultMsg);
 			}
 
 			ws.on("message", async (raw: any) => {
-				console.log("message received: ", raw);
+				// console.log("message received: ", raw);
 				let data: WSIncomingMsg;
 				try {
 					data = JSON.parse(raw.toString());
@@ -112,6 +112,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 
 			ws.on("close", async () => {
 				try {
+					const roomService = RoomService.getInstance(context.joinedRoom);
 					let resultmsg: WSOutgoingMsg;
 					if (
 						await roomService.checkOwner(context.joinedRoom, context.authedUser) // room dir に押し込める

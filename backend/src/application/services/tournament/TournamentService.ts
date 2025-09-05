@@ -16,8 +16,13 @@ import { v4 as uuidv4 } from "uuid";
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
+	private readonly roomId: RoomId;
 
-	constructor() {
+	// シングルトンインスタンスを管理するMap
+	private static instances: Map<RoomId, TournamentService> = new Map();
+
+	constructor(roomId: RoomId) {
+		this.roomId = roomId;
 		this.tournamentRepository = new TypeORMTournamentRepository(
 			AppDataSource.getRepository(TournamentEntity),
 		);
@@ -26,11 +31,28 @@ export class TournamentService {
 		);
 	}
 
+	// room idでシングルトンインスタンスを取得
+	public static getInstance(roomId: RoomId): TournamentService {
+		if (!this.instances.has(roomId)) {
+			this.instances.set(roomId, new TournamentService(roomId));
+		}
+		return this.instances.get(roomId)!;
+	}
+
+	// インスタンスを削除（roomが削除された時など）
+	public static removeInstance(roomId: RoomId): void {
+		this.instances.delete(roomId);
+	}
+
 	async startTournament(
 		participants: UserId[],
 		room_id: RoomId,
 		createdBy: UserId,
 	) {
+		// roomIdの検証を追加
+		if (room_id !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${room_id}`);
+		}
 		// 参加者数の検証
 		if (!participants || participants.length !== 4) {
 			throw new Error(
@@ -140,6 +162,10 @@ export class TournamentService {
 	}
 
 	async getTournamentStatus(roomId: RoomId) {
+		// roomIdの検証を追加
+		if (roomId !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomId}`);
+		}
 		try {
 			const tournament = await this.tournamentRepository.findByRoomId(roomId);
 			if (!tournament) {

@@ -16,12 +16,40 @@ import { v4 as uuidv4 } from "uuid";
 
 export class RoomService {
 	private readonly roomRepository: RoomRepository;
+	private readonly roomId: RoomId;
 
-	constructor() {
+	// シングルトンインスタンスを管理するMap
+	private static instances: Map<RoomId, RoomService> = new Map();
+
+	constructor(roomId: RoomId) {
+		this.roomId = roomId;
 		const repository = new TypeOrmRoomRepository(
 			AppDataSource.getRepository("RoomEntity"),
 		);
 		this.roomRepository = repository;
+	}
+
+	// room idでシングルトンインスタンスを取得
+	public static getInstance(roomId: RoomId): RoomService {
+		if (!this.instances.has(roomId)) {
+			this.instances.set(roomId, new RoomService(roomId));
+		}
+		return this.instances.get(roomId)!;
+	}
+
+	// インスタンスを削除（roomが削除された時など）
+	public static removeInstance(roomId: RoomId): void {
+		this.instances.delete(roomId);
+	}
+
+	// createRoom用の静的メソッド（roomIdがまだ存在しない場合）
+	public static async createRoom(owner_id: string): Promise<Room> {
+		const room = new Room(uuidv4(), owner_id, []);
+		const repository = new TypeOrmRoomRepository(
+			AppDataSource.getRepository("RoomEntity"),
+		);
+		await repository.save(room);
+		return room;
 	}
 
 	async createRoom(owner_id: string): Promise<Room> {
@@ -31,10 +59,18 @@ export class RoomService {
 	}
 
 	async getRoomById(roomid: string): Promise<Room | null> {
+		// roomIdの検証を追加
+		if (roomid !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+		}
 		return this.roomRepository.findById(roomid);
 	}
 
 	async startRoom(roomid: string, userid: UserId): Promise<boolean> {
+		// roomIdの検証を追加
+		if (roomid !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+		}
 		console.log("RoomService.startRoom has called: ", roomid, userid);
 		const room = await this.roomRepository.findById(roomid);
 		if (room === null) return false;
@@ -59,6 +95,10 @@ export class RoomService {
 	}
 
 	async deleteRoom(roomid: string, userid: UserId): Promise<boolean> {
+		// roomIdの検証を追加
+		if (roomid !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+		}
 		const room = await this.roomRepository.findById(roomid);
 		if (room === null) return false;
 		if (room.ownerId === userid && room.status === "waiting")
@@ -67,6 +107,10 @@ export class RoomService {
 	}
 
 	async checkOwner(id: string, userid: UserId): Promise<boolean> {
+		// roomIdの検証を追加
+		if (id !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${id}`);
+		}
 		const room = await this.roomRepository.findById(id);
 		if (room === null) throw Error("no room found");
 		return room.ownerId === userid;
@@ -76,8 +120,13 @@ export class RoomService {
 export class RoomUserService {
 	private readonly userRepository: UserRepository;
 	private readonly roomRepository: RoomRepository;
+	private readonly roomId: RoomId;
 
-	constructor() {
+	// シングルトンインスタンスを管理するMap
+	private static instances: Map<RoomId, RoomUserService> = new Map();
+
+	constructor(roomId: RoomId) {
+		this.roomId = roomId;
 		const u_repository = new TypeOrmUserRepository(
 			AppDataSource.getRepository("UserEntity"),
 		);
@@ -88,7 +137,24 @@ export class RoomUserService {
 		this.roomRepository = r_repository;
 	}
 
+	// room idでシングルトンインスタンスを取得
+	public static getInstance(roomId: RoomId): RoomUserService {
+		if (!this.instances.has(roomId)) {
+			this.instances.set(roomId, new RoomUserService(roomId));
+		}
+		return this.instances.get(roomId)!;
+	}
+
+	// インスタンスを削除（roomが削除された時など）
+	public static removeInstance(roomId: RoomId): void {
+		this.instances.delete(roomId);
+	}
+
 	async joinRoom(userid: UserId, roomid: RoomId): Promise<boolean> {
+		// roomIdの検証を追加
+		if (roomid !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+		}
 		const user = await this.userRepository.findById(userid);
 		if (!user) throw Error("no user found");
 		const room = await this.roomRepository.findById(roomid);
@@ -114,6 +180,10 @@ export class RoomUserService {
 	}
 
 	async getAllRoomUsers(id: string): Promise<RoomUser[]> {
+		// roomIdの検証を追加
+		if (id !== this.roomId) {
+			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${id}`);
+		}
 		return (await this.roomRepository.findParticipants(id)).map((p) =>
 			this.extractRoomUser(p),
 		);

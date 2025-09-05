@@ -13,8 +13,8 @@ globalEventEmitter.on(
 		console.log("tournament event started");
 
 		try {
-			// tournament service を呼び出す
-			const tournamentService = new TournamentService();
+			// room idでシングルトンインスタンスを取得
+			const tournamentService = TournamentService.getInstance(roomId);
 			await tournamentService.startTournament(participants, roomId, ownerid);
 		} catch (error) {
 			console.error("Failed to start tournament:", error);
@@ -27,8 +27,23 @@ globalEventEmitter.on("match.finished", async (tournamentId: TournamentId) => {
 	console.log("match event finished");
 
 	try {
-		// tournament service を呼び出す
-		const tournamentService = new TournamentService();
+		// tournamentIdからroomIdを取得するために、まずtournamentを取得
+		const { AppDataSource } = await import("@infrastructure/data-source.js");
+		const { TournamentEntity } = await import("@infrastructure/entity/tournament/TournamentEntity.js");
+		
+		const tournamentEntity = await AppDataSource.getRepository(TournamentEntity).findOne({
+			where: { id: tournamentId }
+		});
+		
+		if (!tournamentEntity) {
+			console.error(`Tournament not found for id: ${tournamentId}`);
+			return;
+		}
+		
+		const roomId = tournamentEntity.room_id;
+		
+		// room idでシングルトンインスタンスを取得
+		const tournamentService = TournamentService.getInstance(roomId);
 		await tournamentService.processAfterMatch(tournamentId);
 	} catch (error) {
 		console.error("Failed to process match finish:", error);

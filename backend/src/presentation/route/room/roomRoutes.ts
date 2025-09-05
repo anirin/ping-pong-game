@@ -14,7 +14,7 @@ import { decodeJWT } from "../auth/authRoutes.js";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
 	// 各サービスは自身でリポジトリを初期化するスタイルに変更
-	const roomService = new RoomService();
+	// createRoomの場合は特別にroomIdなしでインスタンスを作成
 	const userRepository = new TypeOrmUserRepository(
 		AppDataSource.getRepository("UserEntity"),
 	);
@@ -31,7 +31,7 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 					.status(400)
 					.send({ error: "invalid JWT or non existing user" });
 			}
-			const room = await roomService.createRoom(owner_id);
+			const room = await RoomService.createRoom(owner_id);
 			console.log("create room success: ", room);
 			return reply.status(201).send({
 				id: room.id,
@@ -50,7 +50,7 @@ export async function RoomWSHandler(
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
 	if (context.joinedRoom === null) throw Error("joined no room");
-	const room_service = new RoomService();
+	const room_service = RoomService.getInstance(context.joinedRoom);
 	switch (action) {
 		case "START": {
 			if (
@@ -94,8 +94,8 @@ export async function RoomWSHandler(
 export async function JoinRoomWS(
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
-	const room_service = new RoomService();
-	const room_user_service = new RoomUserService();
+	const room_service = RoomService.getInstance(context.joinedRoom);
+	const room_user_service = RoomUserService.getInstance(context.joinedRoom);
 	try {
 		const succeeded = await room_user_service.joinRoom(
 			context.authedUser,
@@ -136,7 +136,7 @@ export async function JoinRoomWS(
 export async function LeaveRoomWS(
 	context: WebSocketContext,
 ): Promise<WSOutgoingMsg> {
-	const room_user_service = new RoomUserService();
+	const room_user_service = RoomUserService.getInstance(context.joinedRoom);
 	try {
 		const succeeded = await room_user_service.leaveRoom(context.authedUser);
 		if (succeeded)

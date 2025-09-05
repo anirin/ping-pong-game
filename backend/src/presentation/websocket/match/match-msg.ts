@@ -43,6 +43,17 @@ export type MatchIncomingMsg =
 			action: "move";
 			matchId: MatchId;
 			data: MatchPosition;
+	  }
+	| {
+			status: "Match";
+			action: "ready";
+			matchId: MatchId;
+			data: { isReady: boolean };
+	  }
+	| {
+			status: "Match";
+			action: "get_initial_state";
+			matchId: MatchId;
 	  };
 
 // Outgoing messages to client
@@ -81,5 +92,14 @@ export type MatchOutgoingMsg =
 			data: {
 				type: "error";
 				message: string;
+			};
+	  }
+	| {
+			status: "Match";
+			data: {
+				type: "ready_state";
+				matchId: MatchId;
+				readyPlayers: UserId[];
+				readyCount: number;
 			};
 	  };

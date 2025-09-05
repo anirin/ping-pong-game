@@ -9,7 +9,8 @@ export async function TournamentWSHandler(
 	msg: TournamentIncomingMsg,
 	context: WebSocketContext,
 ): Promise<TournamentOutgoingMsg> {
-	const tournamentService = new TournamentService();
+	// room idでシングルトンインスタンスを取得
+	const tournamentService = TournamentService.getInstance(context.joinedRoom);
 
 	try {
 		switch (msg.action) {
@@ -19,17 +20,17 @@ export async function TournamentWSHandler(
 				);
 
 				// デバッグ用ログを追加
-				console.log(
-					"Tournament status response:",
-					JSON.stringify(tournamentStatus, null, 2),
-				);
-				console.log("Matches data:", tournamentStatus.matches);
-				if (tournamentStatus.matches.length > 0) {
-					console.log(
-						"First match structure:",
-						JSON.stringify(tournamentStatus.matches[0], null, 2),
-					);
-				}
+				// console.log(
+				// 	"Tournament status response:",
+				// 	JSON.stringify(tournamentStatus, null, 2),
+				// );
+				// console.log("Matches data:", tournamentStatus.matches);
+				// if (tournamentStatus.matches.length > 0) {
+				// 	console.log(
+				// 		"First match structure:",
+				// 		JSON.stringify(tournamentStatus.matches[0], null, 2),
+				// 	);
+				// }
 
 				return {
 					status: "Tournament",

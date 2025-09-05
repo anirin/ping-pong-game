@@ -43,6 +43,7 @@ export class MatchController {
 
 		this.connectToMatch();
 		this.setupEventListeners();
+		this.initializeReadyButton();
 		this.matchLoop();
 	}
 
@@ -98,6 +99,7 @@ export class MatchController {
 	private setupEventListeners(): void {
 		const btnUp = document.getElementById("button-up");
 		const btnDown = document.getElementById("button-down");
+		const readyButton = document.getElementById("ready-button");
 
 		if (!btnUp || !btnDown) return;
 
@@ -121,6 +123,13 @@ export class MatchController {
 		btnDown.addEventListener("mouseleave", () => {
 			this.movingDown = false;
 		});
+
+		// Readyボタン操作
+		if (readyButton) {
+			readyButton.addEventListener("click", () => {
+				this.handleReadyButtonClick();
+			});
+		}
 
 		// キーボード操作
 		window.addEventListener("keydown", this.handleKeyDownRef);
@@ -153,6 +162,8 @@ export class MatchController {
 	private matchLoop(): void {
 		this.updateMyPaddle();
 		this.updateMatchState();
+		this.updateReadyButton();
+		this.updateReadyCount();
 		this.draw();
 		this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
 	}
@@ -168,6 +179,8 @@ export class MatchController {
 				this.myPlayerNumber = role;
 				this.updatePlayerInfo();
 			}
+			// マッチデータが受信されたらreadyボタンを更新
+			this.updateReadyButton();
 		}
 
 		// マッチの状態を更新
@@ -187,6 +200,65 @@ export class MatchController {
 			const status = matchAPI.getMatchStatus();
 			matchStatusEl.textContent = status ? `Status: ${status}` : "Waiting for match to start...";
 		}
+	}
+
+	private handleReadyButtonClick(): void {
+		matchAPI.toggleReadyState();
+		this.updateReadyButton();
+		this.updateReadyCount();
+	}
+
+	private updateReadyButton(): void {
+		const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
+		if (!readyButton) return;
+
+		const isReady = matchAPI.isCurrentUserReady();
+		const readyCount = matchAPI.getReadyPlayerCount();
+		const playerRole = matchAPI.getPlayerRole();
+
+		// マッチデータがまだ受信されていない場合
+		if (!this.serverState) {
+			readyButton.disabled = true;
+			readyButton.textContent = "Connecting...";
+			readyButton.classList.remove("ready");
+			return;
+		}
+
+		// 観戦者の場合はボタンを無効化
+		if (playerRole === "spectator") {
+			readyButton.disabled = true;
+			readyButton.textContent = "Spectator";
+			readyButton.classList.remove("ready");
+			return;
+		}
+
+		if (isReady) {
+			readyButton.textContent = "Ready!";
+			readyButton.classList.add("ready");
+		} else {
+			readyButton.textContent = "Ready";
+			readyButton.classList.remove("ready");
+		}
+
+		// 2人とも準備完了の場合はボタンを無効化
+		readyButton.disabled = readyCount >= 2;
+	}
+
+	private updateReadyCount(): void {
+		const readyCountEl = document.getElementById("ready-count");
+		if (readyCountEl) {
+			const readyCount = matchAPI.getReadyPlayerCount();
+			readyCountEl.textContent = readyCount.toString();
+		}
+	}
+
+	private initializeReadyButton(): void {
+		const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
+		if (readyButton) {
+			readyButton.disabled = true; // マッチデータ受信まで無効化
+			readyButton.textContent = "Connecting...";
+		}
+		this.updateReadyCount();
 	}
 
 	private draw(): void {

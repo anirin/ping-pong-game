@@ -26,9 +26,9 @@ export interface RealtimeMatchStateDto {
 // マッチ専用のメッセージ型（バックエンドに合わせて修正）
 export interface MatchMessage extends WebSocketMessage {
 	status: "Match";
-	action: "start" | "move";
+	action: "start" | "move" | "ready" | "get_initial_state";
 	matchId?: string;
-	data?: { y: number };
+	data?: { y: number } | { isReady: boolean };
 }
 
 export class MatchAPI {
@@ -36,6 +36,8 @@ export class MatchAPI {
 	private matchId: string | null = null;
 	private userId: string | null = null;
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
+	private readyPlayers: Set<string> = new Set();
+	private isReady: boolean = false;
 
 	constructor() {
 		this.wsManager.addCallback(this.handleMessage.bind(this));
@@ -62,21 +64,138 @@ export class MatchAPI {
 			navigate("/tournament");
 		} else if (message.data && message.data.type === "error") {
 			console.error("Match error:", message.data.message);
+		} else if (message.data && message.data.type === "ready_state") {
+			console.log("Ready state updated:", message.data);
+			this.updateReadyStateFromServer(message.data.readyPlayers, message.data.readyCount);
 		}
 	}
 
-	// マッチにサブスクライブ（バックエンドのstartアクションを使用）
+	// マッチにサブスクライブ（接続のみ、startアクションは送信しない）
 	public subscribeToMatch(matchId: string, userId: string): void {
 		this.matchId = matchId;
 		this.userId = userId;
 		
 		console.log("MatchAPI: マッチにサブスクライブ", { matchId, userId });
-		// バックエンドのstartアクションを使用してマッチを開始
+		
+		// 初期マッチ状態を要求
+		this.requestInitialMatchState();
+	}
+
+	// 初期マッチ状態を要求
+	private requestInitialMatchState(): void {
+		if (!this.matchId) {
+			console.error("Match ID is not set");
+			return;
+		}
+
+		console.log("MatchAPI: 初期マッチ状態を要求", this.matchId);
+		this.wsManager.sendMessage({
+			status: "Match",
+			action: "get_initial_state",
+			matchId: this.matchId,
+		});
+	}
+
+	// マッチを開始する（適切なタイミングで呼び出す）
+	public startMatch(): void {
+		if (!this.matchId) {
+			console.error("Match ID is not set");
+			return;
+		}
+		
+		console.log("MatchAPI: マッチを開始", this.matchId);
 		this.wsManager.sendMessage({
 			status: "Match",
 			action: "start",
-			matchId: matchId,
+			matchId: this.matchId,
 		});
+	}
+
+	// player1からのみマッチを開始する
+	public startMatchIfPlayer1(): void {
+		if (!this.matchId || !this.userId) {
+			console.error("Match ID or User ID is not set");
+			return;
+		}
+
+		// 現在のユーザーがplayer1かどうかチェック
+		const playerRole = this.getPlayerRole();
+		if (playerRole === "player1") {
+			console.log("MatchAPI: Player1がマッチを開始", this.matchId);
+			this.startMatch();
+		} else {
+			console.log("MatchAPI: Player1以外なのでマッチ開始をスキップ", { role: playerRole, userId: this.userId });
+		}
+	}
+
+	// プレイヤーの準備状態を設定
+	public setPlayerReady(userId: string, isReady: boolean): void {
+		if (isReady) {
+			this.readyPlayers.add(userId);
+		} else {
+			this.readyPlayers.delete(userId);
+		}
+		console.log(`Player ${userId} ready state: ${isReady}, Total ready: ${this.readyPlayers.size}`);
+	}
+
+	// 準備完了プレイヤー数を取得
+	public getReadyPlayerCount(): number {
+		return this.readyPlayers.size;
+	}
+
+	// 現在のユーザーが準備完了かどうか
+	public isCurrentUserReady(): boolean {
+		return this.isReady;
+	}
+
+	// 現在のユーザーの準備状態を切り替え
+	public toggleReadyState(): void {
+		if (!this.userId) return;
+		
+		this.isReady = !this.isReady;
+		
+		// バックエンドにready状態を送信
+		this.sendReadyStateToServer(this.isReady);
+	}
+
+	// バックエンドにready状態を送信
+	private sendReadyStateToServer(isReady: boolean): void {
+		if (!this.matchId) {
+			console.error("Match ID is not set");
+			return;
+		}
+
+		// ユーザーがマッチのプレイヤーかどうかをチェック
+		const playerRole = this.getPlayerRole();
+		if (playerRole === "spectator") {
+			console.log("Spectator cannot set ready state, ignoring");
+			return;
+		}
+
+		console.log("Sending ready state to server:", { matchId: this.matchId, isReady, playerRole });
+		this.wsManager.sendMessage({
+			status: "Match",
+			action: "ready",
+			matchId: this.matchId,
+			data: { isReady },
+		});
+	}
+
+	// バックエンドから受信したready状態を更新
+	private updateReadyStateFromServer(readyPlayers: string[], readyCount: number): void {
+		// ローカルのready状態を更新
+		this.readyPlayers.clear();
+		readyPlayers.forEach(playerId => this.readyPlayers.add(playerId));
+
+		// 現在のユーザーのready状態を更新
+		if (this.userId) {
+			this.isReady = this.readyPlayers.has(this.userId);
+		}
+
+		// 2人とも準備完了の場合、player1からのみマッチを開始
+		if (readyCount >= 2) {
+			this.startMatchIfPlayer1();
+		}
 	}
 
 	// パドルの移動を送信（バックエンドのmoveアクションを使用）
