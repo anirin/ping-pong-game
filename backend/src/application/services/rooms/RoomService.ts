@@ -49,6 +49,10 @@ export class RoomService {
 			AppDataSource.getRepository("RoomEntity"),
 		);
 		await repository.save(room);
+		
+		// ルーム作成後に参加者リストも初期化
+		await repository.storeParticipants(room.id, []);
+		
 		return room;
 	}
 

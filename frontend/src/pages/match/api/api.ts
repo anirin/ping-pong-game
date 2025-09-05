@@ -30,7 +30,6 @@ export interface MatchMessage extends WebSocketMessage {
 }
 
 export class MatchAPI {
-	private static instance: MatchAPI | null = null;
 	private matchData: RealtimeMatchStateDto | null = null;
 	private matchId: string | null = null;
 	private userId: string | null = null;
@@ -40,21 +39,16 @@ export class MatchAPI {
 	private messageHandler: (message: WebSocketMessage) => void;
 	private isInitialized: boolean = false;
 
-	private constructor() {
+	constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
-	}
-
-	public static getInstance(): MatchAPI {
-		if (!MatchAPI.instance) {
-			MatchAPI.instance = new MatchAPI();
-		}
-		return MatchAPI.instance;
+		this.initialize();
 	}
 
 	public initialize(): void {
 		if (this.isInitialized) {
-			console.warn("MatchAPI is already initialized");
-			return;
+			console.warn("MatchAPI is already initialized, reinitializing...");
+			// 既に初期化済みの場合は、コールバックを一度削除してから再追加
+			this.wsManager.removeCallback(this.messageHandler);
 		}
 		this.wsManager.addCallback(this.messageHandler);
 		this.isInitialized = true;
@@ -65,6 +59,8 @@ export class MatchAPI {
 		if (message.status !== "Match") {
 			return;
 		}
+
+		console.log("Match received: ", message);
 
 		if (message.data && message.data.type === "match_state" && message.data.state) {
 			this.matchData = message.data.state as RealtimeMatchStateDto;
@@ -82,6 +78,9 @@ export class MatchAPI {
 		} else if (message.data && message.data.type === "ready_state") {
 			console.log("Ready state updated:", message.data);
 			this.updateReadyStateFromServer(message.data.readyPlayers, message.data.readyCount);
+		} else if (message.action === "get_initial_state") {
+			// 初期状態のリクエストに対する応答を待機
+			console.log("Waiting for initial match state...");
 		}
 	}
 
@@ -89,8 +88,16 @@ export class MatchAPI {
 		this.matchId = matchId;
 		this.userId = userId;
 		
+		// 前回のmatch状態を完全にクリア
+		this.matchData = null;
 		this.resetReadyState();
 		
+		console.log("MatchAPI: 新しいマッチに参加", matchId);
+		
+		// WebSocket接続状態を確認し、接続されていない場合は警告を出す
+		if (!this.wsManager.isConnected()) {
+			console.warn("WebSocket is not connected. MatchAPI may not receive messages.");
+		}
 		
 		this.requestInitialMatchState();
 	}
@@ -249,15 +256,4 @@ export class MatchAPI {
 		console.log("MatchAPI destroyed");
 	}
 
-	public static reset(): void {
-		if (MatchAPI.instance) {
-			MatchAPI.instance.destroy();
-			MatchAPI.instance = null;
-		}
-	}
-}
-
-// シングルトンインスタンスの取得関数
-export function getMatchAPI(): MatchAPI {
-	return MatchAPI.getInstance();
 }

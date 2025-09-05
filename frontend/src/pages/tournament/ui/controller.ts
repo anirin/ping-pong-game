@@ -12,7 +12,13 @@ export class TournamentController {
 	private tournamentAPI = getTournamentAPI();
 
 	constructor() {
-		this.tournamentAPI.reset();
+		// 初回のみreset()を呼び出し、2回目以降は既存のインスタンスを再利用
+		if (!this.tournamentAPI.isInitialized) {
+			this.tournamentAPI.reset();
+		} else {
+			// 既に初期化済みの場合は、コールバックのみを追加
+			this.tournamentAPI.initialize();
+		}
 		this.dataUpdateCallback = this.handleDataUpdate.bind(this);
 		this.tournamentAPI.addDataUpdateCallback(this.dataUpdateCallback);
 		this.initialize();

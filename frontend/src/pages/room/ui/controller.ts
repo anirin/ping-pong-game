@@ -1,11 +1,12 @@
-import { getRoomAPI, type RoomState } from "../api/api";
+import { RoomAPI, type RoomState } from "../api/api";
+import { navigate } from "../../../app/routing";
 import type { RoomUser } from "../../../types/types";
 
 export class RoomController {
 	private roomId: string | null = null;
 	private userId: string | null = null;
-	private roomAPI = getRoomAPI();
-	private dataUpdateCallback: (state: RoomState) => void;
+	private roomAPI = new RoomAPI();
+	private dataUpdateCallback: (state: RoomState, action?: string) => void;
 
 	constructor(params?: { [key: string]: string }) {
 		if (params && params.roomId) {
@@ -34,9 +35,8 @@ export class RoomController {
 			return;
 		}
 
-		// RoomAPIを初期化
-		this.roomAPI.initialize();
-		this.roomAPI.addDataUpdateCallback(this.dataUpdateCallback);
+		// RoomAPIにコールバックを設定
+		this.roomAPI.setCallback(this.dataUpdateCallback);
 
 		// WebSocket接続
 		await this.connectToRoom();
@@ -55,11 +55,29 @@ export class RoomController {
 			await this.roomAPI.connectToRoom(this.roomId, this.userId);
 		} catch (error) {
 			console.error("Failed to connect to room:", error);
+			
+			// ユーザーに分かりやすいエラーメッセージを表示
+			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			if (errorMessage.includes("Room not found")) {
+				alert("ルームが見つかりません。ルームが削除されたか、IDが間違っている可能性があります。");
+			} else if (errorMessage.includes("WebSocket connection failed")) {
+				alert("サーバーへの接続に失敗しました。しばらく待ってから再度お試しください。");
+			} else {
+				alert(`ルームへの接続に失敗しました: ${errorMessage}`);
+			}
+			
+			// エラーが発生した場合はlobbyに戻る
+			window.location.href = "/lobby";
 			throw error;
 		}
 	}
 
-	private handleDataUpdate(state: RoomState): void {
+	private handleDataUpdate(state: RoomState, action?: string): void {
+		if (action === "START") {
+			navigate("/tournament");
+			return;
+		}
+		
 		console.log("RoomController: データ更新を受信", state);
 		this.updateUI(state);
 	}
@@ -175,7 +193,7 @@ export class RoomController {
 	}
 
 	public destroy(): void {
-		this.roomAPI.removeDataUpdateCallback(this.dataUpdateCallback);
+		this.roomAPI.removeCallback();
 		this.roomAPI.destroy();
 		console.log("RoomController destroyed");
 	}

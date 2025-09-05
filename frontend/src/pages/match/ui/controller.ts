@@ -34,6 +34,8 @@ export class MatchController {
 
 		this.myPredictedPaddleY = 300;
 		this.hasResetReadyState = false;
+		this.serverState = null;
+		this.myPlayerNumber = null;
 
 		// MatchAPIを初期化
 		this.matchAPI.initialize();

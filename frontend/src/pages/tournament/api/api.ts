@@ -29,7 +29,6 @@ export interface TournamentMessage extends WebSocketMessage {
 }
 
 export class TournamentAPI {
-	private static instance: TournamentAPI | null = null;
 	private tournamentData: TournamentData | null = null;
 
 	private match1: TournamentMatch | null = null;
@@ -39,17 +38,11 @@ export class TournamentAPI {
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 	private messageHandler: (message: WebSocketMessage) => void;
 	private dataUpdateCallbacks: Set<() => void> = new Set();
-	private isInitialized: boolean = false;
+	public isInitialized: boolean = false;
 
-	private constructor() {
+	constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
-	}
-
-	public static getInstance(): TournamentAPI {
-		if (!TournamentAPI.instance) {
-			TournamentAPI.instance = new TournamentAPI();
-		}
-		return TournamentAPI.instance;
+		this.initialize();
 	}
 
 	public initialize(): void {
@@ -69,8 +62,8 @@ export class TournamentAPI {
 
 		if (message.data) {
 			if ('type' in message.data && message.data.type === "navigate_to_match") {
-				// 遷移前にコールバックをクリアして重複を防ぐ
-				this.wsManager.clearCallbacks();
+				// 遷移前にTournamentAPIのコールバックのみを削除
+				this.wsManager.removeCallback(this.messageHandler);
 				navigate(`/match/${message.data.matchId}`);
 				return;
 			}
@@ -99,8 +92,9 @@ export class TournamentAPI {
 	private handleTournamentFinished(winnerId: string, _tournamentId: string): void {
 		this.showTournamentWinner(winnerId);
 		
-		const wsManager = WebSocketManager.getInstance();
-		wsManager.reset();
+		// WebSocketManagerを完全にリセットするのではなく、TournamentAPIのコールバックのみを削除
+		// これにより、他のAPI（RoomAPI、MatchAPI）のコールバックは保持される
+		this.destroy();
 		
 		setTimeout(() => {
 			navigate("/room");
@@ -190,19 +184,6 @@ export class TournamentAPI {
 		console.log("TournamentAPI destroyed");
 	}
 
-	public reset(): void {
-		console.log("TournamentAPI: リセット開始");
-		this.destroy();
-		this.initialize();
-		console.log("TournamentAPI: リセット完了");
-	}
-
-	public static reset(): void {
-		if (TournamentAPI.instance) {
-			TournamentAPI.instance.destroy();
-			TournamentAPI.instance = null;
-		}
-	}
 
 	public addDataUpdateCallback(callback: () => void): void {
 		this.dataUpdateCallbacks.add(callback);

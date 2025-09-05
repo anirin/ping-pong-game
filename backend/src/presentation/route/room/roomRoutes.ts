@@ -97,15 +97,21 @@ export async function JoinRoomWS(
 	const room_service = RoomService.getInstance(context.joinedRoom);
 	const room_user_service = RoomUserService.getInstance(context.joinedRoom);
 	try {
+		// まずルームが存在するかチェック
+		const room = await room_service.getRoomById(context.joinedRoom);
+		if (!room) {
+			return { status: "error", msg: "Room not found. Please try again." };
+		}
+
 		const succeeded = await room_user_service.joinRoom(
 			context.authedUser,
 			context.joinedRoom,
 		);
 
 		if (succeeded) {
-			// 参加成功後、ルーム情報を取得
-			const room = await room_service.getRoomById(context.joinedRoom);
-			if (!room) {
+			// 参加成功後、ルーム情報を再取得
+			const updatedRoom = await room_service.getRoomById(context.joinedRoom);
+			if (!updatedRoom) {
 				throw new Error("Failed to retrieve room info after joining.");
 			}
 
@@ -116,9 +122,9 @@ export async function JoinRoomWS(
 					action: "USER",
 					users: await room_user_service.getAllRoomUsers(context.joinedRoom),
 					roomInfo: {
-						id: room.id,
-						ownerId: room.ownerId,
-						status: room.status,
+						id: updatedRoom.id,
+						ownerId: updatedRoom.ownerId,
+						status: updatedRoom.status,
 					},
 				} as WSRoomData, // 型定義を更新するまでは as でキャスト
 			};
@@ -126,6 +132,7 @@ export async function JoinRoomWS(
 			return { status: "error", msg: "failed to join room" };
 		}
 	} catch (error) {
+		console.error("JoinRoomWS error:", error);
 		if (error instanceof Error) {
 			return { status: "error", msg: error.message };
 		}
