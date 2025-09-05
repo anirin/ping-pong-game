@@ -1,0 +1,29 @@
+#friend-header {
+	display: flex;
+	gap: 0;
+	padding: 0.5rem 1rem;
+	border-bottom: 1px solid #ddd;
+	background: #ffffff;
+	position: sticky;
+	top: 0;
+	z-index: 10;
+}
+
+#friend-header button {
+	background-color: #ffd6f5;
+	border: 1px solid #ddd;
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+	font-size: 16px;
+	color: #374151;
+	border-radius: 6px 6px 0 0;
+	transition: all 0.2s ease;
+}
+
+#friend-header button + button {
+	border-left: none;
+}
+
+#friend-header button:hover {
+	background-color: #f6f3f6;
+}

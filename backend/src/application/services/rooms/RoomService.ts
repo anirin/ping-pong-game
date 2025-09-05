@@ -11,7 +11,7 @@ import {
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmRoomRepository } from "@infrastructure/repository/rooms/TypeORMRoomRepository.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
-import type { WSOutgoingMsg } from "@presentation/route/websocket/ws-msg.js";
+import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
 import { v4 as uuidv4 } from "uuid";
 
 export class RoomService {
@@ -35,10 +35,26 @@ export class RoomService {
 	}
 
 	async startRoom(roomid: string, userid: UserId): Promise<boolean> {
+		console.log("RoomService.startRoom has called: ", roomid, userid);
 		const room = await this.roomRepository.findById(roomid);
 		if (room === null) return false;
-		if (room.ownerId === userid && room.status === "waiting")
-			return this.roomRepository.start(roomid);
+		if (room.ownerId === userid) this.roomRepository.start(roomid);
+
+		const participants: UserId[] = room.allParticipants.map((p) => p.id);
+		console.log("participants: ", participants);
+
+		// 参加者が4人未満の場合はトーナメントを開始しない
+		if (participants.length < 4) {
+			console.log("Cannot start tournament: insufficient participants");
+			console.warn(
+				`Cannot start tournament: insufficient participants (${participants.length}/4) for room ${roomid}`,
+			);
+			return false;
+		}
+
+		const ownerid: UserId = room.ownerId;
+		console.log("room.started event emitted");
+		globalEventEmitter.emit("room.started", roomid, participants, ownerid);
 		return false;
 	}
 

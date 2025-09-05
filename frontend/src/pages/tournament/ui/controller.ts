@@ -1,237 +1,207 @@
-import type { TournamentModel } from "../model/model.js";
+import {
+	type TournamentData,
+	type TournamentMatch,
+	tournamentAPI,
+} from "../api/api";
 
 export class TournamentController {
-	private model: TournamentModel;
-	private startBtn!: HTMLButtonElement | null;
-	private nextMatchSection!: HTMLElement | null;
-	private nextMatchRound!: HTMLElement | null;
-	private nextMatchPlayers!: HTMLElement | null;
-	private tournamentInfoSection!: HTMLElement | null;
-	private participantsList!: HTMLElement | null;
-	private loadingIndicator!: HTMLElement | null;
-	private errorDisplay!: HTMLElement | null;
+	private tournamentData: TournamentData | null = null;
+	private match1: TournamentMatch | null = null;
+	private match2: TournamentMatch | null = null;
 
-	constructor(model: TournamentModel) {
-		this.model = model;
-		this.initializeElements();
-		this.setupEventListeners();
-		this.setupStateChangeCallback();
+	constructor() {
+		this.initialize();
 	}
 
-	private initializeElements(): void {
-		this.startBtn = document.getElementById(
-			"start-tournament-btn",
-		) as HTMLButtonElement;
-		this.nextMatchSection = document.getElementById("next-match-section");
-		this.nextMatchRound = document.getElementById("next-match-round");
-		this.nextMatchPlayers = document.getElementById("next-match-players");
-		this.tournamentInfoSection = document.getElementById(
-			"tournament-info-section",
-		);
-		this.participantsList = document.getElementById("participants-list");
-		this.loadingIndicator = document.getElementById("loading-indicator");
-		this.errorDisplay = document.getElementById("error-display");
+	private async initialize(): Promise<void> {
+		// WebSocketでデータを要求
+		tournamentAPI.getTournamentData();
+
+		// データが受信されるまで待機（ポーリングまたはイベントリスナー）
+		await this.waitForTournamentData();
+
+		// データが準備できてから更新
+		this.updateTournamentDisplay();
 	}
 
-	private setupEventListeners(): void {
-		if (this.startBtn) {
-			this.startBtn.addEventListener("click", () =>
-				this.handleStartTournament(),
-			);
-		}
-	}
-
-	private setupStateChangeCallback(): void {
-		this.model.setStateChangeCallback((state) => {
-			this.updateUI(state);
-
-			// tournament_startedメッセージを受け取った時にspanタグを更新
-			if (state.tournament && state.currentMatch) {
-				this.updateSpanValuesFromBackend(state.tournament);
-			}
+	private async waitForTournamentData(): Promise<void> {
+		return new Promise((resolve) => {
+			const checkData = () => {
+				if (tournamentAPI.getCurrentTournament()) {
+					this.tournamentData = tournamentAPI.getCurrentTournament();
+					this.match1 = tournamentAPI.getMatch1();
+					this.match2 = tournamentAPI.getMatch2();
+					resolve();
+				} else {
+					// 100ms後に再チェック
+					setTimeout(checkData, 100);
+				}
+			};
+			checkData();
 		});
 	}
 
-	private async handleStartTournament(): Promise<void> {
+	private async updateTournamentDisplay(): Promise<void> {
+		if (!this.tournamentData) {
+			return;
+		}
+
 		try {
-			// 実際の参加者データを取得（例：ルームから取得）
-			// 現在はサンプルデータを使用
-			const participants = ["user1", "user2", "user3", "user4"];
-			const roomId = "room1"; // 実際の実装では動的に取得
-			const userId = "user1"; // 実際の実装では動的に取得
-
-			console.log("トーナメント開始を試行中...", {
-				participants,
-				roomId,
-				userId,
-			});
-
-			// Modelを通じてトーナメントを開始
-			await this.model.startTournament(participants, roomId, userId);
+			await this.updateRound1Matches();
+			await this.updateNextMatchInfo();
+			await this.updateWinnerDisplay();
 		} catch (error) {
-			console.error("トーナメント開始エラー:", error);
+			console.error("トーナメント表示の更新に失敗しました:", error);
 		}
 	}
 
-	private updateUI(state: any): void {
-		// ローディング状態の表示
-		this.updateLoadingState(state.isLoading);
-
-		// エラー表示
-		if (state.error) {
-			this.updateErrorDisplay(state.error);
-		} else {
-			this.clearErrorDisplay();
+	private async updateRound1Matches(): Promise<void> {
+		if (!this.match1 || !this.match2) {
+			return;
 		}
 
-		// 参加者リストの表示
-		if (state.participants && state.participants.length > 0) {
-			this.updateParticipantsList(state.participants);
-		}
+		try {
+			// left match - プロパティ名を修正
+			this.updateUserElement(
+				"user-a-span",
+				this.match1.player1Id,
+				this.match1.score1,
+			);
+			this.updateUserElement(
+				"user-b-span",
+				this.match1.player2Id,
+				this.match1.score2,
+			);
+			this.updateMatchPath("path-1", "path-2", this.match1);
 
-		// トーナメント情報の表示
-		if (state.tournament) {
-			this.updateTournamentInfo(state.tournament);
-		}
-
-		// 次のマッチ情報を表示
-		if (state.currentMatch) {
-			this.updateNextMatchDisplay(state.currentMatch);
-		}
-	}
-
-	private updateLoadingState(isLoading: boolean): void {
-		if (this.loadingIndicator) {
-			this.loadingIndicator.style.display = isLoading ? "block" : "none";
-		}
-		if (this.startBtn) {
-			this.startBtn.disabled = isLoading;
-		}
-	}
-
-	private updateErrorDisplay(error: string): void {
-		if (this.errorDisplay) {
-			this.errorDisplay.textContent = `エラー: ${error}`;
-			this.errorDisplay.style.display = "block";
+			// right match - プロパティ名を修正
+			this.updateUserElement(
+				"user-c-span",
+				this.match2.player1Id,
+				this.match2.score1,
+			);
+			this.updateUserElement(
+				"user-d-span",
+				this.match2.player2Id,
+				this.match2.score2,
+			);
+			this.updateMatchPath("path-3", "path-4", this.match2);
+		} catch (error) {
+			console.error("round1マッチ表示の更新に失敗しました:", error);
 		}
 	}
 
-	private clearErrorDisplay(): void {
-		if (this.errorDisplay) {
-			this.errorDisplay.style.display = "none";
+	private updateUserElement(
+		elementId: string,
+		userId: string,
+		score: number,
+	): void {
+		const element = document.getElementById(elementId);
+		if (element) {
+			element.textContent = `${userId} (Score: ${score})`;
+		}
+
+		// アバター画像も更新
+		// todo : アバター画像の更新
+	}
+
+	private updateMatchPath(
+		path1Id: string,
+		path2Id: string,
+		match: TournamentMatch,
+	): void {
+		const path1 = document.getElementById(path1Id) as unknown as SVGElement;
+		const path2 = document.getElementById(path2Id) as unknown as SVGElement;
+
+		if (path1 && path2) {
+			// 勝利者がいる場合、勝利者のパスを赤くする - プロパティ名を修正
+			if (match.winnerId) {
+				if (match.winnerId === match.player1Id) {
+					path1.style.stroke = "red";
+					path2.style.stroke = "gray";
+				} else {
+					path1.style.stroke = "gray";
+					path2.style.stroke = "red";
+				}
+			} else {
+				// 勝利者がいない場合、両方ともグレー
+				path1.style.stroke = "gray";
+				path2.style.stroke = "gray";
+			}
 		}
 	}
 
-	private updateParticipantsList(participants: string[]): void {
-		if (this.participantsList) {
-			this.participantsList.innerHTML = participants
-				.map((participant) => `<li>${participant}</li>`)
-				.join("");
+	private updateNextMatchInfo(): void {
+		if (!this.tournamentData?.next_match_id) {
+			return;
+		}
+
+		const nextMatch = this.tournamentData.matches.find(
+			(m) => m.id === this.tournamentData!.next_match_id,
+		);
+		if (nextMatch) {
+			this.updateNextMatchDisplay(nextMatch);
 		}
 	}
 
-	private updateTournamentInfo(tournament: any): void {
-		if (this.tournamentInfoSection) {
-			this.tournamentInfoSection.innerHTML = `
-				<h3>トーナメント情報</h3>
-				<p>ID: ${tournament.id}</p>
-				<p>ステータス: ${tournament.status}</p>
-				<p>現在のラウンド: ${tournament.currentRound}</p>
-				<p>参加者数: ${tournament.participants.length}</p>
-				${tournament.winner_id ? `<p>優勝者: ${tournament.winner_id}</p>` : ""}
+	/**
+	 * 次のマッチ表示の更新
+	 */
+	private async updateNextMatchDisplay(match: TournamentMatch): Promise<void> {
+		try {
+			const nextMatchSection = document.getElementById("next-match-section");
+			const nextMatchRound = document.getElementById("next-match-round");
+			const nextMatchPlayers = document.getElementById("next-match-players");
+
+			if (nextMatchSection && nextMatchRound && nextMatchPlayers) {
+				nextMatchSection.style.display = "block";
+				nextMatchRound.textContent = `${match.round}回戦`;
+				// プロパティ名を修正
+				nextMatchPlayers.textContent = `${match.player1Id} vs ${match.player2Id}`;
+			}
+		} catch (error) {
+			console.error("次のマッチ表示の更新に失敗しました:", error);
+		}
+	}
+
+	private async updateWinnerDisplay(): Promise<void> {
+		if (!this.tournamentData?.winner_id) {
+			return;
+		}
+
+		try {
+			// 勝利者を表示する要素を作成または更新
+			const winnerSection = document.createElement("div");
+			winnerSection.className = "winner-section";
+			winnerSection.innerHTML = `
+				<h2>🏆 トーナメント優勝者 🏆</h2>
+				<div class="winner-info">
+					<img src="${this.tournamentData.winner_id || "./src/pages/tournament/ui/avator.jpg"}" width="40" height="40">
+					<span>${this.tournamentData.winner_id}</span>
+				</div>
 			`;
-			this.tournamentInfoSection.style.display = "block";
+
+			// 既存の勝利者セクションがあれば置き換え
+			const existingWinner = document.querySelector(".winner-section");
+			if (existingWinner) {
+				existingWinner.remove();
+			}
+
+			// メインコンテナに追加
+			const mainContainer = document.querySelector(".main");
+			if (mainContainer) {
+				mainContainer.appendChild(winnerSection);
+			}
+		} catch (error) {
+			console.error("勝利者表示の更新に失敗しました:", error);
 		}
 	}
 
-	private updateNextMatchDisplay(currentMatch: any): void {
-		if (this.nextMatchSection && this.nextMatchRound && this.nextMatchPlayers) {
-			this.nextMatchSection.style.display = "block";
-			this.nextMatchRound.textContent = `${currentMatch.round}回戦`;
-			this.nextMatchPlayers.textContent = `${currentMatch.player1_name} vs ${currentMatch.player2_name}`;
-		}
+	public destroy(): void {
+		tournamentAPI.destroy();
 	}
+}
 
-	// backendから受け取ったデータでspanタグを更新するメソッド
-	private updateSpanValuesFromBackend(tournament: any): void {
-		console.log("Updating span values from backend tournament data...");
-
-		// 最初の2つのマッチからデータを取得
-		const matches = tournament.matches || [];
-		const userData: { [key: string]: { username: string; score: number } } = {};
-
-		// マッチデータからユーザー情報を抽出
-		matches.slice(0, 2).forEach((match: any, index: number) => {
-			// 各マッチのplayer1とplayer2を処理
-			const player1SpanId = `user-${String.fromCharCode(97 + index * 2)}-span`; // a, c
-			const player2SpanId = `user-${String.fromCharCode(98 + index * 2)}-span`; // b, d
-
-			// player1の情報を設定
-			if (match.player1_name && match.score1 !== undefined) {
-				userData[player1SpanId] = {
-					username: match.player1_name,
-					score: match.score1,
-				};
-			}
-
-			// player2の情報を設定
-			if (match.player2_name && match.score2 !== undefined) {
-				userData[player2SpanId] = {
-					username: match.player2_name,
-					score: match.score2,
-				};
-			}
-		});
-
-		// spanタグを更新
-		Object.keys(userData).forEach((spanId) => {
-			const data = userData[spanId];
-			const span = document.getElementById(spanId);
-			if (span) {
-				span.textContent = `${data.username} (Score: ${data.score})`;
-				console.log(
-					`Updated ${spanId}: ${data.username} (Score: ${data.score})`,
-				);
-			}
-		});
-
-		// pathの色を更新
-		this.updatePathColorsFromBackend(matches);
-	}
-
-	// backendデータからpathの色を更新するメソッド
-	private updatePathColorsFromBackend(matches: any[]): void {
-		console.log("Updating path colors from backend match data...");
-
-		// 全てのpathをグレーにリセット
-		["path-1", "path-2", "path-3", "path-4"].forEach((pathId) => {
-			const path = document.getElementById(pathId) as unknown as SVGPathElement;
-			if (path) path.setAttribute("stroke", "gray");
-		});
-
-		// マッチごとに勝者のpathを赤くする
-		matches.slice(0, 2).forEach((match: any, index: number) => {
-			const path1Id = `path-${index * 2 + 1}`;
-			const path2Id = `path-${index * 2 + 2}`;
-
-			const path1 = document.getElementById(
-				path1Id,
-			) as unknown as SVGPathElement;
-			const path2 = document.getElementById(
-				path2Id,
-			) as unknown as SVGPathElement;
-
-			if (match.score1 > match.score2 && path1) {
-				path1.setAttribute("stroke", "red");
-				console.log(
-					`Winner: ${match.player1_name} (${match.score1}) - ${path1Id} colored red`,
-				);
-			} else if (match.score2 > match.score1 && path2) {
-				path2.setAttribute("stroke", "red");
-				console.log(
-					`Winner: ${match.player2_name} (${match.score2}) - ${path2Id} colored red`,
-				);
-			}
-		});
-	}
+export function createTournamentController(): TournamentController {
+	return new TournamentController();
 }

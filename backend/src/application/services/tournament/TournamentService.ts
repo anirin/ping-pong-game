@@ -1,18 +1,3 @@
-// tournament の初期化
-// tournament の開始
-// tournament の次のラウンドの生成
-// tournament の終了
-
-// 適宜　tournament の状態を更新する （match依存するので問題なし）
-// 開始後は全て上のメソッドは全てmatch次第 だが今回は 手動でmethodを呼ぶ
-
-// frontendに送るべき情報
-/*
-user情報
-match情報
-tournament情報（遷移状態）
-*/
-
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
 import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
@@ -24,11 +9,14 @@ import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
+import { wsManager } from "@presentation/websocket/ws-manager.js";
 import { v4 as uuidv4 } from "uuid";
 
+// コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
+
 	constructor() {
 		this.tournamentRepository = new TypeORMTournamentRepository(
 			AppDataSource.getRepository(TournamentEntity),
@@ -43,6 +31,13 @@ export class TournamentService {
 		room_id: RoomId,
 		createdBy: UserId,
 	) {
+		// 参加者数の検証
+		if (!participants || participants.length !== 4) {
+			throw new Error(
+				`Tournament requires exactly 4 participants, got ${participants?.length || 0}`,
+			);
+		}
+
 		const tournamentId = uuidv4();
 		const tournament = new Tournament(
 			tournamentId,
@@ -54,69 +49,78 @@ export class TournamentService {
 		// 一回戦の作成
 		tournament.generateFirstRound();
 
-		// matches の db保存
 		const matches = tournament.matches;
-		await this.matchRepository.saveAll(matches);
 
-		// tournament の db保存
-		await this.tournamentRepository.save(tournament);
+		// matches の db保存
+		try {
+			await this.matchRepository.saveAll(matches);
+		} catch (error) {
+			throw new Error("Failed to save matches");
+		}
 
 		// トーナメント開始
 		tournament.start();
 
-		// まず最初の試合も送る
-		const nextMatch = tournament.getNextMatch();
-
-		return {
-			tournament,
-			nextMatch,
-		};
-	}
-
-	async generateNextRound(tournamentId: TournamentId) {
-		const tournament = await this.tournamentRepository.findById(tournamentId);
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		tournament!.matches = tournamentMatches;
-		if (!tournament) {
-			throw new Error("Tournament not found");
-		}
+		// tournament の db保存
 		try {
-			tournament.generateNextRound();
+			await this.tournamentRepository.save(tournament);
 		} catch (error) {
-			console.error(error);
-			throw new Error("Failed to generate next round");
+			throw new Error("Failed to save tournament");
 		}
 
-		// そのラウンドにあるmatches の 追加保存
-		const matches = tournament.matches;
-		// currentRound の matches を取得して、それを保存する
-		const currentRoundMatches = matches.filter(
-			(match) => match.round === tournament.currentRound,
-		);
-		await this.matchRepository.saveAll(currentRoundMatches);
-
-		// 次に行う試合も送る
-		const nextMatch = tournament.getNextMatch();
-
-		return {
-			tournament,
-			nextMatch,
-		};
+		// 対処療法
+		wsManager.broadcast(room_id, {
+			status: "Room",
+			data: {
+				action: "START",
+			},
+		});
 	}
 
-	async getNextMatch(tournamentId: TournamentId) {
-		const tournament = await this.tournamentRepository.findById(tournamentId);
-		if (!tournament) {
-			throw new Error("Tournament not found");
+	async processAfterMatch(tournamentId: TournamentId) {
+		let tournament: Tournament | null;
+
+		try {
+			tournament = await this.tournamentRepository.findById(tournamentId);
+			if (!tournament) {
+				throw new Error("Tournament not found");
+			}
+			const matches =
+				await this.matchRepository.findByTournamentId(tournamentId);
+			if (!matches) {
+				throw new Error("Matches not found");
+			}
+
+			tournament.matches = matches;
+		} catch (error) {
+			throw new Error("Failed to find tournament");
 		}
-		const tournamentMatches =
-			await this.matchRepository.findByTournamentId(tournamentId);
-		if (!tournamentMatches) {
-			throw new Error("Tournament matches not found");
+
+		// case 1 : current round に scheduled の match がある場合
+		const scheduledMatch = tournament!.matches.find(
+			(match) =>
+				match.status === "scheduled" && match.round === tournament.currentRound,
+		);
+		if (scheduledMatch) {
+			return;
 		}
-		tournament.matches = tournamentMatches;
-		return tournament.getNextMatch();
+
+		if (tournament!.canGenerateNextRound()) {
+			// case 2 : 全て finised で next round 生成可能な場合
+			tournament!.generateNextRound();
+
+			// 各種 db 操作
+			try {
+				await this.matchRepository.saveAll(tournament!.matches);
+				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
+			} catch (error) {
+				throw new Error("Failed to save matches");
+			}
+		} else {
+			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
+			// tournament finish を broadcast
+			this.finishTournament(tournamentId, tournament.winner_id!);
+		}
 	}
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
@@ -124,7 +128,53 @@ export class TournamentService {
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
+
 		tournament.finish(winnerId);
-		await this.tournamentRepository.save(tournament);
+
+		// db操作
+		try {
+			await this.tournamentRepository.save(tournament);
+		} catch (error) {
+			throw new Error("Failed to save tournament");
+		}
+	}
+
+	async getTournamentStatus(roomId: RoomId) {
+		try {
+			const tournament = await this.tournamentRepository.findByRoomId(roomId);
+			if (!tournament) {
+				throw new Error("Tournament not found for this room");
+			}
+
+			if (tournament.status === "finished") {
+				return {
+					status: tournament.status,
+					next_match_id: "",
+					matches: tournament.matches,
+					current_round: tournament.currentRound,
+					winner_id: tournament.winner_id,
+				};
+			}
+
+			const matches = await this.matchRepository.findByTournamentId(
+				tournament.id,
+			);
+			if (!matches) {
+				throw new Error("Matches not found for tournament");
+			}
+
+			tournament.matches = matches;
+			const nextMatch = tournament.getNextMatch();
+
+			return {
+				status: tournament.status,
+				next_match_id: nextMatch?.id || "",
+				matches: tournament.matches,
+				current_round: tournament.currentRound,
+				winner_id: tournament.winner_id,
+			};
+		} catch (error) {
+			throw new Error("Failed to get tournament status");
+		}
 	}
 }

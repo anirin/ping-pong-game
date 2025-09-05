@@ -23,7 +23,7 @@ export type WSIncomingMsg =
 import type { RoomUser } from "./types"; // './types' は実際のパスに合わせてください
 
 export interface WSRoomData {
-	action: "USER" | "DELETE";
+	action: "USER" | "DELETE" | "START";
 	users: RoomUser[];
 	// ★ roomInfoプロパティをオプショナルで追加
 	roomInfo?: {

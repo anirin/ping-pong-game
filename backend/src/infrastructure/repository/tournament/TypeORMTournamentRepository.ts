@@ -1,5 +1,6 @@
 import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
 import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
+import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
 import type { Repository } from "typeorm";
@@ -9,6 +10,14 @@ export class TypeORMTournamentRepository implements TournamentRepository {
 
 	async findById(id: TournamentId): Promise<Tournament | null> {
 		const entity = await this.repository.findOne({ where: { id } });
+		if (!entity) return null;
+		return this.toDomain(entity);
+	}
+
+	async findByRoomId(roomId: RoomId): Promise<Tournament | null> {
+		const entity = await this.repository.findOne({
+			where: { room_id: roomId },
+		});
 		if (!entity) return null;
 		return this.toDomain(entity);
 	}

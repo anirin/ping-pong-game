@@ -1,20 +1,16 @@
 import "dotenv/config";
 
-import { GameService } from "@application/services/game/GameService.js";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
-import { InMemoryMatchRepository } from "@infrastructure/repository/match/InMemoryMatchRepository.js";
-import { WebSocketNotifier } from "@infrastructure/repository/websocket/WebSocketNotifier.js";
-import gameRoutes from "@presentation/route/game/gameRoutes.js";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
 import authRoutes from "./route/auth/authRoutes.js";
+import { registerFriendRoutes } from "./route/friends/friendRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
-import { registerTournamentWs } from "./route/tournament/ws.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
-import { registerWSRoutes } from "./route/websocket/ws.js";
+import { registerWSRoutes } from "./websocket/ws.js";
 
 export async function buildServer() {
 	if (
@@ -34,10 +30,6 @@ export async function buildServer() {
 			cert: fs.readFileSync(process.env.HTTPS_CERT),
 		},
 	});
-	const matchRepository = new InMemoryMatchRepository();
-	const webSocketNotifier = new WebSocketNotifier();
-	const gameService = new GameService(matchRepository, webSocketNotifier);
-	webSocketNotifier.setGameService(gameService);
 	// corsの設定
 	await app.register(cors, {
 		origin: true,
@@ -62,16 +54,16 @@ export async function buildServer() {
 	// webSocketの設定
 	await app.register(fastifyWebSocket);
 
+	// authのrouting?
+	await app.register(authRoutes, { prefix: "/auth" }); // todo : 書き方統一したい
+
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);
 	await registerUserChange(app);
-	await registerTournamentWs(app);
+
+	// webSocketのrouting
 	await registerWSRoutes(app);
-	await app.register(authRoutes, { prefix: "/auth" });
-	await app.register(gameRoutes, {
-		gameService,
-		webSocketNotifier,
-		matchRepository,
-	});
+	await registerFriendRoutes(app);
+
 	return app;
 }

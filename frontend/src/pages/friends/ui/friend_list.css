@@ -1,0 +1,66 @@
+.friend-list-content {
+	margin-top: 30px;
+	margin-left: 250px;
+	min-height: 100vh;
+	display: flex;
+	height: auto;
+	overflow-y: auto;
+}
+
+#friend-list-body {
+	flex: 1;
+	background-color: gainsboro;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	justify-content: flex-start;
+	align-content: flex-start;
+	padding-top: 1rem;
+	padding-left: 1rem;
+}
+
+.friend-profile {
+	flex: 0 0 calc(50% - 1rem);
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+
+	height: 120px;
+	padding: 1rem;
+	box-sizing: border-box;
+	color: black;
+	border-radius: 8px;
+	background-color: #ff99ff;
+	cursor: pointer;
+	transition: transform 0.2s ease;
+}
+
+.friend-profile:hover {
+	transform: scale(1.02);
+}
+
+.friend-profile .avatar_url {
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.friend-info {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	flex: 1;
+	min-width: 0;
+}
+
+.friend-info .userName,
+.friend-info .status {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	max-width: 100%;
+}

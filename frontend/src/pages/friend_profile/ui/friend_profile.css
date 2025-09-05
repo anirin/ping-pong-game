@@ -1,0 +1,145 @@
+.friend-profile-content {
+	margin-top: 30px;
+	margin-left: 250px;
+	min-height: 100vh;
+	display: flex;
+	height: auto;
+	overflow-y: auto;
+}
+
+#friend-contents {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+#friend-profile-body {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #f0f0f0;
+	width: 100%;
+	padding: 32px 24px;
+}
+
+.friend-request-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	padding: 2rem;
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.input-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	width: 280px;
+}
+
+.input-group input {
+	padding: 8px;
+	border: 1px solid #aaa;
+	border-radius: 5px;
+}
+
+.friend-card {
+	display: grid;
+	grid-template-columns: 30% 1fr minmax(120px, 10%);
+	align-items: center;
+	gap: 1rem;
+	padding: 1rem;
+	border-radius: 8px;
+	background-color: #ff99ff;
+	width: min(900px, 100%);
+	max-width: 100%;
+	box-sizing: border-box;
+	min-height: 200px;
+}
+
+.friend-card .avatar {
+	grid-column: 1;
+	width: 100%;
+	aspect-ratio: 1 / 1;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.friend-card .friend-info {
+	grid-column: 2;
+	display: grid;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.friend-card .friend-info .row {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0;
+	min-width: 0;
+}
+
+.friend-card .friend-info .label {
+	white-space: nowrap;
+	flex: 0 0 auto;
+}
+
+.username {
+	max-inline-size: min(30ch, 100%);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+}
+
+.status {
+	white-space: nowrap;
+}
+
+.actions {
+	grid-column: 3;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	justify-self: stretch;
+}
+
+.submit-btn {
+	background-color: #6a5acd;
+	color: white;
+	padding: 0.5rem 1.2rem;
+	border: none;
+	border-radius: 20px;
+	cursor: pointer;
+	width: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.submit-btn:hover {
+	background-color: #5a4abf;
+}
+
+.friend-info {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+
+@media (max-width: 560px) {
+	.friend-card {
+		grid-template-columns: 30%, 70%;
+	}
+	.actions {
+		grid-column: 1 / -1;
+		justify-self: end;
+		width: autoa;
+	}
+}
