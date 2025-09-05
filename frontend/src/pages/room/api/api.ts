@@ -34,6 +34,7 @@ export class RoomAPI {
 		| null = null;
 
 	constructor() {
+		console.log("RoomAPI constructor");
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 	}

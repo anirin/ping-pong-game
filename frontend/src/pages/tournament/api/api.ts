@@ -36,6 +36,7 @@ export class TournamentAPI {
 		null;
 
 	constructor() {
+		console.log("TournamentAPI constructor");
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 	}

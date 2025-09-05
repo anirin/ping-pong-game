@@ -17,6 +17,7 @@ export class TournamentController {
 	private readonly retryDelay: number = 1000;
 
 	constructor() {
+		console.log("TournamentController constructor");
 		this.controllerCallback = this.handleMessage.bind(this);
 		this.tournamentAPI.setCallback(this.controllerCallback);
 		this.initialize().catch((error) => {

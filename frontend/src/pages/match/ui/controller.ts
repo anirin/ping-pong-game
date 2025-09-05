@@ -34,6 +34,7 @@ export class MatchController {
 	private matchAPI = new MatchAPI();
 
 	constructor(params?: { [key: string]: string }) {
+		console.log("MatchController constructor");
 		if (params && params.matchId) {
 			this.matchId = params.matchId;
 		}
@@ -70,6 +71,11 @@ export class MatchController {
 	}
 
 	private setupMatchAPI(): void {
+		// matchIdを設定
+		if (this.matchId) {
+			this.matchAPI.setMatchId(this.matchId);
+		}
+
 		// コールバックを設定
 		this.matchAPI.setCallback(this.handleMatchEvent.bind(this));
 
@@ -463,5 +469,39 @@ export class MatchController {
 			ctx.textAlign = "center";
 			ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
 		}
+	}
+
+	public destroy(): void {
+		// アニメーションフレームを停止
+		if (this.animationFrameId !== null) {
+			cancelAnimationFrame(this.animationFrameId);
+			this.animationFrameId = null;
+		}
+
+		// キーボードイベントリスナーを削除
+		document.removeEventListener("keydown", this.handleKeyDownRef);
+		document.removeEventListener("keyup", this.handleKeyUpRef);
+
+		// MatchAPIのリソースをクリーンアップ
+		if (this.matchAPI) {
+			this.matchAPI.destroy();
+		}
+
+		// 全ての値を初期化
+		this.resetAllValues();
+
+		console.log("MatchController destroyed");
+	}
+
+	// 全ての値を初期化
+	private resetAllValues(): void {
+		this.matchId = null;
+		this.animationFrameId = null;
+		this.serverState = null;
+		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
+		this.myPlayerNumber = null;
+		this.movingUp = false;
+		this.movingDown = false;
+		this.hasResetReadyState = false;
 	}
 }

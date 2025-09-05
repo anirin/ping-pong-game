@@ -9,6 +9,7 @@ export class RoomController {
 	private dataUpdateCallback: (state: RoomState, action?: string) => void;
 
 	constructor(params?: { [key: string]: string }) {
+		console.log("RoomController constructor");
 		if (params && params.roomId) {
 			this.roomId = params.roomId;
 		}

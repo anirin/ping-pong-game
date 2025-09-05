@@ -34,7 +34,7 @@ export class MatchAPI {
 	private userId: string | null = null;
 
 	private matchData: RealtimeMatchStateDto | null = null;
-	private wsManager: WebSocketManager = WebSocketManager.getInstance();
+	private wsManager: WebSocketManager;
 	private readyPlayers: Set<string> = new Set();
 	private isReady: boolean = false;
 	private messageHandler: (message: WebSocketMessage) => void;
@@ -42,6 +42,9 @@ export class MatchAPI {
 		null;
 
 	constructor() {
+		console.log("MatchAPI constructor");
+		this.wsManager = WebSocketManager.getInstance();
+		console.log("WebSocket接続状態:", this.wsManager.getConnectionState());
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 		this.resetReadyState();
@@ -81,6 +84,10 @@ export class MatchAPI {
 		this.controllerCallback = callback;
 	}
 
+	public setMatchId(matchId: string): void {
+		this.matchId = matchId;
+	}
+
 	public removeCallback(): void {
 		this.controllerCallback = null;
 	}
@@ -88,10 +95,7 @@ export class MatchAPI {
 	// destroy
 	public destroy(): void {
 		this.wsManager.removeCallback();
-		this.controllerCallback = null;
-		this.resetReadyState();
-		this.matchData = null;
-		console.log("MatchAPI destroyed");
+		this.resetAllValues();
 	}
 
 	// 送信 マッチ情報の取得
@@ -102,6 +106,8 @@ export class MatchAPI {
 				"WebSocket is not connected. MatchAPI may not receive messages.",
 			);
 		}
+
+		console.log("マッチ情報の取得を送信しました");
 
 		this.wsManager.sendMessage({
 			status: "Match",
@@ -164,6 +170,7 @@ export class MatchAPI {
 				message.data.state
 			) {
 				this.matchData = message.data.state as RealtimeMatchStateDto;
+				console.log("match statusを受信しました:", this.matchData.status);
 				if (this.controllerCallback) {
 					this.controllerCallback(this.matchData, "match_state");
 				}
@@ -243,4 +250,14 @@ export class MatchAPI {
 			matchId: this.matchId,
 		});
 	}
+
+	private resetAllValues(): void {
+		this.matchId = null;
+		this.userId = null;
+		this.matchData = null;
+		this.controllerCallback = null;
+		this.resetReadyState();
+	}
+
+
 }
