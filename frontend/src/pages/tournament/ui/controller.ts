@@ -1,9 +1,9 @@
+import { navigate } from "../../../app/routing/index.js";
 import {
+	TournamentAPI,
 	type TournamentData,
 	type TournamentMatch,
-	TournamentAPI,
 } from "../api/api";
-import { navigate } from "../../../app/routing/index.js";
 
 export class TournamentController {
 	private tournamentData: TournamentData | null = null;
@@ -44,16 +44,24 @@ export class TournamentController {
 					return;
 				}
 
-				const wsManager = this.tournamentAPI['wsManager'];
+				const wsManager = this.tournamentAPI["wsManager"];
 				if (wsManager.isConnected()) {
-					console.log("WebSocket is connected, proceeding with tournament data request");
+					console.log(
+						"WebSocket is connected, proceeding with tournament data request",
+					);
 					this.connectionRetryCount = 0;
 					resolve();
 				} else if (this.connectionRetryCount >= this.maxRetryAttempts) {
-					reject(new Error(`WebSocket接続に失敗しました。最大試行回数(${this.maxRetryAttempts})に達しました。`));
+					reject(
+						new Error(
+							`WebSocket接続に失敗しました。最大試行回数(${this.maxRetryAttempts})に達しました。`,
+						),
+					);
 				} else {
 					this.connectionRetryCount++;
-					console.log(`WebSocket is not connected, waiting... (試行回数: ${this.connectionRetryCount}/${this.maxRetryAttempts})`);
+					console.log(
+						`WebSocket is not connected, waiting... (試行回数: ${this.connectionRetryCount}/${this.maxRetryAttempts})`,
+					);
 					setTimeout(checkConnection, this.retryDelay);
 				}
 			};
@@ -113,11 +121,18 @@ export class TournamentController {
 					});
 					break;
 				case "navigate_to_match":
-					console.log("TournamentController: マッチへのナビゲーションを受信", data.matchId);
+					console.log(
+						"TournamentController: マッチへのナビゲーションを受信",
+						data.matchId,
+					);
 					this.handleNavigationToMatch(data.matchId);
 					break;
 				case "tournament_finished":
-					console.log("TournamentController: トーナメント終了を受信", data.winner_id, data.tournament_id);
+					console.log(
+						"TournamentController: トーナメント終了を受信",
+						data.winner_id,
+						data.tournament_id,
+					);
 					this.handleTournamentFinished(data.winner_id);
 					break;
 				default:
@@ -141,7 +156,7 @@ export class TournamentController {
 			console.error("優勝者IDが指定されていません");
 			return;
 		}
-		
+
 		this.showTournamentWinner(winnerId);
 		setTimeout(() => {
 			if (!this.isDestroyed) {
@@ -164,7 +179,7 @@ export class TournamentController {
 			await Promise.all([
 				this.updateRound1Matches(),
 				this.updateNextMatchInfo(),
-				this.updateWinnerDisplay()
+				this.updateWinnerDisplay(),
 			]);
 		} catch (error) {
 			console.error("トーナメント表示の更新に失敗しました:", error);
@@ -182,7 +197,7 @@ export class TournamentController {
 				user1Id: "user-a-span",
 				user2Id: "user-b-span",
 				path1Id: "path-1",
-				path2Id: "path-2"
+				path2Id: "path-2",
 			});
 
 			// マッチ2の更新
@@ -190,19 +205,22 @@ export class TournamentController {
 				user1Id: "user-c-span",
 				user2Id: "user-d-span",
 				path1Id: "path-3",
-				path2Id: "path-4"
+				path2Id: "path-4",
 			});
 		} catch (error) {
 			console.error("round1マッチ表示の更新に失敗しました:", error);
 		}
 	}
 
-	private updateMatchDisplay(match: TournamentMatch, elements: {
-		user1Id: string;
-		user2Id: string;
-		path1Id: string;
-		path2Id: string;
-	}): void {
+	private updateMatchDisplay(
+		match: TournamentMatch,
+		elements: {
+			user1Id: string;
+			user2Id: string;
+			path1Id: string;
+			path2Id: string;
+		},
+	): void {
 		this.updateUserElement(elements.user1Id, match.player1Id, match.score1);
 		this.updateUserElement(elements.user2Id, match.player2Id, match.score2);
 		this.updateMatchPath(elements.path1Id, elements.path2Id, match);
@@ -281,7 +299,7 @@ export class TournamentController {
 				nextMatchSection.style.display = "block";
 				nextMatchRound.textContent = `${match.round}回戦`;
 				nextMatchPlayers.textContent = `${match.player1Id} vs ${match.player2Id}`;
-				
+
 				const goToMatchBtn = document.getElementById("go-to-match-btn");
 				if (goToMatchBtn) {
 					goToMatchBtn.onclick = () => this.goToNextMatch(match.id);
@@ -295,7 +313,6 @@ export class TournamentController {
 	private goToNextMatch(matchId: string): void {
 		this.tournamentAPI.navigateToMatch(matchId);
 	}
-
 
 	private showTournamentWinner(winnerId: string): void {
 		try {
@@ -318,18 +335,18 @@ export class TournamentController {
 					display: "flex",
 					justifyContent: "center",
 					alignItems: "center",
-					zIndex: "1000"
-				}
+					zIndex: "1000",
+				},
 			);
 
-			const content = modal.querySelector('.winner-content') as HTMLElement;
+			const content = modal.querySelector(".winner-content") as HTMLElement;
 			if (content) {
 				Object.assign(content.style, {
 					background: "white",
 					padding: "2rem",
 					borderRadius: "10px",
 					textAlign: "center",
-					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)"
+					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
 				});
 			}
 
@@ -374,8 +391,8 @@ export class TournamentController {
 					borderRadius: "10px",
 					textAlign: "center",
 					zIndex: "1000",
-					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)"
-				}
+					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+				},
 			);
 
 			document.body.appendChild(modal);
@@ -416,7 +433,11 @@ export class TournamentController {
 	}
 
 	// 共通のモーダル作成メソッド
-	private createModal(className: string, innerHTML: string, styles: Record<string, string>): HTMLElement {
+	private createModal(
+		className: string,
+		innerHTML: string,
+		styles: Record<string, string>,
+	): HTMLElement {
 		const modal = document.createElement("div");
 		modal.className = className;
 		modal.innerHTML = innerHTML;
@@ -437,10 +458,12 @@ export class TournamentController {
 		this.isDestroyed = true;
 		this.tournamentAPI.removeCallback();
 		this.tournamentAPI.destroy();
-		
+
 		// 既存のモーダルをクリーンアップ
-		const existingModals = document.querySelectorAll('.tournament-winner-modal, .tournament-finished-message');
-		existingModals.forEach(modal => {
+		const existingModals = document.querySelectorAll(
+			".tournament-winner-modal, .tournament-finished-message",
+		);
+		existingModals.forEach((modal) => {
 			if (modal.parentNode) {
 				modal.parentNode.removeChild(modal);
 			}

@@ -139,7 +139,10 @@ export class WebSocketManager {
 	}
 
 	// WebSocketイベントハンドラーの設定
-	private setupWebSocketEventHandlers(resolve: () => void, reject: (error: Error) => void): void {
+	private setupWebSocketEventHandlers(
+		resolve: () => void,
+		reject: (error: Error) => void,
+	): void {
 		if (!this.ws) return;
 
 		this.ws.onopen = () => {
@@ -172,7 +175,6 @@ export class WebSocketManager {
 		}
 	}
 
-
 	// 接続タイムアウトの設定
 	private setupConnectionTimeout(reject: (error: Error) => void): void {
 		setTimeout(() => {
@@ -198,5 +200,4 @@ export class WebSocketManager {
 			this.setupConnectionTimeout(reject);
 		});
 	}
-
 }

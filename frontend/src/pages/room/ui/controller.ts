@@ -1,6 +1,6 @@
-import { RoomAPI, type RoomState } from "../api/api";
 import { navigate } from "../../../app/routing";
 import type { RoomUser } from "../../../types/types";
+import { RoomAPI, type RoomState } from "../api/api";
 
 export class RoomController {
 	private roomId: string | null = null;
@@ -55,17 +55,22 @@ export class RoomController {
 			await this.roomAPI.connectToRoom(this.roomId, this.userId);
 		} catch (error) {
 			console.error("Failed to connect to room:", error);
-			
+
 			// ユーザーに分かりやすいエラーメッセージを表示
-			const errorMessage = error instanceof Error ? error.message : "Unknown error";
+			const errorMessage =
+				error instanceof Error ? error.message : "Unknown error";
 			if (errorMessage.includes("Room not found")) {
-				alert("ルームが見つかりません。ルームが削除されたか、IDが間違っている可能性があります。");
+				alert(
+					"ルームが見つかりません。ルームが削除されたか、IDが間違っている可能性があります。",
+				);
 			} else if (errorMessage.includes("WebSocket connection failed")) {
-				alert("サーバーへの接続に失敗しました。しばらく待ってから再度お試しください。");
+				alert(
+					"サーバーへの接続に失敗しました。しばらく待ってから再度お試しください。",
+				);
 			} else {
 				alert(`ルームへの接続に失敗しました: ${errorMessage}`);
 			}
-			
+
 			// エラーが発生した場合はlobbyに戻る
 			window.location.href = "/lobby";
 			throw error;
@@ -77,7 +82,7 @@ export class RoomController {
 			navigate("/tournament");
 			return;
 		}
-		
+
 		console.log("RoomController: データ更新を受信", state);
 		this.updateUI(state);
 	}
@@ -107,19 +112,27 @@ export class RoomController {
 		}
 
 		// ゲーム開始ボタン
-		const startGameButton = document.getElementById("start-game-button") as HTMLButtonElement;
+		const startGameButton = document.getElementById(
+			"start-game-button",
+		) as HTMLButtonElement;
 		if (startGameButton) {
 			const canStart = this.roomAPI.canStartGame();
 			startGameButton.hidden = !canStart;
 		}
 
 		// 退出/削除ボタン
-		const leaveDeleteButton = document.getElementById("leave-delete-button") as HTMLButtonElement;
+		const leaveDeleteButton = document.getElementById(
+			"leave-delete-button",
+		) as HTMLButtonElement;
 		if (leaveDeleteButton) {
 			leaveDeleteButton.disabled = !state.isWsConnected;
 			if (state.isWsConnected) {
-				leaveDeleteButton.className = state.isOwner ? "btn delete" : "btn leave";
-				leaveDeleteButton.textContent = state.isOwner ? "Delete Room" : "Leave Room";
+				leaveDeleteButton.className = state.isOwner
+					? "btn delete"
+					: "btn leave";
+				leaveDeleteButton.textContent = state.isOwner
+					? "Delete Room"
+					: "Leave Room";
 			} else {
 				leaveDeleteButton.className = "btn";
 				leaveDeleteButton.textContent = "Connecting...";
@@ -137,7 +150,8 @@ export class RoomController {
 		listElement.innerHTML = "";
 
 		if (participants.length === 0) {
-			listElement.innerHTML = '<li class="participant-item-empty">Waiting for other players...</li>';
+			listElement.innerHTML =
+				'<li class="participant-item-empty">Waiting for other players...</li>';
 			return;
 		}
 
@@ -180,9 +194,13 @@ export class RoomController {
 
 	private handleLeaveOrDelete(): void {
 		const state = this.roomAPI.getRoomState();
-		
+
 		if (state.isOwner) {
-			if (window.confirm("Are you sure? This will delete the room and kick everyone.")) {
+			if (
+				window.confirm(
+					"Are you sure? This will delete the room and kick everyone.",
+				)
+			) {
 				this.roomAPI.deleteRoom();
 			}
 		} else {
@@ -199,6 +217,8 @@ export class RoomController {
 	}
 }
 
-export function createRoomController(params?: { [key: string]: string }): RoomController {
+export function createRoomController(params?: {
+	[key: string]: string;
+}): RoomController {
 	return new RoomController(params);
 }

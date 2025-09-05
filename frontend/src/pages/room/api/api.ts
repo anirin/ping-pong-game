@@ -3,10 +3,7 @@ import {
 	type WebSocketMessage,
 } from "../../../shared/websocket/WebSocketManager";
 import type { RoomUser } from "../../../types/types";
-import type {
-	WSIncomingMsg,
-	WSRoomData,
-} from "../../../types/ws-types";
+import type { WSIncomingMsg, WSRoomData } from "../../../types/ws-types";
 
 export interface RoomState {
 	myUserId: string | null;
@@ -32,7 +29,9 @@ export class RoomAPI {
 	};
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 	private messageHandler: (message: WebSocketMessage) => void;
-	private controllerCallback: ((state: RoomState, action?: string) => void) | null = null;
+	private controllerCallback:
+		| ((state: RoomState, action?: string) => void)
+		| null = null;
 
 	constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
@@ -59,7 +58,8 @@ export class RoomAPI {
 
 				if (roomData.roomInfo) {
 					this.roomState.roomInfo = roomData.roomInfo;
-					this.roomState.isOwner = roomData.roomInfo.ownerId === this.roomState.myUserId;
+					this.roomState.isOwner =
+						roomData.roomInfo.ownerId === this.roomState.myUserId;
 				}
 
 				// 通常の状態更新
@@ -73,9 +73,13 @@ export class RoomAPI {
 	}
 
 	// websocket に接続しているだけ
-	public async connectToRoom(roomId: string, userId: string, maxRetries: number = 3): Promise<void> {
+	public async connectToRoom(
+		roomId: string,
+		userId: string,
+		maxRetries: number = 3,
+	): Promise<void> {
 		this.roomState.myUserId = userId;
-		
+
 		for (let attempt = 1; attempt <= maxRetries; attempt++) {
 			try {
 				await this.wsManager.connect(roomId);
@@ -90,15 +94,15 @@ export class RoomAPI {
 			} catch (error) {
 				console.error(`WebSocket connection attempt ${attempt} failed:`, error);
 				this.roomState.isWsConnected = false;
-				
+
 				if (attempt === maxRetries) {
 					throw error; // 最後の試行でも失敗した場合はエラーを投げる
 				}
-				
+
 				// リトライ前に少し待機（指数バックオフ）
-				const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+				const delay = Math.min(1000 * 2 ** (attempt - 1), 5000);
 				console.log(`Retrying connection in ${delay}ms...`);
-				await new Promise(resolve => setTimeout(resolve, delay));
+				await new Promise((resolve) => setTimeout(resolve, delay));
 			}
 		}
 	}
@@ -133,12 +137,16 @@ export class RoomAPI {
 	}
 
 	public canStartGame(): boolean {
-		return this.roomState.isOwner && 
-			   this.roomState.participants.length >= 2 && 
-			   this.roomState.isWsConnected;
+		return (
+			this.roomState.isOwner &&
+			this.roomState.participants.length >= 2 &&
+			this.roomState.isWsConnected
+		);
 	}
 
-	public setCallback(callback: (state: RoomState, action?: string) => void): void {
+	public setCallback(
+		callback: (state: RoomState, action?: string) => void,
+	): void {
 		this.controllerCallback = callback;
 	}
 
@@ -169,5 +177,4 @@ export class RoomAPI {
 			isWsConnected: false,
 		};
 	}
-
 }

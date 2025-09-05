@@ -24,7 +24,7 @@ window.addEventListener("pagehide", cleanupRoomPage);
 export function renderRoomPage(params?: { [key: string]: string }) {
 	const container = document.getElementById("app");
 	if (!container) return;
-	
+
 	// 既存のコントローラーがあれば破棄
 	if (roomController) {
 		roomController.destroy();

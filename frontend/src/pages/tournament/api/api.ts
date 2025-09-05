@@ -32,7 +32,8 @@ export class TournamentAPI {
 
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 	private messageHandler: (message: WebSocketMessage) => void;
-	private controllerCallback: ((data: any, action?: string) => void) | null = null;
+	private controllerCallback: ((data: any, action?: string) => void) | null =
+		null;
 
 	constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
@@ -43,7 +44,7 @@ export class TournamentAPI {
 	public getCurrentTournament(): TournamentData | null {
 		return this.tournamentData;
 	}
-	
+
 	public getMatch(index: number): TournamentMatch | null {
 		if (!this.tournamentData || !this.tournamentData.matches) {
 			return null;
@@ -94,14 +95,17 @@ export class TournamentAPI {
 		}
 
 		if (message.data) {
-			if ('type' in message.data && message.data.type === "navigate_to_match") {
+			if ("type" in message.data && message.data.type === "navigate_to_match") {
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "navigate_to_match");
 				}
 				return;
 			}
 
-			if ('type' in message.data && message.data.type === "tournament_finished") {
+			if (
+				"type" in message.data &&
+				message.data.type === "tournament_finished"
+			) {
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "tournament_finished");
 				}
@@ -117,5 +121,4 @@ export class TournamentAPI {
 			console.error("Tournament data is null");
 		}
 	}
-
 }

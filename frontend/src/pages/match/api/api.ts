@@ -1,8 +1,8 @@
+import { navigate } from "../../../app/routing";
 import {
 	WebSocketManager,
 	type WebSocketMessage,
 } from "../../../shared/websocket/WebSocketManager";
-import { navigate } from "../../../app/routing";
 
 export interface PaddleStateDto {
 	id: string;
@@ -30,82 +30,77 @@ export interface MatchMessage extends WebSocketMessage {
 }
 
 export class MatchAPI {
-	private matchData: RealtimeMatchStateDto | null = null;
 	private matchId: string | null = null;
 	private userId: string | null = null;
+
+	private matchData: RealtimeMatchStateDto | null = null;
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
 	private readyPlayers: Set<string> = new Set();
 	private isReady: boolean = false;
 	private messageHandler: (message: WebSocketMessage) => void;
-	private isInitialized: boolean = false;
+	private controllerCallback: ((data: any, action?: string) => void) | null =
+		null;
 
 	constructor() {
 		this.messageHandler = this.handleMessage.bind(this);
-		this.initialize();
-	}
-
-	public initialize(): void {
-		if (this.isInitialized) {
-			console.warn("MatchAPI is already initialized, reinitializing...");
-			// 既に初期化済みの場合は、コールバックを一度削除してから再追加
-			this.wsManager.removeCallback(this.messageHandler);
-		}
-		this.wsManager.addCallback(this.messageHandler);
-		this.isInitialized = true;
-		console.log("MatchAPI initialized");
-	}
-
-	private handleMessage(message: WebSocketMessage): void {
-		if (message.status !== "Match") {
-			return;
-		}
-
-		console.log("Match received: ", message);
-
-		if (message.data && message.data.type === "match_state" && message.data.state) {
-			this.matchData = message.data.state as RealtimeMatchStateDto;
-			console.log(
-				"Frontend received match data:",
-				JSON.stringify(message.data.state, null, 2),
-			);
-		} else if (message.data && message.data.type === "match_started") {
-			console.log("Match started:", message.data.matchId);
-		} else if (message.data && message.data.type === "match_finished") {
-			console.log("Match finished, winner:", message.data.winnerId);
-			navigate("/tournament");
-		} else if (message.data && message.data.type === "error") {
-			console.error("Match error:", message.data.message);
-		} else if (message.data && message.data.type === "ready_state") {
-			console.log("Ready state updated:", message.data);
-			this.updateReadyStateFromServer(message.data.readyPlayers, message.data.readyCount);
-		} else if (message.action === "get_initial_state") {
-			// 初期状態のリクエストに対する応答を待機
-			console.log("Waiting for initial match state...");
-		}
-	}
-
-	public subscribeToMatch(matchId: string, userId: string): void {
-		this.matchId = matchId;
-		this.userId = userId;
-		
-		// 前回のmatch状態を完全にクリア
-		this.matchData = null;
+		this.wsManager.setCallback(this.messageHandler);
 		this.resetReadyState();
-		
-		console.log("MatchAPI: 新しいマッチに参加", matchId);
-		
+	}
+
+	// getter
+	public getMatchData(): RealtimeMatchStateDto | null {
+		return this.matchData;
+	}
+
+	public getMatchStatus(): string | null {
+		return this.matchData?.status || null;
+	}
+
+	public getPlayerRole(): "player1" | "player2" | "spectator" | null {
+		if (!this.matchData || !this.userId) return null;
+
+		if (this.userId === this.matchData.paddles.player1.id) {
+			return "player1";
+		} else if (this.userId === this.matchData.paddles.player2.id) {
+			return "player2";
+		} else {
+			return "spectator";
+		}
+	}
+
+	public getReadyPlayerCount(): number {
+		return this.readyPlayers.size;
+	}
+
+	public isCurrentUserReady(): boolean {
+		return this.isReady;
+	}
+
+	// setter
+	public setCallback(callback: (data: any, action?: string) => void): void {
+		this.controllerCallback = callback;
+	}
+
+	public removeCallback(): void {
+		this.controllerCallback = null;
+	}
+
+	// destroy
+	public destroy(): void {
+		this.wsManager.removeCallback();
+		this.controllerCallback = null;
+		this.resetReadyState();
+		this.matchData = null;
+		console.log("MatchAPI destroyed");
+	}
+
+	// 送信 マッチ情報の取得
+	public sendMatchStart(): void {
 		// WebSocket接続状態を確認し、接続されていない場合は警告を出す
 		if (!this.wsManager.isConnected()) {
-			console.warn("WebSocket is not connected. MatchAPI may not receive messages.");
-		}
-		
-		this.requestInitialMatchState();
-	}
-
-	private requestInitialMatchState(): void {
-		if (!this.matchId) {
-			console.error("Match ID is not set");
-			return;
+			console.warn(
+				"WebSocket is not connected. MatchAPI may not receive messages.",
+			);
 		}
 
 		this.wsManager.sendMessage({
@@ -115,19 +110,26 @@ export class MatchAPI {
 		});
 	}
 
-	public startMatch(): void {
-		if (!this.matchId) {
-			console.error("Match ID is not set");
-			return;
-		}
-		
+	// 送信 パドルの移動
+	public sendPaddleMove(position: { y: number }): void {
 		this.wsManager.sendMessage({
 			status: "Match",
-			action: "start",
+			action: "move",
 			matchId: this.matchId,
+			data: position,
 		});
 	}
 
+	// 送信 準備完了
+	public sendReady(): void {
+		if (!this.userId) return;
+
+		this.isReady = !this.isReady;
+
+		this.sendReadyToServer(this.isReady);
+	}
+
+	// 送信 マッチの開始
 	public startMatchIfPlayer1(): void {
 		if (!this.matchId || !this.userId) {
 			console.error("Match ID or User ID is not set");
@@ -140,29 +142,80 @@ export class MatchAPI {
 		}
 	}
 
+	// ------------------------------------------------------------
+	// private methods
+	// ------------------------------------------------------------
 
-	public resetReadyState(): void {
+	private resetReadyState(): void {
 		this.readyPlayers.clear();
 		this.isReady = false;
 	}
 
-	public getReadyPlayerCount(): number {
-		return this.readyPlayers.size;
+	private handleMessage(message: WebSocketMessage): void {
+		if (message.status !== "Match") {
+			console.error("MatchAPI: 不明なステータス", message.status);
+			return;
+		}
+
+		try {
+			if (
+				message.data &&
+				message.data.type === "match_state" &&
+				message.data.state
+			) {
+				this.matchData = message.data.state as RealtimeMatchStateDto;
+				if (this.controllerCallback) {
+					this.controllerCallback(this.matchData, "match_state");
+				}
+			} else if (message.data && message.data.type === "match_started") {
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "match_started");
+				}
+			} else if (message.data && message.data.type === "match_finished") {
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "match_finished");
+				}
+				navigate("/tournament");
+			} else if (message.data && message.data.type === "error") {
+				console.error("Match error:", message.data.message);
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "error");
+				}
+			} else if (message.data && message.data.type === "ready_state") {
+				this.updateReadyStateFromServer(
+					message.data.readyPlayers,
+					message.data.readyCount,
+				);
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "ready_state");
+				}
+			} else if (message.action === "get_initial_state") {
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "get_initial_state");
+				}
+			}
+		} catch (error) {
+			console.error("Failed to handle match message:", error);
+		}
 	}
 
-	public isCurrentUserReady(): boolean {
-		return this.isReady;
+	private updateReadyStateFromServer(
+		readyPlayers: string[],
+		readyCount: number,
+	): void {
+		this.readyPlayers.clear();
+		readyPlayers.forEach((playerId) => this.readyPlayers.add(playerId));
+
+		if (this.userId) {
+			this.isReady = this.readyPlayers.has(this.userId);
+		}
+
+		if (readyCount >= 2) {
+			this.startMatchIfPlayer1();
+		}
 	}
 
-	public toggleReadyState(): void {
-		if (!this.userId) return;
-		
-		this.isReady = !this.isReady;
-		
-		this.sendReadyStateToServer(this.isReady);
-	}
-
-	private sendReadyStateToServer(isReady: boolean): void {
+	private sendReadyToServer(isReady: boolean): void {
 		if (!this.matchId) {
 			console.error("Match ID is not set");
 			return;
@@ -182,78 +235,12 @@ export class MatchAPI {
 		});
 	}
 
-	private updateReadyStateFromServer(readyPlayers: string[], readyCount: number): void {
-		this.readyPlayers.clear();
-		readyPlayers.forEach(playerId => this.readyPlayers.add(playerId));
-
-		if (this.userId) {
-			this.isReady = this.readyPlayers.has(this.userId);
-		}
-
-		if (readyCount >= 2) {
-			this.startMatchIfPlayer1();
-		}
-	}
-
-	public sendPaddleMove(position: { y: number }): void {
-		if (!this.wsManager.isConnected()) {
-			console.warn("WebSocket is not connected");
-			return;
-		}
-
-		if (!this.matchId) {
-			console.warn("Match ID is not set");
-			return;
-		}
-
+	// 送信 マッチの開始
+	private startMatch(): void {
 		this.wsManager.sendMessage({
 			status: "Match",
-			action: "move",
+			action: "start",
 			matchId: this.matchId,
-			data: position,
 		});
 	}
-
-	public getMatchData(): RealtimeMatchStateDto | null {
-		return this.matchData;
-	}
-
-	public getMatchId(): string | null {
-		return this.matchId;
-	}
-
-	public getUserId(): string | null {
-		return this.userId;
-	}
-
-	public getMatchStatus(): string | null {
-		return this.matchData?.status || null;
-	}
-
-	public getPlayerRole(): "player1" | "player2" | "spectator" | null {
-		if (!this.matchData || !this.userId) return null;
-
-		if (this.userId === this.matchData.paddles.player1.id) {
-			return "player1";
-		} else if (this.userId === this.matchData.paddles.player2.id) {
-			return "player2";
-		} else {
-			return "spectator";
-		}
-	}
-
-	public destroy(): void {
-		if (!this.isInitialized) {
-			console.warn("MatchAPI is not initialized");
-			return;
-		}
-		this.wsManager.removeCallback(this.messageHandler);
-		this.resetReadyState();
-		this.matchData = null;
-		this.matchId = null;
-		this.userId = null;
-		this.isInitialized = false;
-		console.log("MatchAPI destroyed");
-	}
-
 }

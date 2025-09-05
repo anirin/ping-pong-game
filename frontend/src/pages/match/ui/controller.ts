@@ -1,17 +1,37 @@
-import { getMatchAPI, type RealtimeMatchStateDto } from "../api/api";
+import { navigate } from "../../../app/routing";
+import { MatchAPI, type RealtimeMatchStateDto } from "../api/api";
+
+// 定数定義
+const CONSTANTS = {
+	PADDLE_SPEED: 7,
+	PADDLE_HEIGHT: 100,
+	PADDLE_WIDTH: 10,
+	PADDLE_MARGIN: 10,
+	BALL_RADIUS: 10,
+	INITIAL_PADDLE_Y: 300,
+	PADDLE_MIN_Y: 50,
+	PADDLE_MAX_Y: 550,
+	FONT_SIZE_LARGE: "50px Arial",
+	FONT_SIZE_MEDIUM: "24px Arial",
+} as const;
+
+const KEY_BINDINGS = {
+	UP: ["ArrowUp", "w"],
+	DOWN: ["ArrowDown", "s"],
+} as const;
 
 export class MatchController {
 	private matchId: string | null = null;
 	private animationFrameId: number | null = null;
 	private serverState: RealtimeMatchStateDto | null = null;
-	private myPredictedPaddleY: number = 300;
+	private myPredictedPaddleY: number = CONSTANTS.INITIAL_PADDLE_Y;
 	private myPlayerNumber: "player1" | "player2" | null = null;
 	private movingUp: boolean = false;
 	private movingDown: boolean = false;
 	private hasResetReadyState: boolean = false;
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
-	private matchAPI = getMatchAPI();
+	private matchAPI = new MatchAPI();
 
 	constructor(params?: { [key: string]: string }) {
 		if (params && params.matchId) {
@@ -26,127 +46,179 @@ export class MatchController {
 	}
 
 	private runMatch(): void {
-		if (!this.matchId) {
-			alert("Match ID is missing. Cannot start match.");
-			window.location.pathname = "/";
-			return;
-		}
+		try {
+			if (!this.matchId) {
+				this.handleError("Match ID is missing. Cannot start match.", "/");
+				return;
+			}
 
-		this.myPredictedPaddleY = 300;
+			this.initializeMatchState();
+			this.setupMatchAPI();
+			this.setupEventListeners();
+			this.matchLoop();
+		} catch (error) {
+			this.handleError("Failed to start match", "/");
+			console.error("Match initialization error:", error);
+		}
+	}
+
+	private initializeMatchState(): void {
+		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
 		this.hasResetReadyState = false;
 		this.serverState = null;
 		this.myPlayerNumber = null;
+	}
 
-		// MatchAPIを初期化
-		this.matchAPI.initialize();
+	private setupMatchAPI(): void {
+		// コールバックを設定
+		this.matchAPI.setCallback(this.handleMatchEvent.bind(this));
 
+		// ページ離脱時のクリーンアップを設定
 		window.addEventListener("popstate", this.cleanup.bind(this), {
 			once: true,
 		});
 
+		// WebSocket接続を開始
 		this.connectToMatch();
-		this.setupEventListeners();
-		this.initializeReadyButton();
-		this.matchLoop();
 	}
 
 	private cleanup(): void {
-		this.matchAPI.destroy();
-		if (this.animationFrameId) {
-			cancelAnimationFrame(this.animationFrameId);
-			this.animationFrameId = null;
+		try {
+			// WebSocket接続とコールバックをクリーンアップ
+			this.matchAPI.removeCallback();
+			this.matchAPI.destroy();
+
+			// アニメーションフレームをキャンセル
+			if (this.animationFrameId) {
+				cancelAnimationFrame(this.animationFrameId);
+				this.animationFrameId = null;
+			}
+
+			// イベントリスナーを削除
+			this.removeEventListeners();
+		} catch (error) {
+			console.error("Cleanup error:", error);
 		}
+	}
+
+	private removeEventListeners(): void {
 		window.removeEventListener("keydown", this.handleKeyDownRef);
 		window.removeEventListener("keyup", this.handleKeyUpRef);
 	}
 
+	private handleError(message: string, redirectPath: string = "/"): void {
+		alert(message);
+		window.location.pathname = redirectPath;
+	}
+
 	private async connectToMatch(): Promise<void> {
-		const matchId = this.matchId;
-		const token = localStorage.getItem("accessToken");
-
-		if (!token) {
-			alert("Token not found. Please login.");
-			window.location.pathname = "/auth/login";
-			return;
-		}
-
 		try {
+			const token = localStorage.getItem("accessToken");
+			if (!token) {
+				this.handleError("Token not found. Please login.", "/auth/login");
+				return;
+			}
+
 			const payload = JSON.parse(atob(token.split(".")[1]));
-			const userId = payload.id;
-			this.matchAPI.subscribeToMatch(matchId!, userId);
+			if (!payload.id) {
+				this.handleError("Invalid token format.", "/auth/login");
+				return;
+			}
+
+			this.matchAPI.sendMatchStart();
 		} catch (error) {
 			console.error("WebSocket接続エラー:", error);
-			alert("WebSocket接続に失敗しました。");
+			this.handleError("WebSocket接続に失敗しました。");
+		}
+	}
+
+	private handleMatchEvent(_data: any, action?: string): void {
+		if (action === "match_finished") {
+			// マッチ終了時にトーナメントページに遷移
+			navigate("/tournament");
 		}
 	}
 
 	private handleKeyDown(e: KeyboardEvent): void {
-		if (e.key === "ArrowUp" || e.key.toLowerCase() === "w")
-			this.movingUp = true;
-		if (e.key === "ArrowDown" || e.key.toLowerCase() === "s")
-			this.movingDown = true;
+		const key = e.key.toLowerCase();
+		if (KEY_BINDINGS.UP.includes(key as any)) this.movingUp = true;
+		if (KEY_BINDINGS.DOWN.includes(key as any)) this.movingDown = true;
 	}
 
 	private handleKeyUp(e: KeyboardEvent): void {
-		if (e.key === "ArrowUp" || e.key.toLowerCase() === "w")
-			this.movingUp = false;
-		if (e.key === "ArrowDown" || e.key.toLowerCase() === "s")
-			this.movingDown = false;
+		const key = e.key.toLowerCase();
+		if (KEY_BINDINGS.UP.includes(key as any)) this.movingUp = false;
+		if (KEY_BINDINGS.DOWN.includes(key as any)) this.movingDown = false;
 	}
 
 	private setupEventListeners(): void {
+		this.setupPaddleButtons();
+		this.setupReadyButton();
+		this.setupKeyboardListeners();
+	}
+
+	private setupPaddleButtons(): void {
 		const btnUp = document.getElementById("button-up");
 		const btnDown = document.getElementById("button-down");
-		const readyButton = document.getElementById("ready-button");
 
-		if (!btnUp || !btnDown) return;
-
-		btnUp.addEventListener("mousedown", () => {
-			this.movingUp = true;
-		});
-		btnUp.addEventListener("mouseup", () => {
-			this.movingUp = false;
-		});
-		btnUp.addEventListener("mouseleave", () => {
-			this.movingUp = false;
-		});
-
-		btnDown.addEventListener("mousedown", () => {
-			this.movingDown = true;
-		});
-		btnDown.addEventListener("mouseup", () => {
-			this.movingDown = false;
-		});
-		btnDown.addEventListener("mouseleave", () => {
-			this.movingDown = false;
-		});
-
-		if (readyButton) {
-			readyButton.addEventListener("click", () => {
-				this.handleReadyButtonClick();
-			});
+		if (!btnUp || !btnDown) {
+			console.warn("Paddle buttons not found in DOM");
+			return;
 		}
 
+		this.addPaddleButtonListeners(btnUp, "up");
+		this.addPaddleButtonListeners(btnDown, "down");
+	}
+
+	private addPaddleButtonListeners(
+		button: HTMLElement,
+		direction: "up" | "down",
+	): void {
+		const setMoving = (moving: boolean) => {
+			if (direction === "up") {
+				this.movingUp = moving;
+			} else {
+				this.movingDown = moving;
+			}
+		};
+
+		button.addEventListener("mousedown", () => setMoving(true));
+		button.addEventListener("mouseup", () => setMoving(false));
+		button.addEventListener("mouseleave", () => setMoving(false));
+	}
+
+	private setupReadyButton(): void {
+		const readyButton = document.getElementById("ready-button");
+		if (readyButton) {
+			readyButton.addEventListener("click", () =>
+				this.handleReadyButtonClick(),
+			);
+		} else {
+			console.warn("Ready button not found in DOM");
+		}
+	}
+
+	private setupKeyboardListeners(): void {
 		window.addEventListener("keydown", this.handleKeyDownRef);
 		window.addEventListener("keyup", this.handleKeyUpRef);
 	}
 
 	private updateMyPaddle(): void {
-		const PADDLE_SPEED = 7;
 		let hasMoved = false;
 
 		if (this.movingUp) {
-			this.myPredictedPaddleY -= PADDLE_SPEED;
+			this.myPredictedPaddleY -= CONSTANTS.PADDLE_SPEED;
 			hasMoved = true;
 		}
 		if (this.movingDown) {
-			this.myPredictedPaddleY += PADDLE_SPEED;
+			this.myPredictedPaddleY += CONSTANTS.PADDLE_SPEED;
 			hasMoved = true;
 		}
 
+		// パドルの位置を制限
 		this.myPredictedPaddleY = Math.max(
-			50,
-			Math.min(600 - 50, this.myPredictedPaddleY),
+			CONSTANTS.PADDLE_MIN_Y,
+			Math.min(CONSTANTS.PADDLE_MAX_Y, this.myPredictedPaddleY),
 		);
 
 		if (hasMoved) {
@@ -165,22 +237,29 @@ export class MatchController {
 
 	private updateMatchState(): void {
 		this.serverState = this.matchAPI.getMatchData();
-		
+
 		if (this.serverState && this.myPlayerNumber === null) {
-			const role = this.matchAPI.getPlayerRole();
-			if (role === "player1" || role === "player2") {
-				this.myPlayerNumber = role;
-				this.updatePlayerInfo();
-			}
-			this.updateReadyButton();
+			this.initializePlayerRole();
 		}
 
-		if (this.serverState && this.serverState.status === "finished" && !this.hasResetReadyState) {
-			this.matchAPI.resetReadyState();
+		if (
+			this.serverState &&
+			this.serverState.status === "finished" &&
+			!this.hasResetReadyState
+		) {
 			this.hasResetReadyState = true;
 		}
 
 		this.updateMatchStatus();
+	}
+
+	private initializePlayerRole(): void {
+		const role = this.matchAPI.getPlayerRole();
+		if (role === "player1" || role === "player2") {
+			this.myPlayerNumber = role;
+			this.updatePlayerInfo();
+		}
+		this.updateReadyButton();
 	}
 
 	private updatePlayerInfo(): void {
@@ -194,47 +273,71 @@ export class MatchController {
 		const matchStatusEl = document.getElementById("match-status");
 		if (matchStatusEl) {
 			const status = this.matchAPI.getMatchStatus();
-			matchStatusEl.textContent = status ? `Status: ${status}` : "Waiting for match to start...";
+			matchStatusEl.textContent = status
+				? `Status: ${status}`
+				: "Waiting for match to start...";
 		}
 	}
 
 	private handleReadyButtonClick(): void {
-		this.matchAPI.toggleReadyState();
+		this.matchAPI.sendReady();
 		this.updateReadyButton();
 		this.updateReadyCount();
 	}
 
 	private updateReadyButton(): void {
-		const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
-		if (!readyButton) return;
+		const readyButton = document.getElementById(
+			"ready-button",
+		) as HTMLButtonElement;
+		if (!readyButton) {
+			console.warn("Ready button not found in DOM");
+			return;
+		}
 
+		const buttonState = this.getReadyButtonState();
+		this.applyReadyButtonState(readyButton, buttonState);
+	}
+
+	private getReadyButtonState() {
 		const isReady = this.matchAPI.isCurrentUserReady();
 		const readyCount = this.matchAPI.getReadyPlayerCount();
 		const playerRole = this.matchAPI.getPlayerRole();
 
 		if (!this.serverState) {
-			readyButton.disabled = true;
-			readyButton.textContent = "Connecting...";
-			readyButton.classList.remove("ready");
-			return;
+			return {
+				disabled: true,
+				text: "Connecting...",
+				hasReadyClass: false,
+			};
 		}
 
 		if (playerRole === "spectator") {
-			readyButton.disabled = true;
-			readyButton.textContent = "Spectator";
-			readyButton.classList.remove("ready");
-			return;
+			return {
+				disabled: true,
+				text: "Spectator",
+				hasReadyClass: false,
+			};
 		}
 
-		if (isReady) {
-			readyButton.textContent = "Ready!";
-			readyButton.classList.add("ready");
+		return {
+			disabled: readyCount >= 2,
+			text: isReady ? "Ready!" : "Ready",
+			hasReadyClass: isReady,
+		};
+	}
+
+	private applyReadyButtonState(
+		button: HTMLButtonElement,
+		state: ReturnType<typeof this.getReadyButtonState>,
+	): void {
+		button.disabled = state.disabled;
+		button.textContent = state.text;
+
+		if (state.hasReadyClass) {
+			button.classList.add("ready");
 		} else {
-			readyButton.textContent = "Ready";
-			readyButton.classList.remove("ready");
+			button.classList.remove("ready");
 		}
-
-		readyButton.disabled = readyCount >= 2;
 	}
 
 	private updateReadyCount(): void {
@@ -245,64 +348,118 @@ export class MatchController {
 		}
 	}
 
-	private initializeReadyButton(): void {
-		const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
-		if (readyButton) {
-			readyButton.disabled = true;
-			readyButton.textContent = "Connecting...";
-			readyButton.classList.remove("ready");
-		}
-		this.updateReadyCount();
-	}
-
 	private draw(): void {
 		const canvas = document.getElementById("matchCanvas") as HTMLCanvasElement;
 		const ctx = canvas?.getContext("2d");
-		if (!ctx) return;
-
-		ctx.fillStyle = "black";
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-		if (!this.serverState) {
-			ctx.fillStyle = "white";
-			ctx.font = "24px Arial";
-			ctx.textAlign = "center";
-			ctx.fillText(
-				"Connecting to server...",
-				canvas.width / 2,
-				canvas.height / 2,
-			);
+		if (!ctx) {
+			console.warn("Canvas context not available");
 			return;
 		}
 
-		const state = this.serverState;
+		this.clearCanvas(ctx, canvas);
+
+		if (!this.serverState) {
+			this.drawConnectionMessage(ctx, canvas);
+			return;
+		}
+
+		this.updateScoreDisplay();
+		this.drawGameElements(ctx, canvas);
+	}
+
+	private clearCanvas(
+		ctx: CanvasRenderingContext2D,
+		canvas: HTMLCanvasElement,
+	): void {
+		ctx.fillStyle = "black";
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+	}
+
+	private drawConnectionMessage(
+		ctx: CanvasRenderingContext2D,
+		canvas: HTMLCanvasElement,
+	): void {
+		ctx.fillStyle = "white";
+		ctx.font = CONSTANTS.FONT_SIZE_MEDIUM;
+		ctx.textAlign = "center";
+		ctx.fillText(
+			"Connecting to server...",
+			canvas.width / 2,
+			canvas.height / 2,
+		);
+	}
+
+	private updateScoreDisplay(): void {
+		if (!this.serverState) return;
+
 		const score1El = document.getElementById("player1-score");
 		const score2El = document.getElementById("player2-score");
-		if (score1El) score1El.textContent = state.scores.player1.toString();
-		if (score2El) score2El.textContent = state.scores.player2.toString();
+		if (score1El)
+			score1El.textContent = this.serverState.scores.player1.toString();
+		if (score2El)
+			score2El.textContent = this.serverState.scores.player2.toString();
+	}
+
+	private drawGameElements(
+		ctx: CanvasRenderingContext2D,
+		canvas: HTMLCanvasElement,
+	): void {
+		if (!this.serverState) return;
 
 		ctx.fillStyle = "white";
-		const serverP1Y = state.paddles.player1.y;
-		const serverP2Y = state.paddles.player2.y;
 
-		if (this.myPlayerNumber === "player1") {
-			ctx.fillRect(10, this.myPredictedPaddleY - 50, 10, 100);
-		} else {
-			ctx.fillRect(10, serverP1Y - 50, 10, 100);
-		}
+		this.drawPaddles(ctx, canvas);
+		this.drawBall(ctx);
+		this.drawGameOverMessage(ctx, canvas);
+	}
 
-		if (this.myPlayerNumber === "player2") {
-			ctx.fillRect(canvas.width - 20, this.myPredictedPaddleY - 50, 10, 100);
-		} else {
-			ctx.fillRect(canvas.width - 20, serverP2Y - 50, 10, 100);
-		}
+	private drawPaddles(
+		ctx: CanvasRenderingContext2D,
+		canvas: HTMLCanvasElement,
+	): void {
+		const { player1, player2 } = this.serverState!.paddles;
 
+		// Player 1 paddle
+		const p1Y =
+			this.myPlayerNumber === "player1" ? this.myPredictedPaddleY : player1.y;
+		this.drawPaddle(ctx, CONSTANTS.PADDLE_MARGIN, p1Y);
+
+		// Player 2 paddle
+		const p2Y =
+			this.myPlayerNumber === "player2" ? this.myPredictedPaddleY : player2.y;
+		this.drawPaddle(
+			ctx,
+			canvas.width - CONSTANTS.PADDLE_MARGIN - CONSTANTS.PADDLE_WIDTH,
+			p2Y,
+		);
+	}
+
+	private drawPaddle(
+		ctx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+	): void {
+		ctx.fillRect(
+			x,
+			y - CONSTANTS.PADDLE_HEIGHT / 2,
+			CONSTANTS.PADDLE_WIDTH,
+			CONSTANTS.PADDLE_HEIGHT,
+		);
+	}
+
+	private drawBall(ctx: CanvasRenderingContext2D): void {
+		const { x, y } = this.serverState!.ball;
 		ctx.beginPath();
-		ctx.arc(state.ball.x, state.ball.y, 10, 0, Math.PI * 2);
+		ctx.arc(x, y, CONSTANTS.BALL_RADIUS, 0, Math.PI * 2);
 		ctx.fill();
+	}
 
-		if (state.status === "finished") {
-			ctx.font = "50px Arial";
+	private drawGameOverMessage(
+		ctx: CanvasRenderingContext2D,
+		canvas: HTMLCanvasElement,
+	): void {
+		if (this.serverState!.status === "finished") {
+			ctx.font = CONSTANTS.FONT_SIZE_LARGE;
 			ctx.textAlign = "center";
 			ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
 		}

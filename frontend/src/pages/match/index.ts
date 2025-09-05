@@ -9,7 +9,7 @@ export function renderMatchPage(params?: { [key: string]: string }) {
 		return;
 	}
 	app.innerHTML = html;
-	
+
 	// マッチコントローラーを初期化して実行
 	const matchController = new MatchController(params);
 	matchController.render();

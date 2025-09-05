@@ -22,7 +22,7 @@ export function renderTournamentPage() {
 	const state: TournamentPageState = {
 		controller: null,
 		eventListeners: [],
-		isDestroyed: false
+		isDestroyed: false,
 	};
 
 	try {
@@ -60,8 +60,12 @@ function setupEventListeners(state: TournamentPageState): void {
 
 	const events = [
 		{ element: window, event: "beforeunload", handler: handleBeforeUnload },
-		{ element: document, event: "visibilitychange", handler: handleVisibilityChange },
-		{ element: window, event: "pagehide", handler: handlePageHide }
+		{
+			element: document,
+			event: "visibilitychange",
+			handler: handleVisibilityChange,
+		},
+		{ element: window, event: "pagehide", handler: handlePageHide },
 	];
 
 	events.forEach(({ element, event, handler }) => {
@@ -75,20 +79,20 @@ function createCleanupFunction(state: TournamentPageState): () => void {
 		if (state.isDestroyed) {
 			return;
 		}
-		
+
 		state.isDestroyed = true;
-		
+
 		try {
 			state.eventListeners.forEach(({ element, event, handler }) => {
 				element.removeEventListener(event, handler);
 			});
 			state.eventListeners = [];
-			
+
 			if (state.controller) {
 				state.controller.destroy();
 				state.controller = null;
 			}
-			
+
 			console.log("トーナメントページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
@@ -101,9 +105,9 @@ function createErrorCleanupFunction(state: TournamentPageState): () => void {
 		if (state.isDestroyed) {
 			return;
 		}
-		
+
 		state.isDestroyed = true;
-		
+
 		try {
 			state.eventListeners.forEach(({ element, event, handler }) => {
 				element.removeEventListener(event, handler);
@@ -116,8 +120,9 @@ function createErrorCleanupFunction(state: TournamentPageState): () => void {
 }
 
 function showErrorPage(app: HTMLElement, error: unknown): void {
-	const errorMessage = error instanceof Error ? error.message : "不明なエラーが発生しました";
-	
+	const errorMessage =
+		error instanceof Error ? error.message : "不明なエラーが発生しました";
+
 	app.innerHTML = `
 		<div class="error-container" style="
 			display: flex;
