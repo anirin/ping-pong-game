@@ -286,6 +286,17 @@ export class MatchController {
 	}
 
 	private handleReadyButtonClick(): void {
+		const playerRole = this.matchAPI.getPlayerRole();
+		if (playerRole === "spectator" || playerRole === null) {
+			console.warn("Cannot set ready state: invalid player role");
+			return;
+		}
+
+		if (this.serverState && (this.serverState.status === "playing" || this.serverState.status === "finished")) {
+			console.warn("Cannot set ready state: match is not in scheduled state");
+			return;
+		}
+
 		this.matchAPI.sendReady();
 		this.updateReadyButton();
 		this.updateReadyCount();
@@ -321,6 +332,23 @@ export class MatchController {
 			return {
 				disabled: true,
 				text: "Spectator",
+				hasReadyClass: false,
+			};
+		}
+
+		if (playerRole === null) {
+			return {
+				disabled: true,
+				text: "Waiting for player role...",
+				hasReadyClass: false,
+			};
+		}
+
+		// マッチが既に開始されている場合は無効化
+		if (this.serverState.status === "playing" || this.serverState.status === "finished") {
+			return {
+				disabled: true,
+				text: this.serverState.status === "playing" ? "Playing..." : "Finished",
 				hasReadyClass: false,
 			};
 		}

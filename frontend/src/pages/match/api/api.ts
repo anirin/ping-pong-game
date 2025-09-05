@@ -48,6 +48,7 @@ export class MatchAPI {
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 		this.resetReadyState();
+		this.initializeUserId();
 	}
 
 	// getter
@@ -128,9 +129,14 @@ export class MatchAPI {
 
 	// 送信 準備完了
 	public sendReady(): void {
-		if (!this.userId) return;
+		if (!this.userId) {
+			console.error("Cannot send ready: userId is not set");
+			return;
+		}
 
+		console.log("Sending ready state, current isReady:", this.isReady);
 		this.isReady = !this.isReady;
+		console.log("New isReady state:", this.isReady);
 
 		this.sendReadyToServer(this.isReady);
 	}
@@ -234,6 +240,13 @@ export class MatchAPI {
 			return;
 		}
 
+		console.log("Sending ready message to server:", {
+			status: "Match",
+			action: "ready",
+			matchId: this.matchId,
+			data: { isReady },
+		});
+
 		this.wsManager.sendMessage({
 			status: "Match",
 			action: "ready",
@@ -249,6 +262,21 @@ export class MatchAPI {
 			action: "start",
 			matchId: this.matchId,
 		});
+	}
+
+	private initializeUserId(): void {
+		try {
+			const token = localStorage.getItem("accessToken");
+			if (token) {
+				const payload = JSON.parse(atob(token.split(".")[1]));
+				if (payload.id) {
+					this.userId = payload.id;
+					console.log("User ID initialized:", this.userId);
+				}
+			}
+		} catch (error) {
+			console.error("Failed to initialize user ID:", error);
+		}
 	}
 
 	private resetAllValues(): void {

@@ -150,6 +150,8 @@ export class WebSocketManager {
 		};
 
 		this.ws.onmessage = (event) => {
+			// debug
+			console.log("WebSocketメッセージ:", event.data);
 			this.handleWebSocketMessage(event);
 		};
 
