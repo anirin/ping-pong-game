@@ -11,26 +11,16 @@ export class TournamentController {
 	private dataUpdateCallback: () => void;
 
 	constructor() {
-		// TournamentAPI をリセットしてクリーンな状態にする
 		tournamentAPI.reset();
-		
-		// データ更新コールバックを設定
 		this.dataUpdateCallback = this.handleDataUpdate.bind(this);
 		tournamentAPI.addDataUpdateCallback(this.dataUpdateCallback);
 		this.initialize();
 	}
 
 	private async initialize(): Promise<void> {
-		// WebSocket接続を確認
 		await this.waitForWebSocketConnection();
-		
-		// WebSocketでデータを要求
 		tournamentAPI.getTournamentData();
-
-		// データが受信されるまで待機（ポーリングまたはイベントリスナー）
 		await this.waitForTournamentData();
-
-		// データが準備できてから更新
 		this.updateTournamentDisplay();
 	}
 
@@ -43,7 +33,6 @@ export class TournamentController {
 					resolve();
 				} else {
 					console.log("WebSocket is not connected, waiting...");
-					// 100ms後に再チェック
 					setTimeout(checkConnection, 100);
 				}
 			};
@@ -58,7 +47,6 @@ export class TournamentController {
 					this.updateLocalData();
 					resolve();
 				} else {
-					// 100ms後に再チェック
 					setTimeout(checkData, 100);
 				}
 			};
@@ -83,19 +71,18 @@ export class TournamentController {
 			return;
 		}
 
-		try {
-			// トーナメントが終了している場合の特別処理
-			if (this.tournamentData.status === "finished") {
-				await this.handleTournamentFinished();
-				return;
-			}
+					try {
+				if (this.tournamentData.status === "finished") {
+					await this.handleTournamentFinished();
+					return;
+				}
 
-			await this.updateRound1Matches();
-			await this.updateNextMatchInfo();
-			await this.updateWinnerDisplay();
-		} catch (error) {
-			console.error("トーナメント表示の更新に失敗しました:", error);
-		}
+				await this.updateRound1Matches();
+				await this.updateNextMatchInfo();
+				await this.updateWinnerDisplay();
+			} catch (error) {
+				console.error("トーナメント表示の更新に失敗しました:", error);
+			}
 	}
 
 	private async updateRound1Matches(): Promise<void> {
@@ -103,35 +90,33 @@ export class TournamentController {
 			return;
 		}
 
-		try {
-			// left match - プロパティ名を修正
-			this.updateUserElement(
-				"user-a-span",
-				this.match1.player1Id,
-				this.match1.score1,
-			);
-			this.updateUserElement(
-				"user-b-span",
-				this.match1.player2Id,
-				this.match1.score2,
-			);
-			this.updateMatchPath("path-1", "path-2", this.match1);
+					try {
+				this.updateUserElement(
+					"user-a-span",
+					this.match1.player1Id,
+					this.match1.score1,
+				);
+				this.updateUserElement(
+					"user-b-span",
+					this.match1.player2Id,
+					this.match1.score2,
+				);
+				this.updateMatchPath("path-1", "path-2", this.match1);
 
-			// right match - プロパティ名を修正
-			this.updateUserElement(
-				"user-c-span",
-				this.match2.player1Id,
-				this.match2.score1,
-			);
-			this.updateUserElement(
-				"user-d-span",
-				this.match2.player2Id,
-				this.match2.score2,
-			);
-			this.updateMatchPath("path-3", "path-4", this.match2);
-		} catch (error) {
-			console.error("round1マッチ表示の更新に失敗しました:", error);
-		}
+				this.updateUserElement(
+					"user-c-span",
+					this.match2.player1Id,
+					this.match2.score1,
+				);
+				this.updateUserElement(
+					"user-d-span",
+					this.match2.player2Id,
+					this.match2.score2,
+				);
+				this.updateMatchPath("path-3", "path-4", this.match2);
+			} catch (error) {
+				console.error("round1マッチ表示の更新に失敗しました:", error);
+			}
 	}
 
 	private updateUserElement(
@@ -143,9 +128,6 @@ export class TournamentController {
 		if (element) {
 			element.textContent = `${userId} (Score: ${score})`;
 		}
-
-		// アバター画像も更新
-		// todo : アバター画像の更新
 	}
 
 	private updateMatchPath(
@@ -157,7 +139,6 @@ export class TournamentController {
 		const path2 = document.getElementById(path2Id) as unknown as SVGElement;
 
 		if (path1 && path2) {
-			// 勝利者がいる場合、勝利者のパスを赤くする - プロパティ名を修正
 			if (match.winnerId) {
 				if (match.winnerId === match.player1Id) {
 					path1.style.stroke = "red";
@@ -167,7 +148,6 @@ export class TournamentController {
 					path2.style.stroke = "red";
 				}
 			} else {
-				// 勝利者がいない場合、両方ともグレー
 				path1.style.stroke = "gray";
 				path2.style.stroke = "gray";
 			}
@@ -187,9 +167,6 @@ export class TournamentController {
 		}
 	}
 
-	/**
-	 * 次のマッチ表示の更新
-	 */
 	private async updateNextMatchDisplay(match: TournamentMatch): Promise<void> {
 		try {
 			const nextMatchSection = document.getElementById("next-match-section");
@@ -199,10 +176,8 @@ export class TournamentController {
 			if (nextMatchSection && nextMatchRound && nextMatchPlayers) {
 				nextMatchSection.style.display = "block";
 				nextMatchRound.textContent = `${match.round}回戦`;
-				// プロパティ名を修正
 				nextMatchPlayers.textContent = `${match.player1Id} vs ${match.player2Id}`;
 				
-				// ボタンのonclickイベントを設定
 				const goToMatchBtn = document.getElementById("go-to-match-btn");
 				if (goToMatchBtn) {
 					goToMatchBtn.onclick = () => this.goToNextMatch(match.id);
@@ -217,24 +192,19 @@ export class TournamentController {
 		tournamentAPI.navigateToMatch(matchId);
 	}
 
-	// トーナメント終了時の処理
 	private async handleTournamentFinished(): Promise<void> {
 		if (!this.tournamentData?.winner_id) {
 			return;
 		}
 
 		try {
-			// 勝利者表示を更新
 			await this.updateWinnerDisplay();
-			
-			// トーナメント終了メッセージを表示
 			this.showTournamentFinishedMessage();
 		} catch (error) {
 			console.error("トーナメント終了処理に失敗しました:", error);
 		}
 	}
 
-	// トーナメント終了メッセージの表示
 	private showTournamentFinishedMessage(): void {
 		const messageDiv = document.createElement("div");
 		messageDiv.className = "tournament-finished-message";
@@ -244,8 +214,6 @@ export class TournamentController {
 				<p>お疲れ様でした！</p>
 			</div>
 		`;
-		
-		// スタイルを追加
 		messageDiv.style.cssText = `
 			position: fixed;
 			top: 50%;
@@ -261,8 +229,6 @@ export class TournamentController {
 		`;
 		
 		document.body.appendChild(messageDiv);
-		
-		// 5秒後にメッセージを削除
 		setTimeout(() => {
 			if (messageDiv.parentNode) {
 				messageDiv.parentNode.removeChild(messageDiv);
@@ -276,7 +242,6 @@ export class TournamentController {
 		}
 
 		try {
-			// 勝利者を表示する要素を作成または更新
 			const winnerSection = document.createElement("div");
 			winnerSection.className = "winner-section";
 			winnerSection.innerHTML = `
@@ -287,13 +252,11 @@ export class TournamentController {
 				</div>
 			`;
 
-			// 既存の勝利者セクションがあれば置き換え
 			const existingWinner = document.querySelector(".winner-section");
 			if (existingWinner) {
 				existingWinner.remove();
 			}
 
-			// メインコンテナに追加
 			const mainContainer = document.querySelector(".main");
 			if (mainContainer) {
 				mainContainer.appendChild(winnerSection);

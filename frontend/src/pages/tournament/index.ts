@@ -10,28 +10,21 @@ export function renderTournamentPage() {
 	}
 
 	try {
-		// HTMLを設定
 		app.innerHTML = html;
-
-		// トーナメントコントローラーを初期化
 		const tournamentController = createTournamentController();
 
-		// ページを離れる際のクリーンアップを設定
 		const handleBeforeUnload = () => {
 			tournamentController.destroy();
 		};
 
-		// ページの可視性が変更された時のクリーンアップも設定
 		const handleVisibilityChange = () => {
 			if (document.hidden) {
-				// ページが非表示になった時の処理（必要に応じて）
 			}
 		};
 
 		window.addEventListener("beforeunload", handleBeforeUnload);
 		document.addEventListener("visibilitychange", handleVisibilityChange);
 
-		// クリーンアップ関数を返す（必要に応じて外部から呼び出し可能）
 		return () => {
 			window.removeEventListener("beforeunload", handleBeforeUnload);
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
