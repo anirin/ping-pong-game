@@ -3,16 +3,12 @@ import { matchAPI, type RealtimeMatchStateDto } from "../api/api";
 export class MatchController {
 	private matchId: string | null = null;
 	private animationFrameId: number | null = null;
-
-	// ゲームの状態とUI要素
 	private serverState: RealtimeMatchStateDto | null = null;
 	private myPredictedPaddleY: number = 300;
 	private myPlayerNumber: "player1" | "player2" | null = null;
 	private movingUp: boolean = false;
 	private movingDown: boolean = false;
-	private hasResetReadyState: boolean = false; // ready状態リセット済みフラグ
-
-	// キーボードイベントのハンドラをクラスのプロパティとして保持
+	private hasResetReadyState: boolean = false;
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 
@@ -36,9 +32,8 @@ export class MatchController {
 		}
 
 		this.myPredictedPaddleY = 300;
-		this.hasResetReadyState = false; // フラグをリセット
+		this.hasResetReadyState = false;
 
-		// 他のページに移動した際にリソースをクリーンアップするためのイベントリスナー
 		window.addEventListener("popstate", this.cleanup.bind(this), {
 			once: true,
 		});
@@ -50,7 +45,6 @@ export class MatchController {
 	}
 
 	private cleanup(): void {
-		console.log("Cleaning up match resources...");
 		matchAPI.destroy();
 		if (this.animationFrameId) {
 			cancelAnimationFrame(this.animationFrameId);
@@ -73,11 +67,7 @@ export class MatchController {
 		try {
 			const payload = JSON.parse(atob(token.split(".")[1]));
 			const userId = payload.id;
-
-			// マッチにサブスクライブ（バックエンドのstartアクションを使用）
 			matchAPI.subscribeToMatch(matchId!, userId);
-
-			console.log("Match WebSocket connection established.");
 		} catch (error) {
 			console.error("WebSocket接続エラー:", error);
 			alert("WebSocket接続に失敗しました。");
@@ -105,7 +95,6 @@ export class MatchController {
 
 		if (!btnUp || !btnDown) return;
 
-		// ボタン操作
 		btnUp.addEventListener("mousedown", () => {
 			this.movingUp = true;
 		});
@@ -126,14 +115,12 @@ export class MatchController {
 			this.movingDown = false;
 		});
 
-		// Readyボタン操作
 		if (readyButton) {
 			readyButton.addEventListener("click", () => {
 				this.handleReadyButtonClick();
 			});
 		}
 
-		// キーボード操作
 		window.addEventListener("keydown", this.handleKeyDownRef);
 		window.addEventListener("keyup", this.handleKeyUpRef);
 	}
@@ -171,28 +158,22 @@ export class MatchController {
 	}
 
 	private updateMatchState(): void {
-		// APIから最新のマッチ状態を取得
 		this.serverState = matchAPI.getMatchData();
 		
-		// プレイヤーの役割を更新
 		if (this.serverState && this.myPlayerNumber === null) {
 			const role = matchAPI.getPlayerRole();
 			if (role === "player1" || role === "player2") {
 				this.myPlayerNumber = role;
 				this.updatePlayerInfo();
 			}
-			// マッチデータが受信されたらreadyボタンを更新
 			this.updateReadyButton();
 		}
 
-		// マッチが終了した場合、ready状態をリセット（一度だけ）
 		if (this.serverState && this.serverState.status === "finished" && !this.hasResetReadyState) {
-			console.log("Match finished, resetting ready state for next match");
 			matchAPI.resetReadyState();
-			this.hasResetReadyState = true; // フラグを設定して重複実行を防ぐ
+			this.hasResetReadyState = true;
 		}
 
-		// マッチの状態を更新
 		this.updateMatchStatus();
 	}
 
@@ -225,7 +206,6 @@ export class MatchController {
 		const readyCount = matchAPI.getReadyPlayerCount();
 		const playerRole = matchAPI.getPlayerRole();
 
-		// マッチデータがまだ受信されていない場合
 		if (!this.serverState) {
 			readyButton.disabled = true;
 			readyButton.textContent = "Connecting...";
@@ -233,7 +213,6 @@ export class MatchController {
 			return;
 		}
 
-		// 観戦者の場合はボタンを無効化
 		if (playerRole === "spectator") {
 			readyButton.disabled = true;
 			readyButton.textContent = "Spectator";
@@ -249,7 +228,6 @@ export class MatchController {
 			readyButton.classList.remove("ready");
 		}
 
-		// 2人とも準備完了の場合はボタンを無効化
 		readyButton.disabled = readyCount >= 2;
 	}
 
@@ -264,9 +242,9 @@ export class MatchController {
 	private initializeReadyButton(): void {
 		const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
 		if (readyButton) {
-			readyButton.disabled = true; // マッチデータ受信まで無効化
+			readyButton.disabled = true;
 			readyButton.textContent = "Connecting...";
-			readyButton.classList.remove("ready"); // readyクラスを削除
+			readyButton.classList.remove("ready");
 		}
 		this.updateReadyCount();
 	}
@@ -301,26 +279,22 @@ export class MatchController {
 		const serverP1Y = state.paddles.player1.y;
 		const serverP2Y = state.paddles.player2.y;
 
-		// プレイヤー1のパドルを描画
 		if (this.myPlayerNumber === "player1") {
 			ctx.fillRect(10, this.myPredictedPaddleY - 50, 10, 100);
 		} else {
 			ctx.fillRect(10, serverP1Y - 50, 10, 100);
 		}
 
-		// プレイヤー2のパドルを描画
 		if (this.myPlayerNumber === "player2") {
 			ctx.fillRect(canvas.width - 20, this.myPredictedPaddleY - 50, 10, 100);
 		} else {
 			ctx.fillRect(canvas.width - 20, serverP2Y - 50, 10, 100);
 		}
 
-		// ボールを描画
 		ctx.beginPath();
 		ctx.arc(state.ball.x, state.ball.y, 10, 0, Math.PI * 2);
 		ctx.fill();
 
-		// ゲーム終了時の表示
 		if (state.status === "finished") {
 			ctx.font = "50px Arial";
 			ctx.textAlign = "center";
