@@ -1,27 +1,27 @@
 import {
 	type TournamentData,
 	type TournamentMatch,
-	getTournamentAPI,
+	TournamentAPI,
 } from "../api/api";
+import { navigate } from "../../../app/routing/index.js";
 
 export class TournamentController {
 	private tournamentData: TournamentData | null = null;
 	private match1: TournamentMatch | null = null;
 	private match2: TournamentMatch | null = null;
-	private dataUpdateCallback: () => void;
-	private tournamentAPI = getTournamentAPI();
+	private controllerCallback: (data: any, action?: string) => void;
+	private tournamentAPI: TournamentAPI = new TournamentAPI();
+	private isDestroyed: boolean = false;
+	private connectionRetryCount: number = 0;
+	private readonly maxRetryAttempts: number = 5;
+	private readonly retryDelay: number = 1000;
 
 	constructor() {
-		// 初回のみreset()を呼び出し、2回目以降は既存のインスタンスを再利用
-		if (!this.tournamentAPI.isInitialized) {
-			this.tournamentAPI.reset();
-		} else {
-			// 既に初期化済みの場合は、コールバックのみを追加
-			this.tournamentAPI.initialize();
-		}
-		this.dataUpdateCallback = this.handleDataUpdate.bind(this);
-		this.tournamentAPI.addDataUpdateCallback(this.dataUpdateCallback);
-		this.initialize();
+		this.controllerCallback = this.handleMessage.bind(this);
+		this.tournamentAPI.setCallback(this.controllerCallback);
+		this.initialize().catch((error) => {
+			console.error("TournamentController初期化エラー:", error);
+		});
 	}
 
 	private async initialize(): Promise<void> {
@@ -32,15 +32,29 @@ export class TournamentController {
 	}
 
 	private async waitForWebSocketConnection(): Promise<void> {
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
+			if (this.isDestroyed) {
+				reject(new Error("Controller is destroyed"));
+				return;
+			}
+
 			const checkConnection = () => {
+				if (this.isDestroyed) {
+					reject(new Error("Controller is destroyed"));
+					return;
+				}
+
 				const wsManager = this.tournamentAPI['wsManager'];
 				if (wsManager.isConnected()) {
 					console.log("WebSocket is connected, proceeding with tournament data request");
+					this.connectionRetryCount = 0;
 					resolve();
+				} else if (this.connectionRetryCount >= this.maxRetryAttempts) {
+					reject(new Error(`WebSocket接続に失敗しました。最大試行回数(${this.maxRetryAttempts})に達しました。`));
 				} else {
-					console.log("WebSocket is not connected, waiting...");
-					setTimeout(checkConnection, 100);
+					this.connectionRetryCount++;
+					console.log(`WebSocket is not connected, waiting... (試行回数: ${this.connectionRetryCount}/${this.maxRetryAttempts})`);
+					setTimeout(checkConnection, this.retryDelay);
 				}
 			};
 			checkConnection();
@@ -48,13 +62,30 @@ export class TournamentController {
 	}
 
 	private async waitForTournamentData(): Promise<void> {
-		return new Promise((resolve) => {
+		return new Promise((resolve, reject) => {
+			if (this.isDestroyed) {
+				reject(new Error("Controller is destroyed"));
+				return;
+			}
+
+			let dataRetryCount = 0;
+			const maxDataRetries = 30; // 3秒間待機
+			const dataRetryDelay = 100;
+
 			const checkData = () => {
+				if (this.isDestroyed) {
+					reject(new Error("Controller is destroyed"));
+					return;
+				}
+
 				if (this.tournamentAPI.getCurrentTournament()) {
 					this.updateLocalData();
 					resolve();
+				} else if (dataRetryCount >= maxDataRetries) {
+					reject(new Error("トーナメントデータの取得に失敗しました。"));
 				} else {
-					setTimeout(checkData, 100);
+					dataRetryCount++;
+					setTimeout(checkData, dataRetryDelay);
 				}
 			};
 			checkData();
@@ -63,67 +94,118 @@ export class TournamentController {
 
 	private updateLocalData(): void {
 		this.tournamentData = this.tournamentAPI.getCurrentTournament();
-		this.match1 = this.tournamentAPI.getMatch1();
-		this.match2 = this.tournamentAPI.getMatch2();
+		this.match1 = this.tournamentAPI.getMatch(0);
+		this.match2 = this.tournamentAPI.getMatch(1);
 	}
 
-	private handleDataUpdate(): void {
-		console.log("TournamentController: データ更新を受信");
-		this.updateLocalData();
-		this.updateTournamentDisplay();
+	private handleMessage(data: any, action?: string): void {
+		if (this.isDestroyed) {
+			return;
+		}
+
+		try {
+			switch (action) {
+				case "data_update":
+					console.log("TournamentController: データ更新を受信");
+					this.updateLocalData();
+					this.updateTournamentDisplay().catch((error) => {
+						console.error("トーナメント表示の更新に失敗:", error);
+					});
+					break;
+				case "navigate_to_match":
+					console.log("TournamentController: マッチへのナビゲーションを受信", data.matchId);
+					this.handleNavigationToMatch(data.matchId);
+					break;
+				case "tournament_finished":
+					console.log("TournamentController: トーナメント終了を受信", data.winner_id, data.tournament_id);
+					this.handleTournamentFinished(data.winner_id);
+					break;
+				default:
+					console.log("TournamentController: 不明なアクション", action);
+			}
+		} catch (error) {
+			console.error("メッセージ処理中にエラーが発生:", error);
+		}
+	}
+
+	private handleNavigationToMatch(matchId: string): void {
+		if (!matchId) {
+			console.error("マッチIDが指定されていません");
+			return;
+		}
+		navigate(`/match/${matchId}`);
+	}
+
+	private handleTournamentFinished(winnerId: string): void {
+		if (!winnerId) {
+			console.error("優勝者IDが指定されていません");
+			return;
+		}
+		
+		this.showTournamentWinner(winnerId);
+		setTimeout(() => {
+			if (!this.isDestroyed) {
+				navigate("/room");
+			}
+		}, 3000);
 	}
 
 	private async updateTournamentDisplay(): Promise<void> {
-		if (!this.tournamentData) {
+		if (!this.tournamentData || this.isDestroyed) {
 			return;
 		}
 
-					try {
-				if (this.tournamentData.status === "finished") {
-					await this.handleTournamentFinished();
-					return;
-				}
-
-				await this.updateRound1Matches();
-				await this.updateNextMatchInfo();
-				await this.updateWinnerDisplay();
-			} catch (error) {
-				console.error("トーナメント表示の更新に失敗しました:", error);
+		try {
+			if (this.tournamentData.status === "finished") {
+				await this.handleTournamentFinishedDisplay();
+				return;
 			}
+
+			await Promise.all([
+				this.updateRound1Matches(),
+				this.updateNextMatchInfo(),
+				this.updateWinnerDisplay()
+			]);
+		} catch (error) {
+			console.error("トーナメント表示の更新に失敗しました:", error);
+		}
 	}
 
 	private async updateRound1Matches(): Promise<void> {
-		if (!this.match1 || !this.match2) {
+		if (!this.match1 || !this.match2 || this.isDestroyed) {
 			return;
 		}
 
-					try {
-				this.updateUserElement(
-					"user-a-span",
-					this.match1.player1Id,
-					this.match1.score1,
-				);
-				this.updateUserElement(
-					"user-b-span",
-					this.match1.player2Id,
-					this.match1.score2,
-				);
-				this.updateMatchPath("path-1", "path-2", this.match1);
+		try {
+			// マッチ1の更新
+			this.updateMatchDisplay(this.match1, {
+				user1Id: "user-a-span",
+				user2Id: "user-b-span",
+				path1Id: "path-1",
+				path2Id: "path-2"
+			});
 
-				this.updateUserElement(
-					"user-c-span",
-					this.match2.player1Id,
-					this.match2.score1,
-				);
-				this.updateUserElement(
-					"user-d-span",
-					this.match2.player2Id,
-					this.match2.score2,
-				);
-				this.updateMatchPath("path-3", "path-4", this.match2);
-			} catch (error) {
-				console.error("round1マッチ表示の更新に失敗しました:", error);
-			}
+			// マッチ2の更新
+			this.updateMatchDisplay(this.match2, {
+				user1Id: "user-c-span",
+				user2Id: "user-d-span",
+				path1Id: "path-3",
+				path2Id: "path-4"
+			});
+		} catch (error) {
+			console.error("round1マッチ表示の更新に失敗しました:", error);
+		}
+	}
+
+	private updateMatchDisplay(match: TournamentMatch, elements: {
+		user1Id: string;
+		user2Id: string;
+		path1Id: string;
+		path2Id: string;
+	}): void {
+		this.updateUserElement(elements.user1Id, match.player1Id, match.score1);
+		this.updateUserElement(elements.user2Id, match.player2Id, match.score2);
+		this.updateMatchPath(elements.path1Id, elements.path2Id, match);
 	}
 
 	private updateUserElement(
@@ -131,9 +213,15 @@ export class TournamentController {
 		userId: string,
 		score: number,
 	): void {
-		const element = document.getElementById(elementId);
-		if (element) {
-			element.textContent = `${userId} (Score: ${score})`;
+		try {
+			const element = document.getElementById(elementId);
+			if (element) {
+				element.textContent = `${userId} (Score: ${score})`;
+			} else {
+				console.warn(`要素が見つかりません: ${elementId}`);
+			}
+		} catch (error) {
+			console.error(`ユーザー要素の更新に失敗 (${elementId}):`, error);
 		}
 	}
 
@@ -142,10 +230,15 @@ export class TournamentController {
 		path2Id: string,
 		match: TournamentMatch,
 	): void {
-		const path1 = document.getElementById(path1Id) as unknown as SVGElement;
-		const path2 = document.getElementById(path2Id) as unknown as SVGElement;
+		try {
+			const path1 = document.getElementById(path1Id) as unknown as SVGElement;
+			const path2 = document.getElementById(path2Id) as unknown as SVGElement;
 
-		if (path1 && path2) {
+			if (!path1 || !path2) {
+				console.warn(`パス要素が見つかりません: ${path1Id}, ${path2Id}`);
+				return;
+			}
+
 			if (match.winnerId) {
 				if (match.winnerId === match.player1Id) {
 					path1.style.stroke = "red";
@@ -158,11 +251,13 @@ export class TournamentController {
 				path1.style.stroke = "gray";
 				path2.style.stroke = "gray";
 			}
+		} catch (error) {
+			console.error(`マッチパスの更新に失敗 (${path1Id}, ${path2Id}):`, error);
 		}
 	}
 
 	private updateNextMatchInfo(): void {
-		if (!this.tournamentData?.next_match_id) {
+		if (!this.tournamentData?.next_match_id || this.isDestroyed) {
 			return;
 		}
 
@@ -170,7 +265,9 @@ export class TournamentController {
 			(m) => m.id === this.tournamentData!.next_match_id,
 		);
 		if (nextMatch) {
-			this.updateNextMatchDisplay(nextMatch);
+			this.updateNextMatchDisplay(nextMatch).catch((error) => {
+				console.error("次のマッチ情報の更新に失敗:", error);
+			});
 		}
 	}
 
@@ -199,7 +296,51 @@ export class TournamentController {
 		this.tournamentAPI.navigateToMatch(matchId);
 	}
 
-	private async handleTournamentFinished(): Promise<void> {
+
+	private showTournamentWinner(winnerId: string): void {
+		try {
+			const modal = this.createModal(
+				"tournament-winner-modal",
+				`
+					<div class="winner-content">
+						<h1>🏆 トーナメント終了 🏆</h1>
+						<h2>優勝者: ${winnerId}</h2>
+						<p>3秒後にルームページに戻ります...</p>
+					</div>
+				`,
+				{
+					position: "fixed",
+					top: "0",
+					left: "0",
+					width: "100%",
+					height: "100%",
+					background: "rgba(0, 0, 0, 0.8)",
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					zIndex: "1000"
+				}
+			);
+
+			const content = modal.querySelector('.winner-content') as HTMLElement;
+			if (content) {
+				Object.assign(content.style, {
+					background: "white",
+					padding: "2rem",
+					borderRadius: "10px",
+					textAlign: "center",
+					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)"
+				});
+			}
+
+			document.body.appendChild(modal);
+			this.autoRemoveModal(modal, 3000);
+		} catch (error) {
+			console.error("トーナメント優勝者表示に失敗:", error);
+		}
+	}
+
+	private async handleTournamentFinishedDisplay(): Promise<void> {
 		if (!this.tournamentData?.winner_id) {
 			return;
 		}
@@ -213,34 +354,35 @@ export class TournamentController {
 	}
 
 	private showTournamentFinishedMessage(): void {
-		const messageDiv = document.createElement("div");
-		messageDiv.className = "tournament-finished-message";
-		messageDiv.innerHTML = `
-			<div class="message-content">
-				<h2>🏆 トーナメント終了 🏆</h2>
-				<p>お疲れ様でした！</p>
-			</div>
-		`;
-		messageDiv.style.cssText = `
-			position: fixed;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			background: rgba(0, 0, 0, 0.9);
-			color: white;
-			padding: 2rem;
-			border-radius: 10px;
-			text-align: center;
-			z-index: 1000;
-			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-		`;
-		
-		document.body.appendChild(messageDiv);
-		setTimeout(() => {
-			if (messageDiv.parentNode) {
-				messageDiv.parentNode.removeChild(messageDiv);
-			}
-		}, 5000);
+		try {
+			const modal = this.createModal(
+				"tournament-finished-message",
+				`
+					<div class="message-content">
+						<h2>🏆 トーナメント終了 🏆</h2>
+						<p>お疲れ様でした！</p>
+					</div>
+				`,
+				{
+					position: "fixed",
+					top: "50%",
+					left: "50%",
+					transform: "translate(-50%, -50%)",
+					background: "rgba(0, 0, 0, 0.9)",
+					color: "white",
+					padding: "2rem",
+					borderRadius: "10px",
+					textAlign: "center",
+					zIndex: "1000",
+					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)"
+				}
+			);
+
+			document.body.appendChild(modal);
+			this.autoRemoveModal(modal, 5000);
+		} catch (error) {
+			console.error("トーナメント終了メッセージ表示に失敗:", error);
+		}
 	}
 
 	private async updateWinnerDisplay(): Promise<void> {
@@ -273,9 +415,36 @@ export class TournamentController {
 		}
 	}
 
+	// 共通のモーダル作成メソッド
+	private createModal(className: string, innerHTML: string, styles: Record<string, string>): HTMLElement {
+		const modal = document.createElement("div");
+		modal.className = className;
+		modal.innerHTML = innerHTML;
+		Object.assign(modal.style, styles);
+		return modal;
+	}
+
+	// モーダルの自動削除メソッド
+	private autoRemoveModal(modal: HTMLElement, delay: number): void {
+		setTimeout(() => {
+			if (modal.parentNode && !this.isDestroyed) {
+				modal.parentNode.removeChild(modal);
+			}
+		}, delay);
+	}
+
 	public destroy(): void {
-		this.tournamentAPI.removeDataUpdateCallback(this.dataUpdateCallback);
+		this.isDestroyed = true;
+		this.tournamentAPI.removeCallback();
 		this.tournamentAPI.destroy();
+		
+		// 既存のモーダルをクリーンアップ
+		const existingModals = document.querySelectorAll('.tournament-winner-modal, .tournament-finished-message');
+		existingModals.forEach(modal => {
+			if (modal.parentNode) {
+				modal.parentNode.removeChild(modal);
+			}
+		});
 	}
 }
 
