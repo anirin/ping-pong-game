@@ -1,5 +1,0 @@
-server.host: "0.0.0.0"
-elasticsearch.hosts: [ "https://elasticsearch:9200" ]
-elasticsearch.username: "elastic"
-elasticsearch.password: "changeme"
-elasticsearch.ssl.verificationMode: "none"

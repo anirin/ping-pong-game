@@ -22,13 +22,12 @@ services:
       - "9200:9200"
     environment:
       - cluster.name=${CLUSTER_NAME}
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - xpack.license.self_generated.type=${LICENSE}
     env_file:
       - ./elk/elasticsearch/.env
     networks:
       - elasticsearch
-    secrets:
-      - elastic_password
 
   logstash:
     container_name: logstash
@@ -39,18 +38,17 @@ services:
       - logstashdata:/usr/share/logstash/data
       - ./elk/logstash/logstash_ingest_data/:/usr/share/logstash/ingest_data/
       - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    depends_on:
+      - elasticsearch
+      - kibana
     env_file:
       - ./elk/logstash/.env
     environment:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
     ports:
       - "5044:5044"
-    depends_on:
+    networks:
       - elasticsearch
-    secrets:
-      - elastic_password
-    # networks:
-    #   - logstash
 
   kibana:
     container_name: kibana
@@ -65,11 +63,8 @@ services:
     volumes:
       - elk_certs:/usr/share/kibana/config/certs
       - kibanadata:/usr/share/kibana/data
-    #   - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
       - "5601:5601"
-    secrets:
-      - kibana_password
     depends_on:
       - elasticsearch
     networks:
@@ -92,9 +87,10 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
+      - elasticsearch
       - logstash
-    # networks:
-    #   - logstash
+    networks:
+      - elasticsearch
 
   frontend:
     container_name: frontend
@@ -133,21 +129,9 @@ volumes:
 networks:
   elasticsearch:
     driver: bridge
-  # logstash:
-  #   driver: bridge
 
 secrets:
   server_certificate:
     file: ./backend/secrets/cert.pem
   server_key:
     file: ./backend/secrets/key.pem
-  elastic_certificate:
-    file: ./elk/secrets/cert.pem
-  elastic_key:
-    file: ./elk/secrets/key.pem
-  elastic_password:
-    environment: ELASTIC_PASSWORD
-  kibana_password:
-    environment: KIBANA_PASSWORD
-  kibana_key:
-    environment: ENCRYPTION_KEY
