@@ -160,7 +160,7 @@ export class TournamentService {
 			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
 			// tournament finish を broadcast
 			console.log("case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了");
-			this.finishTournament(tournamentId, tournament.winner_id!);
+			this.finishTournament(tournamentId, winnerId);
 		}
 
 		if (wsManager.hasRoom(this.roomId)) {
@@ -176,22 +176,27 @@ export class TournamentService {
 	}
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
+		console.log("finishTournament called with winnerId:", winnerId);
+		
 		const tournament = await this.tournamentRepository.findById(tournamentId);
 		if (!tournament) {
 			throw new Error("Tournament not found");
 		}
 
 		tournament.finish(winnerId);
+		console.log("Tournament finished, winner_id set to:", tournament.winner_id);
 
 		// db操作
 		try {
 			await this.tournamentRepository.save(tournament);
+			console.log("Tournament saved to database with winner_id:", tournament.winner_id);
 		} catch (error) {
 			throw new Error("Failed to save tournament");
 		}
 
 		// トーナメント終了をフロントエンドに通知
 		if (wsManager.hasRoom(this.roomId)) {
+			console.log("Broadcasting tournament_finished with winner_id:", winnerId);
 			wsManager.broadcast(this.roomId, {
 				status: "Tournament",
 				data: {

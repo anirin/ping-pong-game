@@ -40,8 +40,8 @@ export class TypeORMMatchRepository implements MatchRepository {
 
 	private toDomain(entity: MatchEntity): Match {
 		const matchRule = new MatchRule(
-			2, // pointToWin: 本来はDBから取得するか、設定ファイルから読み込むべき
-			{ vx: 7, vy: 7 }, // initialBallSpeed: デフォルト値
+			5, // pointToWin: 勝利ポイントを5に変更
+			{ vx: 5, vy: 5 }, // initialBallSpeed: ボールスピードを遅くする（7→5）
 			{ width: 800, height: 600 }, // fieldSize: デフォルト値
 		);
 
