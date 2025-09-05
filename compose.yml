@@ -28,6 +28,7 @@ services:
       - ./elk/elasticsearch/.env
     networks:
       - elasticsearch
+    mem_limit: ${ES_MEM_LIMIT}
 
   logstash:
     container_name: logstash
@@ -69,6 +70,7 @@ services:
       - elasticsearch
     networks:
       - elasticsearch
+    mem_limit: ${KB_MEM_LIMIT}
 
   filebeat:
     container_name: filebeat
