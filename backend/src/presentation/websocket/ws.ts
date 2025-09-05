@@ -62,7 +62,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				return;
 			} else {
 				// console.log("joinResultMsg: ", joinResultMsg);
-				wsManager.addWebSocketToRoom(context.joinedRoom, ws);
+				wsManager.addWebSocketToRoom(context.joinedRoom, ws, context.authedUser);
 				wsManager.broadcast(context.joinedRoom, joinResultMsg);
 			}
 
@@ -114,9 +114,11 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				try {
 					const roomService = RoomService.getInstance(context.joinedRoom);
 					let resultmsg: WSOutgoingMsg;
-					if (
-						await roomService.checkOwner(context.joinedRoom, context.authedUser) // room dir に押し込める
-					) {
+					
+					// checkOwnerがfalseを返した場合（ルームが見つからない場合も含む）は
+					// 単純にWebSocketから削除するだけにする
+					const isOwner = await roomService.checkOwner(context.joinedRoom, context.authedUser);
+					if (isOwner) {
 						resultmsg = await RoomWSHandler("DELETE", context);
 						if (resultmsg.status !== "error") {
 							wsManager.broadcast(context.joinedRoom, resultmsg);
@@ -126,15 +128,19 @@ export async function registerWSRoutes(app: FastifyInstance) {
 					} else {
 						resultmsg = await LeaveRoomWS(context);
 						if (resultmsg.status !== "error") {
-							wsManager.removeWebSocketFromRoom(context.joinedRoom, ws);
+							wsManager.removeWebSocketFromRoom(context.joinedRoom, ws, context.authedUser);
 							wsManager.broadcast(context.joinedRoom, resultmsg);
 							return;
 						}
 					}
-					ws.send(JSON.stringify(resultmsg));
-					return;
+					
+					// エラーが発生した場合やルームが見つからない場合は
+					// 単純にWebSocketから削除するだけにする
+					wsManager.removeWebSocketFromRoom(context.joinedRoom, ws, context.authedUser);
 				} catch (error) {
-					console.error(error);
+					console.error("WebSocket close error:", error);
+					// エラーが発生した場合もWebSocketから削除する
+					wsManager.removeWebSocketFromRoom(context.joinedRoom, ws, context.authedUser);
 				}
 			});
 		},

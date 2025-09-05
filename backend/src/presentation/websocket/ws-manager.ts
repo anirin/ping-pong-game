@@ -8,6 +8,7 @@ import type { WSOutgoingMsg } from "./ws-msg.js";
 export class WebSocketManager {
 	private static instance: WebSocketManager;
 	private rooms = new Map<RoomId, Set<WebSocket.WebSocket>>();
+	private userConnections = new Map<UserId, WebSocket.WebSocket>();
 
 	private constructor() {}
 
@@ -53,17 +54,44 @@ export class WebSocketManager {
 		}
 	}
 
-	addWebSocketToRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
+	addWebSocketToRoom(roomId: RoomId, ws: WebSocket.WebSocket, userId: UserId) {
+		// 同じユーザーの既存接続がある場合は切断
+		const existingConnection = this.userConnections.get(userId);
+		if (existingConnection && existingConnection !== ws) {
+			console.log(`Closing existing WebSocket connection for user ${userId}`);
+			existingConnection.close(1000, "Replaced by new connection");
+			this.removeWebSocketFromRoom(roomId, existingConnection);
+		}
+
+		// 新しい接続を追加
+		this.userConnections.set(userId, ws);
+		
 		let set = this.rooms.get(roomId);
 		if (!set) set = new Set<WebSocket.WebSocket>();
 		set.add(ws);
 		this.rooms.set(roomId, set);
 	}
 
-	removeWebSocketFromRoom(roomId: RoomId, ws: WebSocket.WebSocket) {
+	removeWebSocketFromRoom(roomId: RoomId, ws: WebSocket.WebSocket, userId?: UserId) {
 		const roomSet = this.rooms.get(roomId);
 		if (roomSet) {
 			roomSet.delete(ws);
+		}
+		
+		// ユーザー接続マップからも削除
+		if (userId) {
+			const userConnection = this.userConnections.get(userId);
+			if (userConnection === ws) {
+				this.userConnections.delete(userId);
+			}
+		} else {
+			// userIdが指定されていない場合は、該当するWebSocketを検索して削除
+			for (const [uid, connection] of this.userConnections.entries()) {
+				if (connection === ws) {
+					this.userConnections.delete(uid);
+					break;
+				}
+			}
 		}
 	}
 
