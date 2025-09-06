@@ -1,0 +1,27 @@
+<div id="match-page-container">
+    <h1>ゲストマッチ</h1>
+    <div id="match-container">
+        <div id="scoreboard">
+            <span id="player1-score">0</span> - <span id="player2-score">0</span>
+        </div>
+        <canvas id="matchCanvas" width="800" height="600"></canvas>
+    </div>
+    <div id="controls">
+        <div class="player-controls">
+            <h3>Player 1 (Left Side)</h3>
+            <p>Use Arrow Keys ↑↓ or W, S</p>
+        </div>
+        <div class="player-controls">
+            <h3>Player 2 (Right Side)</h3>
+            <p>Use Arrow Keys ←→ or A, D</p>
+        </div>
+    </div>
+    <div id="match-info">
+        <p id="match-status">Waiting for match to start...</p>
+        <p id="player-info">Match: <span id="player-role">Unknown vs Unknown</span></p>
+    </div>
+    <div id="match-start-section">
+        <p id="ready-status">Ready to start: <span id="ready-count">0</span>/2 players</p>
+        <button id="ready-button" disabled>Ready</button>
+    </div>
+</div>
