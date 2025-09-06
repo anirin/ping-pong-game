@@ -69,9 +69,11 @@ export class AuthService {
 			const tempPayload = { id: user.id, type: "2fa-pending" };
 			const tempToken = this.tokenService.sign(tempPayload, JWT_SECRET, {
 				expiresIn: "5m",
-			}); // 5分間有効
+			});
 			return { twoFARequired: true, tempToken };
 		}
+		user.setStatus("online");
+		await this.userRepo.update(user);
 		const payload = {
 			id: user.id,
 			email: user.email,
@@ -111,9 +113,10 @@ export class AuthService {
 
 		if (!user.isTwoFAEnabled()) {
 			user.setTwoFA(secret, true);
-			await this.userRepo.update(user);
+			// await this.userRepo.update(user);
 		}
-
+		user.setStatus("online");
+		await this.userRepo.update(user);
 		const payload = {
 			id: user.id,
 			email: user.email,

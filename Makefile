@@ -1,6 +1,8 @@
 NAME=trascen
 COMPOSE_FILE=./compose.yml
 COMPOSE=docker compose -f $(COMPOSE_FILE)
+APP_IMAGE=frontend backend
+APP_VOLUME=frontend_modules backend_modules
 # VOLUME_DIR=/home/hmiyazak/data
 # VOLUME_DIR=~/data
 
@@ -11,6 +13,9 @@ $(NAME):
 
 clean:
 	$(COMPOSE) down
+
+fclean-app:
+	$(COMPOSE) down --volumes $(APP_VOLUME) --rmi $(APP_IMAGE)
 
 fclean:
 # 	sudo rm -rf $(VOLUME_DIR)

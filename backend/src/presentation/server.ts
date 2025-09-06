@@ -22,7 +22,9 @@ export async function buildServer() {
 	}
 
 	const app = fastify({
-		logger: true,
+		logger: {
+			level: "info",
+		},
 		https: {
 			key: fs.readFileSync(process.env.HTTPS_KEY),
 			cert: fs.readFileSync(process.env.HTTPS_CERT),
