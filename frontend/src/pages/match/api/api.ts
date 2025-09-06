@@ -234,7 +234,9 @@ export class MatchAPI {
 		readyCount: number,
 	): void {
 		this.readyPlayers.clear();
-		readyPlayers.forEach((playerId) => this.readyPlayers.add(playerId));
+		for (const playerId of readyPlayers) {
+			this.readyPlayers.add(playerId);
+		}
 
 		if (this.userId) {
 			this.isReady = this.readyPlayers.has(this.userId);
