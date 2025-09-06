@@ -164,7 +164,15 @@ export class RoomUserService {
 		const room = await this.roomRepository.findById(roomid);
 		if (!room) throw Error("no room found");
 		if (room.isFull()) throw Error("the room is full");
+		
+		// 既に参加しているかチェック
 		const participants = await this.roomRepository.findParticipants(roomid);
+		const isAlreadyParticipant = participants.some(p => p.id === userid);
+		if (isAlreadyParticipant) {
+			console.log(`User ${userid} is already in room ${roomid}`);
+			return true; // 既に参加済みの場合は成功として扱う
+		}
+		
 		participants.push(user);
 		return this.roomRepository.storeParticipants(roomid, participants);
 	}
@@ -177,8 +185,25 @@ export class RoomUserService {
 		const room = await this.roomRepository.findById(roomid);
 		if (!room) throw Error("no roon found");
 		if (room.isEmpty()) throw Error("no one is in the room");
-		if (room.checkOwner(userid))
-			throw Error("owner cannot leave without deleting the room");
+		
+		// Ownerの場合は、ルームの状態を確認してから離脱を許可するかどうかを決める
+		if (room.checkOwner(userid)) {
+			// ルームが待機状態の場合は、ownerの一時的な離脱を許可
+			if (room.status === "waiting") {
+				console.log(`Owner ${userid} temporarily leaving room ${roomid} (status: ${room.status})`);
+				const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
+				return this.roomRepository.storeParticipants(roomid, newParticipants);
+			} else if (room.status === "playing") {
+				// ルームが進行中の場合は、ownerも他のプレイヤーと同列に扱う
+				console.log(`Owner ${userid} leaving room ${roomid} during ongoing game (status: ${room.status})`);
+				const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
+				return this.roomRepository.storeParticipants(roomid, newParticipants);
+			} else {
+				// ルームが終了状態の場合は、ownerの離脱を拒否
+				throw Error("owner cannot leave room that is finished");
+			}
+		}
+		
 		const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
 		return this.roomRepository.storeParticipants(roomid, newParticipants);
 	}

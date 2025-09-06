@@ -45,7 +45,7 @@ export class WebSocketManager {
 
 	broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 		// console.log("broadcast to room: ", roomId);
-		// console.log("payload: ", payload);
+		console.log("payload: ", payload);
 		const set = this.rooms.get(roomId);
 		if (!set?.size) return;
 		const msg = JSON.stringify(payload);

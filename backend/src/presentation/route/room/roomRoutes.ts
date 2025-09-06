@@ -79,6 +79,8 @@ export async function RoomWSHandler(
 					data: {
 						action: "DELETE",
 						users: [],
+						reason: "owner_left",
+						message: "Room owner has left. Redirecting to home page.",
 					} satisfies WSRoomData,
 				} satisfies WSOutgoingMsg;
 			} else {

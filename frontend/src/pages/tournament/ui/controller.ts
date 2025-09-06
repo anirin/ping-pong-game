@@ -12,12 +12,13 @@ export class TournamentController {
 	private controllerCallback: (data: any, action?: string) => void;
 	private tournamentAPI: TournamentAPI = new TournamentAPI();
 	private isDestroyed: boolean = false;
-	private connectionRetryCount: number = 0;
-	private readonly maxRetryAttempts: number = 5;
-	private readonly retryDelay: number = 1000;
+	private roomId: string | null = null;
+	private userId: string | null = null;
 
-	constructor() {
-		console.log("TournamentController constructor");
+	constructor(params?: { [key: string]: string }) {
+		console.log("TournamentController constructor", params);
+		this.roomId = params?.roomId || null;
+		this.userId = this.getUserId();
 		this.controllerCallback = this.handleMessage.bind(this);
 		this.tournamentAPI.setCallback(this.controllerCallback);
 		this.initialize().catch((error) => {
@@ -26,48 +27,65 @@ export class TournamentController {
 	}
 
 	private async initialize(): Promise<void> {
-		await this.waitForWebSocketConnection();
+		// WebSocket接続を確認し、必要に応じて再接続
+		await this.ensureWebSocketConnection();
+		
+		// 少し待ってからトーナメントデータを取得
+		await new Promise(resolve => setTimeout(resolve, 500));
+		
 		this.tournamentAPI.getTournamentData();
 		await this.waitForTournamentData();
 		this.updateTournamentDisplay();
 	}
 
-	private async waitForWebSocketConnection(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			if (this.isDestroyed) {
-				reject(new Error("Controller is destroyed"));
-				return;
+	// WebSocket接続を確保する（必要に応じて再接続）
+	private async ensureWebSocketConnection(): Promise<void> {
+		const wsManager = this.tournamentAPI["wsManager"];
+		
+		// roomIdが取得できない場合はエラー
+		if (!this.roomId) {
+			throw new Error("Room ID is required for tournament page");
+		}
+
+		// userIdが取得できない場合はエラー
+		if (!this.userId) {
+			throw new Error("User ID is required for tournament page");
+		}
+
+		// 既に同じルームに接続済みの場合は何もしない
+		if (wsManager.isConnected() && wsManager.getCurrentRoomId() === this.roomId) {
+			console.log(`Already connected to room ${this.roomId} for tournament`);
+			return;
+		}
+
+		console.log(`Connecting to room ${this.roomId} for tournament`);
+		
+		try {
+			await wsManager.connect(this.roomId);
+			console.log("WebSocket connection established for tournament");
+		} catch (error) {
+			console.error("Failed to connect to WebSocket for tournament:", error);
+			throw error;
+		}
+	}
+
+
+	// ユーザーIDを取得
+	private getUserId(): string | null {
+		try {
+			const token = localStorage.getItem("accessToken");
+			if (!token) {
+				console.error("アクセストークンが見つかりません");
+				return null;
 			}
 
-			const checkConnection = () => {
-				if (this.isDestroyed) {
-					reject(new Error("Controller is destroyed"));
-					return;
-				}
-
-				const wsManager = this.tournamentAPI["wsManager"];
-				if (wsManager.isConnected()) {
-					console.log(
-						"WebSocket is connected, proceeding with tournament data request",
-					);
-					this.connectionRetryCount = 0;
-					resolve();
-				} else if (this.connectionRetryCount >= this.maxRetryAttempts) {
-					reject(
-						new Error(
-							`WebSocket接続に失敗しました。最大試行回数(${this.maxRetryAttempts})に達しました。`,
-						),
-					);
-				} else {
-					this.connectionRetryCount++;
-					console.log(
-						`WebSocket is not connected, waiting... (試行回数: ${this.connectionRetryCount}/${this.maxRetryAttempts})`,
-					);
-					setTimeout(checkConnection, this.retryDelay);
-				}
-			};
-			checkConnection();
-		});
+			// JWTトークンをデコードしてユーザーIDを取得
+			const payload = JSON.parse(atob(token.split('.')[1]));
+			return payload.id || null;
+		} catch (error) {
+			console.error("ユーザーIDの取得に失敗しました:", error);
+			return null;
+		}
 	}
 
 	private async waitForTournamentData(): Promise<void> {
@@ -78,7 +96,7 @@ export class TournamentController {
 			}
 
 			let dataRetryCount = 0;
-			const maxDataRetries = 30; // 3秒間待機
+			const maxDataRetries = 50; // 5秒間待機（延長）
 			const dataRetryDelay = 100;
 
 			const checkData = () => {
@@ -87,13 +105,17 @@ export class TournamentController {
 					return;
 				}
 
-				if (this.tournamentAPI.getCurrentTournament()) {
+				const tournamentData = this.tournamentAPI.getCurrentTournament();
+				if (tournamentData) {
+					console.log("Tournament data received:", tournamentData);
 					this.updateLocalData();
 					resolve();
 				} else if (dataRetryCount >= maxDataRetries) {
+					console.error("Tournament data timeout - retry count:", dataRetryCount);
 					reject(new Error("トーナメントデータの取得に失敗しました。"));
 				} else {
 					dataRetryCount++;
+					console.log(`Waiting for tournament data... (${dataRetryCount}/${maxDataRetries})`);
 					setTimeout(checkData, dataRetryDelay);
 				}
 			};
@@ -136,6 +158,10 @@ export class TournamentController {
 					);
 					this.handleTournamentFinished(data.winner_id);
 					break;
+				case "room_deleted":
+					console.log("TournamentController: ルーム削除を受信", data);
+					this.handleRoomDeleted(data);
+					break;
 				default:
 					console.log("TournamentController: 不明なアクション", action);
 			}
@@ -149,7 +175,8 @@ export class TournamentController {
 			console.error("マッチIDが指定されていません");
 			return;
 		}
-		navigate(`/match/${matchId}`);
+		// roomIdを含めてmatchページに遷移
+		navigate(`/match/${this.roomId}/${matchId}`);
 	}
 
 	private handleTournamentFinished(winnerId: string): void {
@@ -164,6 +191,69 @@ export class TournamentController {
 				navigate("/room");
 			}
 		}, 3000);
+	}
+
+	private handleRoomDeleted(data: any): void {
+		// ルーム削除時の処理
+		const reason = data?.reason || "unknown";
+		const message = data?.message || "Room has been deleted.";
+
+		console.log(`Tournament room deleted - Reason: ${reason}, Message: ${message}`);
+
+		// ユーザーに通知を表示
+		this.showRoomDeletedNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			if (!this.isDestroyed) {
+				navigate("/lobby");
+			}
+		}, 3000);
+	}
+
+	private showRoomDeletedNotification(message: string): void {
+		try {
+			const modal = this.createModal(
+				"room-deleted-modal",
+				`
+					<div class="room-deleted-content">
+						<h2>⚠️ ルームが削除されました</h2>
+						<p>${message}</p>
+						<p>3秒後にロビーに戻ります...</p>
+					</div>
+				`,
+				{
+					position: "fixed",
+					top: "0",
+					left: "0",
+					width: "100%",
+					height: "100%",
+					background: "rgba(0, 0, 0, 0.8)",
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					zIndex: "1000",
+				},
+			);
+
+			const content = modal.querySelector(".room-deleted-content") as HTMLElement;
+			if (content) {
+				Object.assign(content.style, {
+					background: "#f8d7da",
+					color: "#721c24",
+					padding: "2rem",
+					borderRadius: "10px",
+					textAlign: "center",
+					boxShadow: "0 4px 20px rgba(0, 0, 0, 0.3)",
+					border: "1px solid #f5c6cb",
+				});
+			}
+
+			document.body.appendChild(modal);
+			this.autoRemoveModal(modal, 3000);
+		} catch (error) {
+			console.error("ルーム削除通知の表示に失敗:", error);
+		}
 	}
 
 	private async updateTournamentDisplay(): Promise<void> {
@@ -472,6 +562,6 @@ export class TournamentController {
 	}
 }
 
-export function createTournamentController(): TournamentController {
-	return new TournamentController();
+export function createTournamentController(params?: { [key: string]: string }): TournamentController {
+	return new TournamentController(params);
 }

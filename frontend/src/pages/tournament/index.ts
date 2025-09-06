@@ -12,7 +12,7 @@ interface TournamentPageState {
 	isDestroyed: boolean;
 }
 
-export function renderTournamentPage() {
+export function renderTournamentPage(params?: { [key: string]: string }) {
 	const app = document.getElementById("app");
 	if (!app) {
 		console.error("アプリケーションのルート要素が見つかりません");
@@ -27,7 +27,7 @@ export function renderTournamentPage() {
 
 	try {
 		app.innerHTML = html;
-		state.controller = createTournamentController();
+		state.controller = createTournamentController(params);
 		setupEventListeners(state);
 		return createCleanupFunction(state);
 	} catch (error) {

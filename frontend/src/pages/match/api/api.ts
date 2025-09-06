@@ -1,4 +1,3 @@
-import { navigate } from "../../../app/routing";
 import {
 	WebSocketManager,
 	type WebSocketMessage,
@@ -164,6 +163,17 @@ export class MatchAPI {
 	}
 
 	private handleMessage(message: WebSocketMessage): void {
+		console.log("MatchAPI received message:", message);
+		
+		if (message.status === "Room" && message.data?.action === "DELETE") {
+			// ルーム削除の通知
+			console.log("MatchAPI: Room deleted", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "room_deleted");
+			}
+			return;
+		}
+		
 		if (message.status !== "Match") {
 			console.error("MatchAPI: 不明なステータス", message.status);
 			return;
@@ -176,25 +186,28 @@ export class MatchAPI {
 				message.data.state
 			) {
 				this.matchData = message.data.state as RealtimeMatchStateDto;
-				console.log("match statusを受信しました:", this.matchData.status);
+				console.log("MatchAPI: match statusを受信しました:", this.matchData.status);
 				if (this.controllerCallback) {
 					this.controllerCallback(this.matchData, "match_state");
 				}
 			} else if (message.data && message.data.type === "match_started") {
+				console.log("MatchAPI: match_started received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "match_started");
 				}
 			} else if (message.data && message.data.type === "match_finished") {
+				console.log("MatchAPI: match_finished received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "match_finished");
 				}
-				navigate("/tournament");
+				// roomIdを含めてtournamentページに遷移（MatchControllerで処理）
 			} else if (message.data && message.data.type === "error") {
-				console.error("Match error:", message.data.message);
+				console.error("MatchAPI: Match error:", message.data.message);
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "error");
 				}
 			} else if (message.data && message.data.type === "ready_state") {
+				console.log("MatchAPI: ready_state received");
 				this.updateReadyStateFromServer(
 					message.data.readyPlayers,
 					message.data.readyCount,
@@ -203,6 +216,7 @@ export class MatchAPI {
 					this.controllerCallback(message.data, "ready_state");
 				}
 			} else if (message.action === "get_initial_state") {
+				console.log("MatchAPI: get_initial_state received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "get_initial_state");
 				}

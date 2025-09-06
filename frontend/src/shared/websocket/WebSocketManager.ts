@@ -44,6 +44,10 @@ export class WebSocketManager {
 		}
 	}
 
+	public getCurrentRoomId(): string | null {
+		return this.currentRoomId;
+	}
+
 	// setter
 	public setCallback(callback: WebSocketMessageCallback): void {
 		this.messageCallback = callback;
@@ -64,6 +68,12 @@ export class WebSocketManager {
 	}
 
 	public async connect(roomId: string): Promise<void> {
+		// 既に同じルームに接続済みの場合は何もしない
+		if (this.isConnected() && this.currentRoomId === roomId) {
+			console.log(`Already connected to room ${roomId}`);
+			return;
+		}
+
 		// 既存の接続をチェックし、必要に応じて切断
 		this.handleExistingConnection(roomId);
 
@@ -107,11 +117,15 @@ export class WebSocketManager {
 
 	// 接続前の状態チェック
 	private handleExistingConnection(roomId: string): void {
+		// 異なるルームに接続している場合は切断
 		if (this.currentRoomId && this.currentRoomId !== roomId) {
+			console.log(`Disconnecting from room ${this.currentRoomId} to connect to ${roomId}`);
 			this.disconnect();
 		}
 
+		// 既存のWebSocket接続がある場合は切断
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			console.log("Closing existing WebSocket connection");
 			this.disconnect();
 		}
 	}

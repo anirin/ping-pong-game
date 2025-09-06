@@ -91,12 +91,24 @@ export class TournamentAPI {
 	// ------------------------------------------------------------
 
 	private handleMessage(message: WebSocketMessage): void {
+		console.log("TournamentAPI received message:", message);
+		
+		if (message.status === "Room" && message.data?.action === "DELETE") {
+			// ルーム削除の通知
+			console.log("TournamentAPI: Room deleted", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "room_deleted");
+			}
+			return;
+		}
+		
 		if (message.status !== "Tournament") {
 			return;
 		}
 
 		if (message.data) {
 			if ("type" in message.data && message.data.type === "navigate_to_match") {
+				console.log("TournamentAPI: navigate_to_match received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "navigate_to_match");
 				}
@@ -107,12 +119,15 @@ export class TournamentAPI {
 				"type" in message.data &&
 				message.data.type === "tournament_finished"
 			) {
+				console.log("TournamentAPI: tournament_finished received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "tournament_finished");
 				}
 				return;
 			}
 
+			// トーナメントデータの受信
+			console.log("TournamentAPI: tournament data received", message.data);
 			this.tournamentData = message.data as TournamentData;
 
 			if (this.controllerCallback) {

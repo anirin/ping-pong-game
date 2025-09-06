@@ -80,7 +80,15 @@ export class RoomController {
 
 	private handleDataUpdate(state: RoomState, action?: string): void {
 		if (action === "START") {
-			navigate("/tournament");
+			// roomIdを含めてtournamentページに遷移
+			navigate(`/tournament/${this.roomId}`);
+			return;
+		}
+
+		if (action === "DELETE") {
+			// ルームが削除された場合の処理
+			console.log("Room deleted");
+			this.handleRoomDeleted();
 			return;
 		}
 
@@ -91,6 +99,56 @@ export class RoomController {
 	private initializeUI(): void {
 		// 初期状態でUIを更新
 		this.updateUI(this.roomAPI.getRoomState());
+	}
+
+	private handleRoomDeleted(): void {
+		// ルーム削除時の処理
+		const message = "Room owner has left. Redirecting to home page.";
+
+		console.log(`Room deleted - Message: ${message}`);
+
+		// ユーザーに通知を表示
+		this.showRoomDeletedNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			navigate("/lobby");
+		}, 3000);
+	}
+
+	private showRoomDeletedNotification(message: string): void {
+		// 通知メッセージを表示
+		const messageArea = document.getElementById("message-area");
+		if (messageArea) {
+			messageArea.innerHTML = `
+				<div style="
+					background: #f8d7da;
+					color: #721c24;
+					padding: 1rem;
+					border-radius: 5px;
+					border: 1px solid #f5c6cb;
+					text-align: center;
+					margin: 1rem 0;
+				">
+					<strong>⚠️ ${message}</strong><br>
+					<span style="font-size: 0.9rem;">Redirecting to lobby in 3 seconds...</span>
+				</div>
+			`;
+		}
+
+		// ボタンを無効化
+		const startButton = document.getElementById("start-game-button") as HTMLButtonElement;
+		const leaveButton = document.getElementById("leave-delete-button") as HTMLButtonElement;
+		
+		if (startButton) {
+			startButton.disabled = true;
+			startButton.textContent = "Room Deleted";
+		}
+		
+		if (leaveButton) {
+			leaveButton.disabled = true;
+			leaveButton.textContent = "Redirecting...";
+		}
 	}
 
 	private updateUI(state: RoomState): void {

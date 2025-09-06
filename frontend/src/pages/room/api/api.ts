@@ -53,6 +53,15 @@ export class RoomAPI {
 				return;
 			}
 
+			if (message.data && message.data.action === "DELETE") {
+				// ルーム削除の処理
+				console.log("Room deleted:", message.data);
+				if (this.controllerCallback) {
+					this.controllerCallback(this.getRoomState(), "DELETE");
+				}
+				return;
+			}
+
 			const roomData = message.data as WSRoomData;
 			if (roomData) {
 				this.roomState.participants = roomData.users || [];

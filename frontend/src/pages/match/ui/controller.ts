@@ -22,6 +22,8 @@ const KEY_BINDINGS = {
 
 export class MatchController {
 	private matchId: string | null = null;
+	private roomId: string | null = null;
+	private userId: string | null = null;
 	private animationFrameId: number | null = null;
 	private serverState: RealtimeMatchStateDto | null = null;
 	private myPredictedPaddleY: number = CONSTANTS.INITIAL_PADDLE_Y;
@@ -34,24 +36,32 @@ export class MatchController {
 	private matchAPI = new MatchAPI();
 
 	constructor(params?: { [key: string]: string }) {
-		console.log("MatchController constructor");
-		if (params && params.matchId) {
-			this.matchId = params.matchId;
+		console.log("MatchController constructor", params);
+		if (params) {
+			this.matchId = params.matchId || null;
+			this.roomId = params.roomId || null;
 		}
+		this.userId = this.getUserId();
 		this.handleKeyDownRef = this.handleKeyDown.bind(this);
 		this.handleKeyUpRef = this.handleKeyUp.bind(this);
 	}
 
-	public render(): void {
-		this.runMatch();
+	public async render(): Promise<void> {
+		await this.runMatch();
 	}
 
-	private runMatch(): void {
+	private async runMatch(): Promise<void> {
 		try {
 			if (!this.matchId) {
 				this.handleError("Match ID is missing. Cannot start match.", "/");
 				return;
 			}
+
+			// WebSocket接続を確保
+			await this.ensureWebSocketConnection();
+			
+			// 少し待ってからマッチデータを取得
+			await new Promise(resolve => setTimeout(resolve, 500));
 
 			this.initializeMatchState();
 			this.setupMatchAPI();
@@ -60,6 +70,55 @@ export class MatchController {
 		} catch (error) {
 			this.handleError("Failed to start match", "/");
 			console.error("Match initialization error:", error);
+		}
+	}
+
+	// WebSocket接続を確保する（必要に応じて再接続）
+	private async ensureWebSocketConnection(): Promise<void> {
+		const wsManager = this.matchAPI["wsManager"];
+		
+		// roomIdが取得できない場合はエラー
+		if (!this.roomId) {
+			throw new Error("Room ID is required for match page");
+		}
+
+		// userIdが取得できない場合はエラー
+		if (!this.userId) {
+			throw new Error("User ID is required for match page");
+		}
+
+		// 既に同じルームに接続済みの場合は何もしない
+		if (wsManager.isConnected() && wsManager.getCurrentRoomId() === this.roomId) {
+			console.log(`Already connected to room ${this.roomId} for match`);
+			return;
+		}
+
+		console.log(`Connecting to room ${this.roomId} for match`);
+		
+		try {
+			await wsManager.connect(this.roomId);
+			console.log("WebSocket connection established for match");
+		} catch (error) {
+			console.error("Failed to connect to WebSocket for match:", error);
+			throw error;
+		}
+	}
+
+	// ユーザーIDを取得
+	private getUserId(): string | null {
+		try {
+			const token = localStorage.getItem("accessToken");
+			if (!token) {
+				console.error("アクセストークンが見つかりません");
+				return null;
+			}
+
+			// JWTトークンをデコードしてユーザーIDを取得
+			const payload = JSON.parse(atob(token.split('.')[1]));
+			return payload.id || null;
+		} catch (error) {
+			console.error("ユーザーIDの取得に失敗しました:", error);
+			return null;
 		}
 	}
 
@@ -117,6 +176,57 @@ export class MatchController {
 		window.location.pathname = redirectPath;
 	}
 
+	private handleRoomDeleted(data: any): void {
+		// ルーム削除時の処理
+		const reason = data?.reason || "unknown";
+		const message = data?.message || "Room has been deleted.";
+
+		console.log(`Match room deleted - Reason: ${reason}, Message: ${message}`);
+
+		// ユーザーに通知を表示
+		this.showRoomDeletedNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			navigate("/lobby");
+		}, 3000);
+	}
+
+	private showRoomDeletedNotification(message: string): void {
+		try {
+			// キャンバス上に通知を表示
+			const canvas = document.getElementById("matchCanvas") as HTMLCanvasElement;
+			if (canvas) {
+				const ctx = canvas.getContext("2d");
+				if (ctx) {
+					// キャンバスをクリア
+					ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+					ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+					// 通知メッセージを表示
+					ctx.fillStyle = "#f8d7da";
+					ctx.fillRect(50, 200, canvas.width - 100, 200);
+					
+					ctx.fillStyle = "#721c24";
+					ctx.font = "24px Arial";
+					ctx.textAlign = "center";
+					ctx.fillText("⚠️ ルームが削除されました", canvas.width / 2, 250);
+					ctx.fillText(message, canvas.width / 2, 280);
+					ctx.fillText("3秒後にロビーに戻ります...", canvas.width / 2, 320);
+				}
+			}
+
+			// ボタンを無効化
+			const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
+			if (readyButton) {
+				readyButton.disabled = true;
+				readyButton.textContent = "Room Deleted";
+			}
+		} catch (error) {
+			console.error("マッチ画面でのルーム削除通知の表示に失敗:", error);
+		}
+	}
+
 	private async connectToMatch(): Promise<void> {
 		try {
 			const token = localStorage.getItem("accessToken");
@@ -131,17 +241,50 @@ export class MatchController {
 				return;
 			}
 
+			console.log("Sending match start request...");
 			this.matchAPI.sendMatchStart();
+			
+			// マッチデータの受信を待機
+			await this.waitForMatchData();
 		} catch (error) {
 			console.error("WebSocket接続エラー:", error);
 			this.handleError("WebSocket接続に失敗しました。");
 		}
 	}
 
-	private handleMatchEvent(_data: any, action?: string): void {
+	// マッチデータの受信を待機
+	private async waitForMatchData(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			let dataRetryCount = 0;
+			const maxDataRetries = 50; // 5秒間待機
+			const dataRetryDelay = 100;
+
+			const checkData = () => {
+				const matchData = this.matchAPI.getMatchData();
+				if (matchData) {
+					console.log("Match data received:", matchData);
+					resolve();
+				} else if (dataRetryCount >= maxDataRetries) {
+					console.error("Match data timeout - retry count:", dataRetryCount);
+					reject(new Error("マッチデータの取得に失敗しました。"));
+				} else {
+					dataRetryCount++;
+					console.log(`Waiting for match data... (${dataRetryCount}/${maxDataRetries})`);
+					setTimeout(checkData, dataRetryDelay);
+				}
+			};
+			checkData();
+		});
+	}
+
+	private handleMatchEvent(data: any, action?: string): void {
 		if (action === "match_finished") {
-			// マッチ終了時にトーナメントページに遷移
-			navigate("/tournament");
+			// マッチ終了時にroomIdを含めてトーナメントページに遷移
+			navigate(`/tournament/${this.roomId}`);
+		} else if (action === "room_deleted") {
+			// ルーム削除時の処理
+			console.log("Match room deleted:", data);
+			this.handleRoomDeleted(data);
 		}
 	}
 

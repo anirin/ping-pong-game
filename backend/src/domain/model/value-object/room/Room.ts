@@ -18,4 +18,11 @@ export type RoomUser = {
 export type WSRoomData = {
 	action: "USER" | "DELETE";
 	users: RoomUser[];
+	reason?: string;
+	message?: string;
+	roomInfo?: {
+		id: string;
+		ownerId: string;
+		status: string;
+	};
 };

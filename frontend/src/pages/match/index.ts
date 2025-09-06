@@ -12,7 +12,7 @@ interface MatchPageState {
 	isDestroyed: boolean;
 }
 
-export function renderMatchPage(params?: { [key: string]: string }) {
+export async function renderMatchPage(params?: { [key: string]: string }) {
 	const app = document.getElementById("app");
 	if (!app) {
 		console.error("アプリケーションのルート要素が見つかりません");
@@ -28,7 +28,7 @@ export function renderMatchPage(params?: { [key: string]: string }) {
 	try {
 		app.innerHTML = html;
 		state.controller = new MatchController(params);
-		state.controller.render();
+		await state.controller.render();
 		setupEventListeners(state);
 		return createCleanupFunction(state);
 	} catch (error) {

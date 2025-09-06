@@ -23,7 +23,7 @@ import { renderFriendRequestPage } from "@/pages/friend_request";
 interface Route {
 	path: string;
 	// handler: () => void;
-	handler: (params?: { [key: string]: string }) => (() => void) | void;
+	handler: (params?: { [key: string]: string }) => (() => void) | void | Promise<(() => void) | void>;
 }
 
 const routes: Route[] = [
@@ -60,7 +60,7 @@ const routes: Route[] = [
 	// 	handler: renderGamePage,
 	// },
 	{
-		path: "/tournament", // id が必要かも
+		path: "/tournament/:roomId",
 		handler: renderTournamentPage,
 	},
 	{
@@ -94,7 +94,7 @@ const routes: Route[] = [
 		},
 	},
 	{
-		path: "/match/:matchId",
+		path: "/match/:roomId/:matchId",
 		handler: renderMatchPage,
 	},
 ];
@@ -152,9 +152,15 @@ export function navigate(to?: string) {
 
 	const match = matchRoute(path);
 	if (match) {
-		const cleanupFn = match.route.handler(match.params);
-		if (typeof cleanupFn === "function") {
-			currentCleanup = cleanupFn;
+		const result = match.route.handler(match.params);
+		if (result instanceof Promise) {
+			result.then((cleanupFn) => {
+				if (typeof cleanupFn === "function") {
+					currentCleanup = cleanupFn;
+				}
+			});
+		} else if (typeof result === "function") {
+			currentCleanup = result;
 		}
 	} else {
 		console.log("No match found. Redirecting to home.");
