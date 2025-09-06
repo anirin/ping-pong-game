@@ -227,7 +227,9 @@ export class TournamentController {
 	private handleForceLobby(data: any): void {
 		// 強制的にlobbyに戻す処理
 		const reason = data?.reason || "unknown";
-		const message = data?.message || "A user has been disconnected for too long. Returning to lobby.";
+		const message =
+			data?.message ||
+			"A user has been disconnected for too long. Returning to lobby.";
 
 		console.log(
 			`Tournament force lobby - Reason: ${reason}, Message: ${message}`,

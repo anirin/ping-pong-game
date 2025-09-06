@@ -20,8 +20,6 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const ws = connection;
 			const url = new URL(req.url, "https://localhost:8080/socket");
 
-			// roomServiceは後でjoinedRoomが確定してから取得
-
 			let token: string | undefined;
 
 			const authHeader = req.headers["authorization"];
@@ -61,12 +59,18 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close();
 				return;
 			} else {
-				// console.log("joinResultMsg: ", joinResultMsg);
 				wsManager.addWebSocketToRoom(
 					context.joinedRoom,
 					ws,
 					context.authedUser,
 				);
+
+				const roomService = RoomService.getInstance(context.joinedRoom);
+				const room = await roomService.getRoomById(context.joinedRoom);
+				if (room && room.status === "playing") {
+					wsManager.recordUserReconnect(context.joinedRoom, context.authedUser);
+				}
+
 				wsManager.broadcast(context.joinedRoom, joinResultMsg);
 			}
 
@@ -122,18 +126,13 @@ export async function registerWSRoutes(app: FastifyInstance) {
 					const roomService = RoomService.getInstance(context.joinedRoom);
 					let resultmsg: WSOutgoingMsg;
 
-					// checkOwnerがfalseを返した場合（ルームが見つからない場合も含む）は
-					// 単純にWebSocketから削除するだけにする
 					const isOwner = await roomService.checkOwner(
 						context.joinedRoom,
 						context.authedUser,
 					);
 					if (isOwner) {
-						// Ownerの場合は、ルームの状態を確認してから削除するかどうかを決める
 						const room = await roomService.getRoomById(context.joinedRoom);
 						if (room && room.status === "waiting") {
-							// ルームが待機状態の場合は、ownerの再接続を許可するため
-							// ルームを削除せずに、ownerを一時的に離脱させる
 							console.log(
 								`Owner ${context.authedUser} temporarily left room ${context.joinedRoom} (room status: ${room.status})`,
 							);
@@ -145,10 +144,8 @@ export async function registerWSRoutes(app: FastifyInstance) {
 									context.authedUser,
 								);
 								wsManager.broadcast(context.joinedRoom, resultmsg);
-								return;
 							}
 						} else if (room && room.status === "playing") {
-							// ルームが進行中の場合は、ownerも他のプレイヤーと同列に扱う
 							console.log(
 								`Owner ${context.authedUser} left room ${context.joinedRoom} during ongoing game (room status: ${room.status})`,
 							);
@@ -160,10 +157,8 @@ export async function registerWSRoutes(app: FastifyInstance) {
 									context.authedUser,
 								);
 								wsManager.broadcast(context.joinedRoom, resultmsg);
-								return;
 							}
 						} else {
-							// ルームが終了状態の場合は、ルームを削除
 							console.log(
 								`Owner ${context.authedUser} left room ${context.joinedRoom}, deleting room (room status: ${room?.status || "unknown"})`,
 							);
@@ -186,15 +181,32 @@ export async function registerWSRoutes(app: FastifyInstance) {
 								context.authedUser,
 							);
 							wsManager.broadcast(context.joinedRoom, resultmsg);
-							return;
 						}
 					}
 
-					// エラーが発生した場合やルームが見つからない場合は
-					// 単純にWebSocketから削除するだけにする
 					console.log(
 						`Removing WebSocket for user ${context.authedUser} from room ${context.joinedRoom}`,
 					);
+
+					const room = await roomService.getRoomById(context.joinedRoom);
+					console.log(
+						`Room status for user ${context.authedUser}:`,
+						room?.status,
+					);
+					if (room && room.status === "playing") {
+						console.log(
+							`Starting disconnect monitoring for user ${context.authedUser} in room ${context.joinedRoom} (room is playing)`,
+						);
+						wsManager.recordUserDisconnect(
+							context.joinedRoom,
+							context.authedUser,
+						);
+					} else {
+						console.log(
+							`Room status is not 'playing' (${room?.status}), skipping disconnect monitoring`,
+						);
+					}
+
 					wsManager.removeWebSocketFromRoom(
 						context.joinedRoom,
 						ws,
@@ -202,7 +214,6 @@ export async function registerWSRoutes(app: FastifyInstance) {
 					);
 				} catch (error) {
 					console.error("WebSocket close error:", error);
-					// エラーが発生した場合もWebSocketから削除する
 					wsManager.removeWebSocketFromRoom(
 						context.joinedRoom,
 						ws,

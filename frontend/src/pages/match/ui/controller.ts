@@ -198,7 +198,9 @@ export class MatchController {
 	private handleForceLobby(data: any): void {
 		// 強制的にlobbyに戻す処理
 		const reason = data?.reason || "unknown";
-		const message = data?.message || "A user has been disconnected for too long. Returning to lobby.";
+		const message =
+			data?.message ||
+			"A user has been disconnected for too long. Returning to lobby.";
 
 		console.log(`Match force lobby - Reason: ${reason}, Message: ${message}`);
 

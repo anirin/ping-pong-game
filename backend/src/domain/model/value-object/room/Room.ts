@@ -16,7 +16,7 @@ export type RoomUser = {
 };
 
 export type WSRoomData = {
-	action: "USER" | "DELETE";
+	action: "USER" | "DELETE" | "FORCE_LOBBY";
 	users: RoomUser[];
 	reason?: string;
 	message?: string;

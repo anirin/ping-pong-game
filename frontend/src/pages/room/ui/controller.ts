@@ -125,7 +125,8 @@ export class RoomController {
 
 	private handleForceLobby(): void {
 		// 強制的にlobbyに戻す処理
-		const message = "A user has been disconnected for too long. Returning to lobby.";
+		const message =
+			"A user has been disconnected for too long. Returning to lobby.";
 
 		console.log(`Force lobby - Message: ${message}`);
 
