@@ -64,6 +64,25 @@ class TournamentStateManager {
 		return this.state.data;
 	}
 
+	// トーナメントのステータスを更新
+	public updateTournamentStatus(status: "waiting" | "in_progress" | "completed"): void {
+		if (this.state.data) {
+			this.state.data.status = status;
+			console.log("トーナメントステータスを更新:", status);
+		}
+	}
+
+	// マッチのステータスを更新
+	public updateMatchStatus(matchId: string, status: "waiting" | "in_progress" | "completed"): void {
+		if (!this.state.data) return;
+
+		const match = this.state.data.matches.find(m => m.id === matchId);
+		if (match) {
+			match.status = status;
+			console.log(`マッチ ${matchId} のステータスを更新:`, status);
+		}
+	}
+
 	// 現在のマッチインデックスを設定
 	public setCurrentMatchIndex(index: number): void {
 		this.state.currentMatchIndex = index;

@@ -11,10 +11,8 @@ export function createGuestTournamentController(params?: { [key: string]: string
 export { GuestTournamentController };
 
 class GuestTournamentController {
-	private tournamentData: GuestTournamentData | null = null;
 	private isDestroyed: boolean = false;
 	private players: string[] = [];
-	private currentMatchIndex: number = 0;
 	private gameLoopInterval: number | null = null;
 	private stateManager: TournamentStateManager;
 
@@ -67,17 +65,15 @@ class GuestTournamentController {
 		
 		if (existingData) {
 			// 既存の状態を復元
-			this.tournamentData = existingData;
-			this.currentMatchIndex = this.stateManager.getCurrentMatchIndex();
-			this.players = this.tournamentData.players;
-			console.log("トーナメント状態を復元しました:", this.tournamentData);
+			this.players = existingData.players;
+			console.log("トーナメント状態を復元しました:", existingData);
 		} else {
 			// 新しいトーナメントを作成
 			if (this.players.length === 0) {
 				this.players = ["Player 1", "Player 2", "Player 3", "Player 4"];
 			}
 			
-			this.tournamentData = {
+			const tournamentData: GuestTournamentData = {
 				id: "guest-tournament-" + Date.now(),
 				status: "waiting",
 				players: this.players,
@@ -105,8 +101,8 @@ class GuestTournamentController {
 			};
 			
 			// 状態管理マネージャーに保存
-			this.stateManager.setTournamentData(this.tournamentData);
-			this.stateManager.setCurrentMatchIndex(this.currentMatchIndex);
+			this.stateManager.setTournamentData(tournamentData);
+			this.stateManager.setCurrentMatchIndex(0);
 		}
 
 		// デバッグ用：状態をログ出力
@@ -130,9 +126,10 @@ class GuestTournamentController {
 	}
 
 	private startTournament(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		this.tournamentData.status = "in_progress";
+		this.stateManager.updateTournamentStatus("in_progress");
 		this.updateTournamentStatus("進行中");
 		
 		// 最初のマッチの準備（手動開始）
@@ -141,12 +138,14 @@ class GuestTournamentController {
 	}
 
 	private startNextMatch(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		const currentMatch = this.tournamentData.matches[this.currentMatchIndex];
+		const currentMatchIndex = this.stateManager.getCurrentMatchIndex();
+		const currentMatch = tournamentData.matches[currentMatchIndex];
 		if (!currentMatch) return;
 
-		currentMatch.status = "in_progress";
+		this.stateManager.updateMatchStatus(currentMatch.id, "in_progress");
 		this.updateMatchDisplay();
 
 		// グローバル状態に現在のマッチ情報を保存
@@ -162,7 +161,8 @@ class GuestTournamentController {
 	}
 
 	private updateTournamentDisplay(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
 		// プレイヤー名を更新
 		this.updatePlayerNames();
@@ -175,9 +175,10 @@ class GuestTournamentController {
 	}
 
 	private updatePlayerNames(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		const matches = this.tournamentData.matches;
+		const matches = tournamentData.matches;
 		
 		// Round 1 - Match 1
 		const name1_1 = document.getElementById("player-name-1-1");
@@ -193,9 +194,10 @@ class GuestTournamentController {
 	}
 
 	private updateScores(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		const matches = this.tournamentData.matches;
+		const matches = tournamentData.matches;
 		
 		// Round 1 - Match 1 scores
 		const score1_1 = document.getElementById("player-score-1-1");
@@ -210,7 +212,7 @@ class GuestTournamentController {
 		if (score2_2) score2_2.textContent = matches[1]?.score2.toString() || "0";
 
 		// Final match scores
-		if (this.tournamentData.currentRound > 1) {
+		if (tournamentData.currentRound > 1) {
 			const finalScore1 = document.getElementById("player-score-final-1");
 			const finalScore2 = document.getElementById("player-score-final-2");
 			if (finalScore1) finalScore1.textContent = "0";
@@ -219,9 +221,11 @@ class GuestTournamentController {
 	}
 
 	private updateMatchDisplay(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		const currentMatch = this.tournamentData.matches[this.currentMatchIndex];
+		const currentMatchIndex = this.stateManager.getCurrentMatchIndex();
+		const currentMatch = tournamentData.matches[currentMatchIndex];
 		if (!currentMatch) return;
 
 		// マッチの状態に応じて表示を更新
@@ -232,17 +236,19 @@ class GuestTournamentController {
 	}
 
 	private updateNextMatchInfo(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		console.log("updateNextMatchInfo開始 - 現在のマッチインデックス:", this.currentMatchIndex);
-		console.log("マッチ数:", this.tournamentData.matches.length);
+		const currentMatchIndex = this.stateManager.getCurrentMatchIndex();
+		console.log("updateNextMatchInfo開始 - 現在のマッチインデックス:", currentMatchIndex);
+		console.log("マッチ数:", tournamentData.matches.length);
 
 		const nextMatchSection = document.getElementById("next-match-section");
 		const nextMatchRound = document.getElementById("next-match-round");
 		const nextMatchPlayers = document.getElementById("next-match-players");
 
-		if (this.currentMatchIndex < this.tournamentData.matches.length) {
-			const currentMatch = this.tournamentData.matches[this.currentMatchIndex];
+		if (currentMatchIndex < tournamentData.matches.length) {
+			const currentMatch = tournamentData.matches[currentMatchIndex];
 			console.log("現在のマッチ:", currentMatch);
 			
 			if (currentMatch && currentMatch.status === "waiting") {
@@ -268,15 +274,16 @@ class GuestTournamentController {
 	}
 
 	private checkTournamentProgress(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
 		// すべてのマッチが完了したかチェック
-		const allMatchesCompleted = this.tournamentData.matches.every(
+		const allMatchesCompleted = tournamentData.matches.every(
 			(match) => match.status === "completed"
 		);
 
 		if (allMatchesCompleted) {
-			if (this.tournamentData.currentRound === 1) {
+			if (tournamentData.currentRound === 1) {
 				// 決勝戦の準備
 				this.prepareFinalMatch();
 			} else {
@@ -304,14 +311,13 @@ class GuestTournamentController {
 	}
 
 	private completeTournament(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
 		// 決勝戦を探す（round: 2のマッチ）
-		const finalMatch = this.tournamentData.matches.find(match => match.round === 2);
+		const finalMatch = tournamentData.matches.find(match => match.round === 2);
 		if (finalMatch) {
 			const winner = this.determineMatchWinner(finalMatch);
-			this.tournamentData.winner = winner;
-			this.tournamentData.status = "completed";
 
 			// 状態管理マネージャーでトーナメント完了
 			this.stateManager.completeTournament(winner);
@@ -345,19 +351,15 @@ class GuestTournamentController {
 		
 		// 状態管理マネージャーから最新の状態を取得
 		const updatedData = this.stateManager.getTournamentData();
-		if (updatedData) {
-			this.tournamentData = updatedData;
-			this.currentMatchIndex = this.stateManager.getCurrentMatchIndex();
-			console.log("状態を更新:", this.tournamentData);
-		}
-
-		if (!this.tournamentData) {
+		if (!updatedData) {
 			console.error("トーナメントデータが存在しません");
 			return;
 		}
 
+		console.log("状態を更新:", updatedData);
+
 		// マッチ結果を確認
-		const match = this.tournamentData.matches.find((m) => m.id === matchId);
+		const match = updatedData.matches.find((m) => m.id === matchId);
 		if (match) {
 			console.log(`マッチ結果: ${match.player1} vs ${match.player2} - 勝者: ${winner} (${score1}-${score2})`);
 			
@@ -373,38 +375,35 @@ class GuestTournamentController {
 
 	// 次のマッチの準備
 	private prepareNextMatch(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		console.log("prepareNextMatch開始 - 現在のマッチインデックス:", this.currentMatchIndex);
-		console.log("トーナメントデータ:", this.tournamentData);
+		const currentMatchIndex = this.stateManager.getCurrentMatchIndex();
+		console.log("prepareNextMatch開始 - 現在のマッチインデックス:", currentMatchIndex);
+		console.log("トーナメントデータ:", tournamentData);
 
 		// 現在のマッチが完了したかチェック
-		const currentMatch = this.tournamentData.matches[this.currentMatchIndex];
+		const currentMatch = tournamentData.matches[currentMatchIndex];
 		console.log("現在のマッチ:", currentMatch);
 		
 		if (currentMatch && currentMatch.status === "completed") {
 			console.log("マッチが完了しています。次のマッチに進みます。");
-			
-			// 次のマッチに進む
-			this.currentMatchIndex++;
 			
 			// 状態管理マネージャーを更新
 			this.stateManager.advanceToNextMatch();
 			
 			// 状態管理マネージャーから最新の状態を取得
 			const updatedData = this.stateManager.getTournamentData();
-			if (updatedData) {
-				this.tournamentData = updatedData;
-				this.currentMatchIndex = this.stateManager.getCurrentMatchIndex();
-			}
+			if (!updatedData) return;
 			
-			console.log("次のマッチインデックス:", this.currentMatchIndex);
-			console.log("マッチ数:", this.tournamentData.matches.length);
+			const newMatchIndex = this.stateManager.getCurrentMatchIndex();
+			console.log("次のマッチインデックス:", newMatchIndex);
+			console.log("マッチ数:", updatedData.matches.length);
 			
 			// すべてのマッチが完了したかチェック
-			if (this.currentMatchIndex >= this.tournamentData.matches.length) {
+			if (newMatchIndex >= updatedData.matches.length) {
 				// 決勝戦が完了したかチェック
-				if (this.tournamentData.currentRound === 2) {
+				if (updatedData.currentRound === 2) {
 					console.log("決勝戦が完了しました！トーナメント完了");
 					this.completeTournament();
 				} else {
@@ -424,21 +423,22 @@ class GuestTournamentController {
 
 	// 決勝戦の準備
 	private prepareFinalMatch(): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
 		// 準決勝の勝者を決定
-		const match1Winner = this.determineMatchWinner(this.tournamentData.matches[0]);
-		const match2Winner = this.determineMatchWinner(this.tournamentData.matches[1]);
+		const match1Winner = this.determineMatchWinner(tournamentData.matches[0]);
+		const match2Winner = this.determineMatchWinner(tournamentData.matches[1]);
 
-		// 状態管理マネージャーで決勝戦を追加（これがローカルの状態も更新する）
+		// 状態管理マネージャーで決勝戦を追加
 		this.stateManager.addFinalMatch(match1Winner, match2Winner);
 		
 		// 状態管理マネージャーから更新されたデータを取得
-		this.tournamentData = this.stateManager.getTournamentData();
-		this.currentMatchIndex = this.stateManager.getCurrentMatchIndex();
+		const updatedData = this.stateManager.getTournamentData();
+		if (!updatedData) return;
 
 		// 決勝戦の表示を更新
-		const finalMatch = this.tournamentData?.matches.find(match => match.round === 2);
+		const finalMatch = updatedData.matches.find(match => match.round === 2);
 		if (finalMatch) {
 			this.updateFinalMatchDisplay(finalMatch);
 		}
@@ -447,15 +447,13 @@ class GuestTournamentController {
 
 	// 外部からマッチ結果を受け取るメソッド
 	public updateMatchResult(matchId: string, score1: number, score2: number): void {
-		if (!this.tournamentData) return;
+		const tournamentData = this.stateManager.getTournamentData();
+		if (!tournamentData) return;
 
-		const match = this.tournamentData.matches.find((m) => m.id === matchId);
+		const match = tournamentData.matches.find((m) => m.id === matchId);
 		if (match) {
-			match.score1 = score1;
-			match.score2 = score2;
-			match.status = "completed";
-			match.winner = score1 > score2 ? match.player1 : match.player2;
-
+			const winner = score1 > score2 ? match.player1 : match.player2;
+			this.stateManager.updateMatchResult(matchId, winner, score1, score2);
 			this.updateMatchDisplay();
 		}
 	}
@@ -480,7 +478,8 @@ class GuestTournamentController {
 		}
 
 		// トーナメントが完了している場合は状態をクリア
-		if (this.tournamentData && this.tournamentData.status === "completed") {
+		const tournamentData = this.stateManager.getTournamentData();
+		if (tournamentData && tournamentData.status === "completed") {
 			this.stateManager.clearState();
 			console.log("トーナメント完了 - 状態をクリアしました");
 		}
