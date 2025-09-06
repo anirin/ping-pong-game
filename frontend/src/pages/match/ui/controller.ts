@@ -35,6 +35,13 @@ export class MatchController {
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private matchAPI = new MatchAPI();
 
+	// 位置修正のためのプロパティ
+	private correctionThreshold: number = 5; // 閾値を下げてより敏感に修正
+	private correctionCount: number = 0;
+
+	// フレームレート制御
+	private frameInterval: number = 1000 / 120; // 8.33ms
+
 	constructor(params?: { [key: string]: string }) {
 		console.log("MatchController constructor", params);
 		if (params) {
@@ -127,6 +134,7 @@ export class MatchController {
 
 	private initializeMatchState(): void {
 		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
+		this.correctionCount = 0;
 		this.hasResetReadyState = false;
 		this.serverState = null;
 		this.myPlayerNumber = null;
@@ -459,11 +467,22 @@ export class MatchController {
 		this.updateReadyButton();
 		this.updateReadyCount();
 		this.draw();
-		this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
+
+		// 120fpsで実行
+		setTimeout(() => {
+			this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
+		}, this.frameInterval);
 	}
 
 	private updateMatchState(): void {
-		this.serverState = this.matchAPI.getMatchData();
+		const newServerState = this.matchAPI.getMatchData();
+
+		// サーバー位置との整合性チェック
+		if (newServerState && this.serverState && this.myPlayerNumber) {
+			this.checkAndCorrectPosition(newServerState);
+		}
+
+		this.serverState = newServerState;
 
 		if (this.serverState && this.myPlayerNumber === null) {
 			this.initializePlayerRole();
@@ -504,6 +523,33 @@ export class MatchController {
 				? `Status: ${status}`
 				: "Waiting for match to start...";
 		}
+	}
+
+	/**
+	 * サーバー位置との整合性をチェックし、必要に応じて位置を修正する
+	 */
+	private checkAndCorrectPosition(serverState: RealtimeMatchStateDto): void {
+		const serverPaddleY = this.getMyServerPaddleY(serverState);
+		const error = Math.abs(this.myPredictedPaddleY - serverPaddleY);
+
+		if (error > this.correctionThreshold) {
+			this.correctionCount++;
+			console.log(
+				`[位置修正 #${this.correctionCount}] 予測=${this.myPredictedPaddleY.toFixed(1)}, サーバー=${serverPaddleY.toFixed(1)}, 誤差=${error.toFixed(1)}px`,
+			);
+
+			// 即座に位置を修正
+			this.myPredictedPaddleY = serverPaddleY;
+		}
+	}
+
+	/**
+	 * 自分のパドルのサーバー位置を取得
+	 */
+	private getMyServerPaddleY(serverState: RealtimeMatchStateDto): number {
+		return this.myPlayerNumber === "player1"
+			? serverState.paddles.player1.y
+			: serverState.paddles.player2.y;
 	}
 
 	private handleReadyButtonClick(): void {
@@ -755,6 +801,7 @@ export class MatchController {
 		this.animationFrameId = null;
 		this.serverState = null;
 		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
+		this.correctionCount = 0;
 		this.myPlayerNumber = null;
 		this.movingUp = false;
 		this.movingDown = false;

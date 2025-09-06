@@ -56,7 +56,7 @@ export class Tournament {
 
 		const matchRule = new MatchRule(
 			5, // 勝利ポイントを5に変更
-			{ vx: 5, vy: 5 }, // ボールスピードを遅くする（7→5）
+			{ vx: 1.5, vy: 1.5 }, // ボールスピードを半分に（5→1.5）
 			{ width: 800, height: 600 },
 		);
 
@@ -110,7 +110,7 @@ export class Tournament {
 		const matchId3: MatchId = uuidv4();
 		const matchRule = new MatchRule(
 			5, // 勝利ポイントを5に変更
-			{ vx: 5, vy: 5 }, // ボールスピードを遅くする（7→5）
+			{ vx: 1.5, vy: 1.5 }, // ボールスピードを半分に（5→1.5）
 			{ width: 800, height: 600 },
 		);
 		const nextRound = this.currentRound + 1;
