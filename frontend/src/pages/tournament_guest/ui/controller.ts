@@ -170,6 +170,14 @@ class GuestTournamentController {
 		// スコアを更新
 		this.updateScores();
 		
+		// 決勝戦の表示を更新（決勝戦が存在する場合）
+		if (tournamentData.currentRound > 1) {
+			const finalMatch = tournamentData.matches.find(match => match.round === 2);
+			if (finalMatch) {
+				this.updateFinalMatchDisplay(finalMatch);
+			}
+		}
+		
 		// 次のマッチ情報を更新
 		this.updateNextMatchInfo();
 	}
@@ -211,13 +219,7 @@ class GuestTournamentController {
 		if (score2_1) score2_1.textContent = matches[1]?.score1.toString() || "0";
 		if (score2_2) score2_2.textContent = matches[1]?.score2.toString() || "0";
 
-		// Final match scores
-		if (tournamentData.currentRound > 1) {
-			const finalScore1 = document.getElementById("player-score-final-1");
-			const finalScore2 = document.getElementById("player-score-final-2");
-			if (finalScore1) finalScore1.textContent = "0";
-			if (finalScore2) finalScore2.textContent = "0";
-		}
+		// 決勝戦のスコアは updateFinalMatchDisplay で処理
 	}
 
 	private updateMatchDisplay(): void {
@@ -294,8 +296,15 @@ class GuestTournamentController {
 	}
 
 	private determineMatchWinner(match: GuestTournamentMatch): string {
-		// ランダムに勝者を決定（実際のゲームではスコアに基づく）
-		return Math.random() > 0.5 ? match.player1 : match.player2;
+		// スコアに基づいて勝者を決定
+		if (match.score1 > match.score2) {
+			return match.player1;
+		} else if (match.score2 > match.score1) {
+			return match.player2;
+		} else {
+			// スコアが同じ場合はplayer1を勝者とする（実際のゲームでは延長戦など）
+			return match.player1;
+		}
 	}
 
 	private updateFinalMatchDisplay(finalMatch: GuestTournamentMatch): void {
@@ -308,6 +317,14 @@ class GuestTournamentController {
 		const finalName2 = document.getElementById("player-name-final-2");
 		if (finalName1) finalName1.textContent = finalMatch.player1;
 		if (finalName2) finalName2.textContent = finalMatch.player2;
+
+		// 決勝戦のスコアを更新
+		const finalScore1 = document.getElementById("player-score-final-1");
+		const finalScore2 = document.getElementById("player-score-final-2");
+		if (finalScore1) finalScore1.textContent = finalMatch.score1.toString();
+		if (finalScore2) finalScore2.textContent = finalMatch.score2.toString();
+
+		console.log(`決勝戦表示を更新: ${finalMatch.player1} ${finalMatch.score1} - ${finalMatch.score2} ${finalMatch.player2}`);
 	}
 
 	private completeTournament(): void {
@@ -317,18 +334,26 @@ class GuestTournamentController {
 		// 決勝戦を探す（round: 2のマッチ）
 		const finalMatch = tournamentData.matches.find(match => match.round === 2);
 		if (finalMatch) {
-			const winner = this.determineMatchWinner(finalMatch);
+			// 決勝戦が既に完了しているかチェック
+			if (finalMatch.status === "completed") {
+				const winner = finalMatch.winner;
+				if (winner) {
+					// 状態管理マネージャーでトーナメント完了
+					this.stateManager.completeTournament(winner);
 
-			// 状態管理マネージャーでトーナメント完了
-			this.stateManager.completeTournament(winner);
-
-			this.showWinner(winner);
-			this.updateTournamentStatus("完了");
-			
-			// 3秒後にlobbyに戻る
-			setTimeout(() => {
-				this.returnToLobby();
-			}, 3000);
+					// 表示を更新（決勝戦のスコアを含む）
+					this.updateTournamentDisplay();
+					this.showWinner(winner);
+					this.updateTournamentStatus("完了");
+					
+					// 3秒後にlobbyに戻る
+					setTimeout(() => {
+						this.returnToLobby();
+					}, 3000);
+				}
+			} else {
+				console.log("決勝戦がまだ完了していません");
+			}
 		}
 	}
 
@@ -340,6 +365,16 @@ class GuestTournamentController {
 		if (winnerSection) winnerSection.style.display = "block";
 		if (winnerName) winnerName.textContent = winner;
 		if (nextMatchSection) nextMatchSection.style.display = "none";
+
+		// 決勝戦の詳細結果を表示
+		const tournamentData = this.stateManager.getTournamentData();
+		if (tournamentData) {
+			const finalMatch = tournamentData.matches.find(match => match.round === 2);
+			if (finalMatch) {
+				console.log(`🏆 トーナメント優勝者: ${winner}`);
+				console.log(`決勝戦結果: ${finalMatch.player1} ${finalMatch.score1} - ${finalMatch.score2} ${finalMatch.player2}`);
+			}
+		}
 	}
 
 	// マッチ結果を処理するメソッド
