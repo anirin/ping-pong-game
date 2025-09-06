@@ -169,6 +169,10 @@ export class TournamentController {
 					console.log("TournamentController: ルーム削除を受信", data);
 					this.handleRoomDeleted(data);
 					break;
+				case "force_lobby":
+					console.log("TournamentController: 強制lobby遷移を受信", data);
+					this.handleForceLobby(data);
+					break;
 				default:
 					console.log("TournamentController: 不明なアクション", action);
 			}
@@ -211,6 +215,28 @@ export class TournamentController {
 
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			if (!this.isDestroyed) {
+				navigate("/lobby");
+			}
+		}, 3000);
+	}
+
+	private handleForceLobby(data: any): void {
+		// 強制的にlobbyに戻す処理
+		const reason = data?.reason || "unknown";
+		const message =
+			data?.message ||
+			"A user has been disconnected for too long. Returning to lobby.";
+
+		console.log(
+			`Tournament force lobby - Reason: ${reason}, Message: ${message}`,
+		);
+
+		// ユーザーに通知を表示
+		this.showForceLobbyNotification(message);
 
 		// 3秒後にロビーページにナビゲート
 		setTimeout(() => {
@@ -264,6 +290,53 @@ export class TournamentController {
 			this.autoRemoveModal(modal, 3000);
 		} catch (error) {
 			console.error("ルーム削除通知の表示に失敗:", error);
+		}
+	}
+
+	private showForceLobbyNotification(message: string): void {
+		try {
+			const modal = this.createModal(
+				"force-lobby-modal",
+				`
+					<div class="force-lobby-content">
+						<h2>🔌 接続が切断されました</h2>
+						<p>${message}</p>
+						<p>3秒後にロビーに戻ります...</p>
+					</div>
+				`,
+				{
+					position: "fixed",
+					top: "0",
+					left: "0",
+					width: "100%",
+					height: "100%",
+					background: "rgba(0, 0, 0, 0.8)",
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					zIndex: "10000",
+				},
+			);
+
+			// スタイルを追加
+			const style = document.createElement("style");
+			style.textContent = `
+				.force-lobby-content {
+					background: #fff3cd;
+					color: #856404;
+					padding: 2rem;
+					border-radius: 10px;
+					text-align: center;
+					box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+					border: 1px solid #ffeaa7;
+				}
+			`;
+			document.head.appendChild(style);
+
+			document.body.appendChild(modal);
+			this.autoRemoveModal(modal, 3000);
+		} catch (error) {
+			console.error("強制lobby通知の表示に失敗:", error);
 		}
 	}
 

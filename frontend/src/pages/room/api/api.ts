@@ -62,6 +62,15 @@ export class RoomAPI {
 				return;
 			}
 
+			if (message.data && message.data.action === "FORCE_LOBBY") {
+				// 強制的にlobbyに戻す処理
+				console.log("Force lobby:", message.data);
+				if (this.controllerCallback) {
+					this.controllerCallback(this.getRoomState(), "FORCE_LOBBY");
+				}
+				return;
+			}
+
 			const roomData = message.data as WSRoomData;
 			if (roomData) {
 				this.roomState.participants = roomData.users || [];

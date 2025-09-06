@@ -195,6 +195,24 @@ export class MatchController {
 		}, 3000);
 	}
 
+	private handleForceLobby(data: any): void {
+		// 強制的にlobbyに戻す処理
+		const reason = data?.reason || "unknown";
+		const message =
+			data?.message ||
+			"A user has been disconnected for too long. Returning to lobby.";
+
+		console.log(`Match force lobby - Reason: ${reason}, Message: ${message}`);
+
+		// ユーザーに通知を表示
+		this.showForceLobbyNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			navigate("/lobby");
+		}, 3000);
+	}
+
 	private showRoomDeletedNotification(message: string): void {
 		try {
 			// キャンバス上に通知を表示
@@ -231,6 +249,53 @@ export class MatchController {
 			}
 		} catch (error) {
 			console.error("マッチ画面でのルーム削除通知の表示に失敗:", error);
+		}
+	}
+
+	private showForceLobbyNotification(message: string): void {
+		try {
+			const modal = this.createModal(
+				"force-lobby-modal",
+				`
+					<div class="force-lobby-content">
+						<h2>🔌 接続が切断されました</h2>
+						<p>${message}</p>
+						<p>3秒後にロビーに戻ります...</p>
+					</div>
+				`,
+				{
+					position: "fixed",
+					top: "0",
+					left: "0",
+					width: "100%",
+					height: "100%",
+					background: "rgba(0, 0, 0, 0.8)",
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					zIndex: "10000",
+				},
+			);
+
+			// スタイルを追加
+			const style = document.createElement("style");
+			style.textContent = `
+				.force-lobby-content {
+					background: #fff3cd;
+					color: #856404;
+					padding: 2rem;
+					border-radius: 10px;
+					text-align: center;
+					box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+					border: 1px solid #ffeaa7;
+				}
+			`;
+			document.head.appendChild(style);
+
+			document.body.appendChild(modal);
+			this.autoRemoveModal(modal, 3000);
+		} catch (error) {
+			console.error("マッチ画面での強制lobby通知の表示に失敗:", error);
 		}
 	}
 
@@ -294,6 +359,10 @@ export class MatchController {
 			// ルーム削除時の処理
 			console.log("Match room deleted:", data);
 			this.handleRoomDeleted(data);
+		} else if (action === "force_lobby") {
+			// 強制的にlobbyに戻す処理
+			console.log("Match force lobby:", data);
+			this.handleForceLobby(data);
 		}
 	}
 
@@ -690,5 +759,25 @@ export class MatchController {
 		this.movingUp = false;
 		this.movingDown = false;
 		this.hasResetReadyState = false;
+	}
+
+	private createModal(
+		className: string,
+		innerHTML: string,
+		styles: Record<string, string>,
+	): HTMLElement {
+		const modal = document.createElement("div");
+		modal.className = className;
+		modal.innerHTML = innerHTML;
+		Object.assign(modal.style, styles);
+		return modal;
+	}
+
+	private autoRemoveModal(modal: HTMLElement, delay: number): void {
+		setTimeout(() => {
+			if (modal.parentNode) {
+				modal.parentNode.removeChild(modal);
+			}
+		}, delay);
 	}
 }
