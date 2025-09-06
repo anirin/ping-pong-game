@@ -130,8 +130,10 @@ export class WebSocketManager {
 	stopDisconnectMonitoring(roomId: RoomId): void {
 		const monitor = this.disconnectMonitors.get(roomId);
 		if (monitor) {
-			// 全てのタイマーをクリア
-			monitor.disconnectTimers.forEach((timer) => clearTimeout(timer));
+		// 全てのタイマーをクリア
+		monitor.disconnectTimers.forEach((timer) => {
+			clearTimeout(timer);
+		});
 			this.disconnectMonitors.delete(roomId);
 		}
 	}
