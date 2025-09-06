@@ -1,9 +1,9 @@
-import html from "./ui/tournament.html?raw";
-import "./ui/tournament.css";
-import { createTournamentController } from "./ui/controller";
+import html from "./ui/match.html?raw";
+import "./ui/match.css";
+import { MatchController } from "./ui/controller";
 
-interface TournamentPageState {
-	controller: ReturnType<typeof createTournamentController> | null;
+interface MatchPageState {
+	controller: MatchController | null;
 	eventListeners: Array<{
 		element: EventTarget;
 		event: string;
@@ -12,14 +12,14 @@ interface TournamentPageState {
 	isDestroyed: boolean;
 }
 
-export function renderTournamentPage(params?: { [key: string]: string }) {
+export async function renderMatchPage(params?: { [key: string]: string }) {
 	const app = document.getElementById("app");
 	if (!app) {
 		console.error("アプリケーションのルート要素が見つかりません");
 		return;
 	}
 
-	const state: TournamentPageState = {
+	const state: MatchPageState = {
 		controller: null,
 		eventListeners: [],
 		isDestroyed: false,
@@ -27,32 +27,33 @@ export function renderTournamentPage(params?: { [key: string]: string }) {
 
 	try {
 		app.innerHTML = html;
-		state.controller = createTournamentController(params);
+		state.controller = new MatchController(params);
+		await state.controller.render();
 		setupEventListeners(state);
 		return createCleanupFunction(state);
 	} catch (error) {
-		console.error("トーナメントページの初期化に失敗しました:", error);
+		console.error("マッチページの初期化に失敗しました:", error);
 		showErrorPage(app, error);
 		return createErrorCleanupFunction(state);
 	}
 }
 
-function setupEventListeners(state: TournamentPageState): void {
+function setupEventListeners(state: MatchPageState): void {
 	const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 		if (!state.isDestroyed && state.controller) {
 			state.controller.destroy();
 		}
 		// ページ離脱を防ぐ
 		event.preventDefault();
-		event.returnValue = "トーナメント中です。本当にページを離れますか？";
-		return "トーナメント中です。本当にページを離れますか？";
+		event.returnValue = "マッチ中です。本当にページを離れますか？";
+		return "マッチ中です。本当にページを離れますか？";
 	};
 
 	const handleVisibilityChange = () => {
 		if (document.hidden && !state.isDestroyed) {
-			console.log("トーナメントページが非表示になりました");
+			console.log("マッチページが非表示になりました");
 		} else if (!document.hidden && !state.isDestroyed) {
-			console.log("トーナメントページが表示されました");
+			console.log("マッチページが表示されました");
 		}
 	};
 
@@ -71,10 +72,10 @@ function setupEventListeners(state: TournamentPageState): void {
 
 		// 現在のURLをプッシュして戻る操作を無効化
 		window.history.pushState(null, "", window.location.href);
-		console.log("トーナメント画面での戻る操作を無効化しました");
+		console.log("マッチ画面での戻る操作を無効化しました");
 
 		// 警告を表示
-		alert("トーナメント中は戻る操作はできません");
+		alert("マッチ中は戻る操作はできません");
 	};
 
 	// キーボードショートカット（Alt+←など）を無効にする
@@ -84,14 +85,14 @@ function setupEventListeners(state: TournamentPageState): void {
 		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowLeft") {
 			keyboardEvent.preventDefault();
 			keyboardEvent.stopPropagation();
-			console.log("トーナメント画面でのキーボード戻る操作を無効化しました");
-			alert("トーナメント中は戻る操作はできません");
+			console.log("マッチ画面でのキーボード戻る操作を無効化しました");
+			alert("マッチ中は戻る操作はできません");
 		}
 		// Alt + 右矢印キー（進む）も無効化
 		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowRight") {
 			keyboardEvent.preventDefault();
 			keyboardEvent.stopPropagation();
-			console.log("トーナメント画面でのキーボード進む操作を無効化しました");
+			console.log("マッチ画面でのキーボード進む操作を無効化しました");
 		}
 		// Backspaceキーも無効化（一部のブラウザで戻る操作に使用される）
 		if (
@@ -103,7 +104,7 @@ function setupEventListeners(state: TournamentPageState): void {
 			if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
 				keyboardEvent.preventDefault();
 				keyboardEvent.stopPropagation();
-				console.log("トーナメント画面でのBackspaceキーを無効化しました");
+				console.log("マッチ画面でのBackspaceキーを無効化しました");
 			}
 		}
 	};
@@ -134,7 +135,7 @@ function setupEventListeners(state: TournamentPageState): void {
 	}, 100);
 }
 
-function createCleanupFunction(state: TournamentPageState): () => void {
+function createCleanupFunction(state: MatchPageState): () => void {
 	return () => {
 		if (state.isDestroyed) {
 			return;
@@ -153,14 +154,14 @@ function createCleanupFunction(state: TournamentPageState): () => void {
 				state.controller = null;
 			}
 
-			console.log("トーナメントページのクリーンアップが完了しました");
+			console.log("マッチページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}
 	};
 }
 
-function createErrorCleanupFunction(state: TournamentPageState): () => void {
+function createErrorCleanupFunction(state: MatchPageState): () => void {
 	return () => {
 		if (state.isDestroyed) {
 			return;
@@ -202,7 +203,7 @@ function showErrorPage(app: HTMLElement, error: unknown): void {
 				max-width: 500px;
 			">
 				<h2 style="color: #dc3545; margin-bottom: 1rem;">⚠️ エラーが発生しました</h2>
-				<p style="margin-bottom: 1rem;">トーナメントページの読み込みに失敗しました。</p>
+				<p style="margin-bottom: 1rem;">マッチページの読み込みに失敗しました。</p>
 				<details style="margin-bottom: 1rem; text-align: left;">
 					<summary style="cursor: pointer; color: #6c757d;">エラー詳細</summary>
 					<pre style="
@@ -224,7 +225,7 @@ function showErrorPage(app: HTMLElement, error: unknown): void {
 						cursor: pointer;
 						font-size: 1rem;
 					">再読み込み</button>
-					<button onclick="alert('トーナメント画面では戻る操作は無効です')" style="
+					<button onclick="alert('マッチ画面では戻る操作は無効です')" style="
 						background: #6c757d;
 						color: white;
 						border: none;

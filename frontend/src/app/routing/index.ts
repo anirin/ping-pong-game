@@ -11,6 +11,8 @@ import { renderSetupPage } from "@pages/setup/index";
 import { renderTournamentPage } from "@pages/tournament";
 import { isLoggedIn } from "@/app/auth";
 import { renderFriendListPage } from "@/pages/friends";
+import { renderMatchPage } from "@/pages/match";
+import { WebSocketManager } from "@/shared/websocket/WebSocketManager";
 
 let currentCleanup: (() => void) | null = null;
 
@@ -21,7 +23,9 @@ import { renderFriendRequestPage } from "@/pages/friend_request";
 interface Route {
 	path: string;
 	// handler: () => void;
-	handler: (params?: { [key: string]: string }) => (() => void) | void;
+	handler: (params?: {
+		[key: string]: string;
+	}) => (() => void) | void | Promise<(() => void) | void>;
 }
 
 const routes: Route[] = [
@@ -58,7 +62,7 @@ const routes: Route[] = [
 	// 	handler: renderGamePage,
 	// },
 	{
-		path: "/tournament", // id が必要かも
+		path: "/tournament/:roomId",
 		handler: renderTournamentPage,
 	},
 	{
@@ -90,6 +94,10 @@ const routes: Route[] = [
 				return renderGuestTournamentPage();
 			}
 		},
+	},
+	{
+		path: "/match/:roomId/:matchId",
+		handler: renderMatchPage,
 	},
 ];
 
@@ -123,6 +131,8 @@ export function navigate(to?: string) {
 	if (to && to !== window.location.pathname) {
 		window.history.pushState({}, "", to);
 	}
+
+	// 現在のページのクリーンアップを実行
 	if (currentCleanup) {
 		currentCleanup();
 		currentCleanup = null;
@@ -130,11 +140,30 @@ export function navigate(to?: string) {
 
 	const path = window.location.pathname;
 
+	// WebSocket接続のクリーンアップ
+	// tournament、match、room以外のページに移動する場合はWebSocketを切断
+	const isWebSocketPage =
+		path.startsWith("/tournament") ||
+		path.startsWith("/match/") ||
+		path.startsWith("/rooms/");
+
+	if (!isWebSocketPage) {
+		const wsManager = WebSocketManager.getInstance();
+		wsManager.clearWsManager();
+		console.log("WebSocket接続をクリーンアップしました");
+	}
+
 	const match = matchRoute(path);
 	if (match) {
-		const cleanupFn = match.route.handler(match.params);
-		if (typeof cleanupFn === "function") {
-			currentCleanup = cleanupFn;
+		const result = match.route.handler(match.params);
+		if (result instanceof Promise) {
+			result.then((cleanupFn) => {
+				if (typeof cleanupFn === "function") {
+					currentCleanup = cleanupFn;
+				}
+			});
+		} else if (typeof result === "function") {
+			currentCleanup = result;
 		}
 	} else {
 		console.log("No match found. Redirecting to home.");

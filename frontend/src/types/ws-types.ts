@@ -1,22 +1,23 @@
 // frontend/src/types/ws-types.ts (修正版)
 
-type MatchPosition = "UP" | "DOWN" | "STAY";
+type MatchPosition = { y: number };
 
 // --- クライアント → サーバー ---
 export type WSIncomingMsg =
 	| {
 			status: "Room";
-			action: "START" | "DELETE";
+			action: "START" | "DELETE" | "LEAVE";
 	  }
-	// | {  // ← 'User'ステータスのメッセージは不要になったので削除
-	// 		status: "User";
-	// 		action: "ADD" | "DELETE";
-	// 		room: RoomId;
-	//   }
 	| {
 			status: "Match";
-			action: "Move";
-			msg: MatchPosition;
+			action: "start";
+			matchId: string;
+	  }
+	| {
+			status: "Match";
+			action: "move";
+			matchId: string;
+			data: MatchPosition;
 	  };
 
 // --- サーバー → クライアント ---
@@ -33,9 +34,27 @@ export interface WSRoomData {
 	};
 }
 
-// TODO: WSTournamentData, WSMatchData の型定義もここに追加する
+// マッチデータの型定義を追加
+export interface WSMatchData {
+	type: "match_state" | "match_started" | "match_finished" | "none" | "error";
+	matchId?: string;
+	state?: {
+		status: string;
+		ball: { x: number; y: number };
+		paddles: {
+			player1: { id: string; y: number };
+			player2: { id: string; y: number };
+		};
+		scores: {
+			player1: number;
+			player2: number;
+		};
+	};
+	winnerId?: string;
+	message?: string;
+}
+
 export type WSTournamentData = {};
-export type WSMatchData = {};
 
 export type WSOutgoingMsg =
 	| {

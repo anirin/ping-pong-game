@@ -38,6 +38,12 @@ export class TypeORMTournamentRepository implements TournamentRepository {
 		const roomId = entity.room_id;
 		const tournament = new Tournament(id, [], createdBy, roomId);
 
+		// エンティティからドメインオブジェクトに値を設定
+		tournament.status = entity.status as any;
+		tournament.currentRound = entity.current_round;
+		tournament.winner_id = entity.winner_id;
+		tournament.type = entity.type as any;
+
 		// todo userid と matchesはapplication or domain にて取得
 		return tournament;
 	}
@@ -46,6 +52,7 @@ export class TypeORMTournamentRepository implements TournamentRepository {
 		const entity = new TournamentEntity();
 		entity.id = tournament.id;
 		entity.status = tournament.status;
+		entity.current_round = tournament.currentRound;
 		entity.winner_id = tournament.winner_id ?? null;
 		entity.created_by = tournament.createdBy;
 		entity.type = tournament.type;

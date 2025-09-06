@@ -20,7 +20,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			const ws = connection;
 			const url = new URL(req.url, "https://localhost:8080/socket");
 
-			const roomService = new RoomService(); // todo : route dir の中に閉じ込める
+			// roomServiceは後でjoinedRoomが確定してから取得
 
 			let token: string | undefined;
 
@@ -61,13 +61,17 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				ws.close();
 				return;
 			} else {
-				console.log("joinResultMsg: ", joinResultMsg);
-				wsManager.addWebSocketToRoom(context.joinedRoom, ws);
+				// console.log("joinResultMsg: ", joinResultMsg);
+				wsManager.addWebSocketToRoom(
+					context.joinedRoom,
+					ws,
+					context.authedUser,
+				);
 				wsManager.broadcast(context.joinedRoom, joinResultMsg);
 			}
 
 			ws.on("message", async (raw: any) => {
-				console.log("message received: ", raw);
+				console.log("message received: ", raw.toString());
 				let data: WSIncomingMsg;
 				try {
 					data = JSON.parse(raw.toString());
@@ -112,28 +116,98 @@ export async function registerWSRoutes(app: FastifyInstance) {
 
 			ws.on("close", async () => {
 				try {
+					console.log(
+						`WebSocket closed for user ${context.authedUser} in room ${context.joinedRoom}`,
+					);
+					const roomService = RoomService.getInstance(context.joinedRoom);
 					let resultmsg: WSOutgoingMsg;
-					if (
-						await roomService.checkOwner(context.joinedRoom, context.authedUser) // room dir に押し込める
-					) {
-						resultmsg = await RoomWSHandler("DELETE", context);
-						if (resultmsg.status !== "error") {
-							wsManager.broadcast(context.joinedRoom, resultmsg);
-							wsManager.leaveAllfromRoom(context.joinedRoom);
-							return;
+
+					// checkOwnerがfalseを返した場合（ルームが見つからない場合も含む）は
+					// 単純にWebSocketから削除するだけにする
+					const isOwner = await roomService.checkOwner(
+						context.joinedRoom,
+						context.authedUser,
+					);
+					if (isOwner) {
+						// Ownerの場合は、ルームの状態を確認してから削除するかどうかを決める
+						const room = await roomService.getRoomById(context.joinedRoom);
+						if (room && room.status === "waiting") {
+							// ルームが待機状態の場合は、ownerの再接続を許可するため
+							// ルームを削除せずに、ownerを一時的に離脱させる
+							console.log(
+								`Owner ${context.authedUser} temporarily left room ${context.joinedRoom} (room status: ${room.status})`,
+							);
+							resultmsg = await LeaveRoomWS(context);
+							if (resultmsg.status !== "error") {
+								wsManager.removeWebSocketFromRoom(
+									context.joinedRoom,
+									ws,
+									context.authedUser,
+								);
+								wsManager.broadcast(context.joinedRoom, resultmsg);
+								return;
+							}
+						} else if (room && room.status === "playing") {
+							// ルームが進行中の場合は、ownerも他のプレイヤーと同列に扱う
+							console.log(
+								`Owner ${context.authedUser} left room ${context.joinedRoom} during ongoing game (room status: ${room.status})`,
+							);
+							resultmsg = await LeaveRoomWS(context);
+							if (resultmsg.status !== "error") {
+								wsManager.removeWebSocketFromRoom(
+									context.joinedRoom,
+									ws,
+									context.authedUser,
+								);
+								wsManager.broadcast(context.joinedRoom, resultmsg);
+								return;
+							}
+						} else {
+							// ルームが終了状態の場合は、ルームを削除
+							console.log(
+								`Owner ${context.authedUser} left room ${context.joinedRoom}, deleting room (room status: ${room?.status || "unknown"})`,
+							);
+							resultmsg = await RoomWSHandler("DELETE", context);
+							if (resultmsg.status !== "error") {
+								wsManager.broadcast(context.joinedRoom, resultmsg);
+								wsManager.leaveAllfromRoom(context.joinedRoom);
+								return;
+							}
 						}
 					} else {
+						console.log(
+							`Non-owner ${context.authedUser} left room ${context.joinedRoom}`,
+						);
 						resultmsg = await LeaveRoomWS(context);
 						if (resultmsg.status !== "error") {
-							wsManager.removeWebSocketFromRoom(context.joinedRoom, ws);
+							wsManager.removeWebSocketFromRoom(
+								context.joinedRoom,
+								ws,
+								context.authedUser,
+							);
 							wsManager.broadcast(context.joinedRoom, resultmsg);
 							return;
 						}
 					}
-					ws.send(JSON.stringify(resultmsg));
-					return;
+
+					// エラーが発生した場合やルームが見つからない場合は
+					// 単純にWebSocketから削除するだけにする
+					console.log(
+						`Removing WebSocket for user ${context.authedUser} from room ${context.joinedRoom}`,
+					);
+					wsManager.removeWebSocketFromRoom(
+						context.joinedRoom,
+						ws,
+						context.authedUser,
+					);
 				} catch (error) {
-					console.error(error);
+					console.error("WebSocket close error:", error);
+					// エラーが発生した場合もWebSocketから削除する
+					wsManager.removeWebSocketFromRoom(
+						context.joinedRoom,
+						ws,
+						context.authedUser,
+					);
 				}
 			});
 		},

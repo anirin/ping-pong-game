@@ -55,8 +55,8 @@ export class Tournament {
 		}
 
 		const matchRule = new MatchRule(
-			2,
-			{ vx: 7, vy: 7 },
+			5, // 勝利ポイントを5に変更
+			{ vx: 5, vy: 5 }, // ボールスピードを遅くする（7→5）
 			{ width: 800, height: 600 },
 		);
 
@@ -97,15 +97,20 @@ export class Tournament {
 			this.matches.filter((match) => match.round === this.currentRound)
 				.length === 1
 		) {
-			this.finish(this.matches[0]!.winnerId!); // service 層に tournament 終了を教える必要がある
+			const finalMatch = this.matches.find(
+				(match) => match.round === this.currentRound,
+			);
+			if (finalMatch && finalMatch.winnerId) {
+				this.finish(finalMatch.winnerId); // service 層に tournament 終了を教える必要がある
+			}
 			return;
 		}
 
 		// 通常の round generate
 		const matchId3: MatchId = uuidv4();
 		const matchRule = new MatchRule(
-			2,
-			{ vx: 7, vy: 7 },
+			5, // 勝利ポイントを5に変更
+			{ vx: 5, vy: 5 }, // ボールスピードを遅くする（7→5）
 			{ width: 800, height: 600 },
 		);
 		const nextRound = this.currentRound + 1;

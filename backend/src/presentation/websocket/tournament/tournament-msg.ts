@@ -1,11 +1,34 @@
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
 
-export type TournamentIncomingMsg = {
-	status: "Tournament";
-	action: "get_status";
-};
+export type TournamentIncomingMsg =
+	| {
+			status: "Tournament";
+			action: "get_status";
+	  }
+	| {
+			status: "Tournament";
+			action: "navigate_to_match";
+			matchId: MatchId;
+	  };
 
-export type TournamentOutgoingMsg = {
-	status: "Tournament";
-	data: WSTournamentData;
-};
+export type TournamentOutgoingMsg =
+	| {
+			status: "Tournament";
+			data: WSTournamentData;
+	  }
+	| {
+			status: "Tournament";
+			data: {
+				type: "navigate_to_match";
+				matchId: MatchId;
+			};
+	  }
+	| {
+			status: "Tournament";
+			data: {
+				type: "tournament_finished";
+				winner_id: string;
+				tournament_id: string;
+			};
+	  };

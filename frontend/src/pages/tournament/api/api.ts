@@ -3,25 +3,24 @@ import {
 	type WebSocketMessage,
 } from "../../../shared/websocket/WebSocketManager";
 
-// トーナメント関連の型定義
 export interface TournamentMatch {
 	id: string;
-	player1Id: string; // player1_id → player1Id に修正
-	player2Id: string; // player2_id → player2Id に修正
+	player1Id: string;
+	player2Id: string;
 	score1: number;
 	score2: number;
-	winnerId: string | null; // winner_id → winnerId に修正
+	winnerId: string | null;
 	status: string;
 	round: number;
 }
 export interface TournamentData {
+	status: string;
 	next_match_id: string;
 	matches: TournamentMatch[];
 	current_round: number;
 	winner_id: string | null;
 }
 
-// トーナメント専用のメッセージ型
 export interface TournamentMessage extends WebSocketMessage {
 	status: "Tournament";
 	action: "get_status";
@@ -31,78 +30,111 @@ export interface TournamentMessage extends WebSocketMessage {
 export class TournamentAPI {
 	private tournamentData: TournamentData | null = null;
 
-	// data類 api に置くのは適切でない
-	private match1: TournamentMatch | null = null; // round1
-	private match2: TournamentMatch | null = null; // round1
-	private match3: TournamentMatch | null = null; // rooud2 （決勝）
-
-	// todo : avator 含め定義する backend も調整必要 (最後)
-	// private player1: Player | null = null;
-	// private player2: Player | null = null;
-	// private player3: Player | null = null;
-	// private player4: Player | null = null;
-
 	private wsManager: WebSocketManager = WebSocketManager.getInstance();
+	private messageHandler: (message: WebSocketMessage) => void;
+	private controllerCallback: ((data: any, action?: string) => void) | null =
+		null;
 
 	constructor() {
-		this.wsManager.addCallback(this.handleMessage.bind(this));
+		console.log("TournamentAPI constructor");
+		this.messageHandler = this.handleMessage.bind(this);
+		this.wsManager.setCallback(this.messageHandler);
 	}
 
-	// トーナメントメッセージの処理(受信)
-	private handleMessage(message: WebSocketMessage): void {
-		// TODO : 検討
-		if (message.status !== "Tournament") {
-			return;
-		}
-
-		if (message.data) {
-			this.tournamentData = message.data as TournamentData;
-
-			// デバッグ用ログを追加
-			console.log(
-				"Frontend received tournament data:",
-				JSON.stringify(message.data, null, 2),
-			);
-
-			// match1, match2, match3 を更新
-			this.match1 = this.tournamentData.matches[0];
-			this.match2 = this.tournamentData.matches[1];
-			// match3 はない場合がある
-			if (this.tournamentData.matches.length > 2) {
-				this.match3 = this.tournamentData.matches[2];
-			}
-		} else {
-			console.error("Tournament data is null");
-		}
+	// getter
+	public getCurrentTournament(): TournamentData | null {
+		return this.tournamentData;
 	}
 
-	// トーナメントデータの取得(送信)
+	public getMatch(index: number): TournamentMatch | null {
+		if (!this.tournamentData || !this.tournamentData.matches) {
+			return null;
+		}
+		return this.tournamentData.matches[index] || null;
+	}
+
+	// setter
+	public setCallback(callback: (data: any, action?: string) => void): void {
+		this.controllerCallback = callback;
+	}
+
+	public removeCallback(): void {
+		this.controllerCallback = null;
+	}
+
+	// methods
+	// 送信
 	public getTournamentData(): void {
-		console.log("TournamentAPI: トーナメントデータを要求");
 		this.wsManager.sendMessage({
 			status: "Tournament",
 			action: "get_status",
 		});
 	}
 
-	public destroy(): void {
-		this.wsManager.removeCallback(this.handleMessage.bind(this));
-		console.log("TournamentAPI: 破棄");
+	// 送信
+	public navigateToMatch(matchId: string): void {
+		this.wsManager.sendMessage({
+			status: "Tournament",
+			action: "navigate_to_match",
+			matchId: matchId,
+		});
 	}
 
-	// データ取得メソッド : frontend用 : apiと関係はないので置き場所検討
-	public getCurrentTournament(): TournamentData | null {
-		return this.tournamentData;
+	public destroy(): void {
+		this.wsManager.removeCallback();
+		this.controllerCallback = null;
+		this.tournamentData = null;
 	}
-	public getMatch1(): TournamentMatch | null {
-		return this.match1;
-	}
-	public getMatch2(): TournamentMatch | null {
-		return this.match2;
-	}
-	public getMatch3(): TournamentMatch | null {
-		return this.match3;
+
+	// ------------------------------------------------------------
+	// private methods
+	// ------------------------------------------------------------
+
+	private handleMessage(message: WebSocketMessage): void {
+		console.log("TournamentAPI received message:", message);
+
+		if (message.status === "Room" && message.data?.action === "DELETE") {
+			// ルーム削除の通知
+			console.log("TournamentAPI: Room deleted", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "room_deleted");
+			}
+			return;
+		}
+
+		if (message.status !== "Tournament") {
+			return;
+		}
+
+		if (message.data) {
+			if ("type" in message.data && message.data.type === "navigate_to_match") {
+				console.log("TournamentAPI: navigate_to_match received");
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "navigate_to_match");
+				}
+				return;
+			}
+
+			if (
+				"type" in message.data &&
+				message.data.type === "tournament_finished"
+			) {
+				console.log("TournamentAPI: tournament_finished received");
+				if (this.controllerCallback) {
+					this.controllerCallback(message.data, "tournament_finished");
+				}
+				return;
+			}
+
+			// トーナメントデータの受信
+			console.log("TournamentAPI: tournament data received", message.data);
+			this.tournamentData = message.data as TournamentData;
+
+			if (this.controllerCallback) {
+				this.controllerCallback(this.tournamentData, "data_update");
+			}
+		} else {
+			console.error("Tournament data is null");
+		}
 	}
 }
-
-export const tournamentAPI = new TournamentAPI();

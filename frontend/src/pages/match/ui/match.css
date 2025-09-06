@@ -1,0 +1,126 @@
+#match-page-container {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 20px;
+	text-align: center;
+}
+
+#match-page-container h1 {
+	color: #333;
+	margin-bottom: 30px;
+}
+
+#match-container {
+	margin-bottom: 30px;
+}
+
+#scoreboard {
+	font-size: 24px;
+	font-weight: bold;
+	margin-bottom: 20px;
+	color: #333;
+}
+
+#matchCanvas {
+	border: 2px solid #333;
+	background-color: #000;
+	display: block;
+	margin: 0 auto;
+}
+
+#controls {
+	margin-bottom: 30px;
+}
+
+#controls p {
+	margin-bottom: 15px;
+	color: #666;
+}
+
+#controls button {
+	background-color: #007bff;
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	margin: 0 10px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+#controls button:hover {
+	background-color: #0056b3;
+}
+
+#controls button:active {
+	background-color: #004085;
+}
+
+#match-info {
+	background-color: #f8f9fa;
+	padding: 20px;
+	border-radius: 10px;
+	border: 1px solid #dee2e6;
+}
+
+#match-info p {
+	margin: 10px 0;
+	color: #495057;
+}
+
+#match-status {
+	font-weight: bold;
+	color: #007bff;
+}
+
+#player-info {
+	font-style: italic;
+}
+
+#match-start-section {
+	background-color: #e8f5e8;
+	padding: 20px;
+	border-radius: 10px;
+	border: 1px solid #28a745;
+	margin-top: 20px;
+}
+
+#match-start-section p {
+	margin: 10px 0;
+	color: #155724;
+	font-weight: bold;
+}
+
+#ready-button {
+	background-color: #28a745;
+	color: white;
+	border: none;
+	padding: 15px 30px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 18px;
+	font-weight: bold;
+	margin-top: 10px;
+}
+
+#ready-button:hover:not(:disabled) {
+	background-color: #218838;
+}
+
+#ready-button:active:not(:disabled) {
+	background-color: #1e7e34;
+}
+
+#ready-button:disabled {
+	background-color: #6c757d;
+	cursor: not-allowed;
+}
+
+#ready-button.ready {
+	background-color: #ffc107;
+	color: #212529;
+}
+
+#ready-button.ready:hover {
+	background-color: #e0a800;
+}

@@ -12,148 +12,20 @@ export class WebSocketManager {
 	private currentRoomId: string | null = null;
 	private isConnecting: boolean = false;
 	private connectionPromise: Promise<void> | null = null;
-	private messageCallbacks: Set<WebSocketMessageCallback> = new Set();
+	private messageCallback: WebSocketMessageCallback | null = null;
 
 	private constructor() {}
 
+	// getter
 	public static getInstance(): WebSocketManager {
 		if (!WebSocketManager.instance) {
-			console.log("WebSocketManager : new instance");
 			WebSocketManager.instance = new WebSocketManager();
-			return WebSocketManager.instance;
 		}
-		console.log("WebSocketManager : get instance");
 		return WebSocketManager.instance;
-	}
-
-	public addCallback(callback: WebSocketMessageCallback): void {
-		console.log("WebSocketManager : add callback");
-		this.messageCallbacks.add(callback);
-	}
-
-	public removeCallback(callback: WebSocketMessageCallback): void {
-		console.log("WebSocketManager : remove callback");
-		this.messageCallbacks.delete(callback);
-	}
-
-	private handleMessage(message: WebSocketMessage): void {
-		console.log("WebSocketManager : handle message");
-		this.messageCallbacks.forEach((callback) => {
-			try {
-				callback(message);
-			} catch (error) {
-				console.error("Message callback error:", error);
-			}
-		});
-	}
-
-	public async connect(roomId: string): Promise<void> {
-		const baseUrl = "wss://localhost:8080";
-
-		if (this.currentRoomId && this.currentRoomId !== roomId) {
-			console.log(
-				`異なるルームに接続しようとしています。現在: ${this.currentRoomId}, 新しい: ${roomId}`,
-			);
-			this.disconnect();
-		}
-
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			console.log("既存のWebSocket接続を切断します");
-			this.disconnect();
-		}
-
-		if (this.isConnecting && this.connectionPromise) {
-			console.log("既に接続中のため、既存のPromiseを返します");
-			return this.connectionPromise;
-		}
-
-		this.isConnecting = true;
-		const endpoint = `${baseUrl}/socket?room=${roomId}`;
-
-		this.connectionPromise = this.createConnection(endpoint);
-
-		try {
-			await this.connectionPromise;
-			this.currentRoomId = roomId; // 接続成功時にルームIDを設定
-			console.log(`ルーム ${roomId} に接続完了`);
-		} finally {
-			this.isConnecting = false;
-			this.connectionPromise = null;
-		}
-	}
-
-	private createConnection(endpoint: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const token = localStorage.getItem("accessToken");
-			if (!token) {
-				console.error("アクセストークンが見つかりません");
-				reject(new Error("アクセストークンが見つかりません"));
-				return;
-			}
-
-			const url = new URL(endpoint);
-			url.searchParams.set("token", token);
-			const finalUrl = url.toString();
-			this.ws = new WebSocket(finalUrl);
-
-			this.ws.onopen = () => {
-				console.log("WebSocket接続が確立されました");
-				resolve();
-			};
-
-			this.ws.onmessage = (event) => {
-				try {
-					const message: WebSocketMessage = JSON.parse(event.data); // backend にあっているのか
-					console.log("WebSocket message received:", message);
-					this.handleMessage(message);
-				} catch (error) {
-					console.error("メッセージの解析に失敗しました:", error);
-				}
-			};
-
-			this.ws.onclose = (event) => {
-				console.log("WebSocket接続が閉じられました:", event.code, event.reason);
-				this.ws = null;
-			};
-
-			this.ws.onerror = (error) => {
-				console.error("WebSocketエラー:", error);
-				reject(new Error("WebSocket接続エラー"));
-			};
-
-			// タイムアウト設定
-			setTimeout(() => {
-				if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-					console.error("WebSocket接続タイムアウト");
-					this.ws.close();
-					reject(new Error("WebSocket接続タイムアウト"));
-				}
-			}, 10000); // 10秒でタイムアウト
-		});
-	}
-
-	public sendMessage(message: WebSocketMessage): void {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(JSON.stringify(message));
-		} else {
-			console.error("WebSocketが接続されていません");
-		}
 	}
 
 	public isConnected(): boolean {
 		return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
-	}
-
-	public disconnect(): void {
-		// todo : 適切なものを考える 謎に呼ばれて消されている
-		// if (this.ws) {
-		// 	console.log("WebSocket接続を切断します");
-		// 	this.ws.close(1000, "正常終了");
-		// 	this.ws = null;
-		// }
-		// this.currentRoomId = null; // ルームIDもリセット
-		// this.messageCallbacks.clear(); // コールバックもクリア
-		// console.log("WebSocket接続とメッセージコールバックをクリアしました");
 	}
 
 	public getConnectionState(): string {
@@ -170,5 +42,180 @@ export class WebSocketManager {
 			default:
 				return "unknown";
 		}
+	}
+
+	public getCurrentRoomId(): string | null {
+		return this.currentRoomId;
+	}
+
+	// setter
+	public setCallback(callback: WebSocketMessageCallback): void {
+		this.messageCallback = callback;
+	}
+
+	// remover
+	public removeCallback(): void {
+		this.messageCallback = null;
+	}
+
+	// 各種 method
+	public sendMessage(message: WebSocketMessage): void {
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			this.ws.send(JSON.stringify(message));
+		} else {
+			console.error("WebSocketが接続されていません");
+		}
+	}
+
+	public async connect(roomId: string): Promise<void> {
+		// 既に同じルームに接続済みの場合は何もしない
+		if (this.isConnected() && this.currentRoomId === roomId) {
+			console.log(`Already connected to room ${roomId}`);
+			return;
+		}
+
+		// 既存の接続をチェックし、必要に応じて切断
+		this.handleExistingConnection(roomId);
+
+		// 既に接続中の場合は待機
+		if (this.isConnecting && this.connectionPromise) {
+			return this.connectionPromise;
+		}
+
+		// 新しい接続を開始
+		this.isConnecting = true;
+		const endpoint = this.buildWebSocketEndpoint(roomId);
+		this.connectionPromise = this.createConnection(endpoint);
+
+		try {
+			await this.connectionPromise;
+			this.currentRoomId = roomId;
+		} finally {
+			this.isConnecting = false;
+			this.connectionPromise = null;
+		}
+	}
+
+	public disconnect(): void {
+		if (this.ws) {
+			this.ws.close(1000, "正常終了");
+			this.ws = null;
+		}
+		this.currentRoomId = null;
+	}
+
+	public clearWsManager(): void {
+		this.disconnect();
+		this.removeCallback();
+		this.isConnecting = false;
+		this.connectionPromise = null;
+	}
+
+	// ------------------------------------------------------------
+	// private method
+	// ------------------------------------------------------------
+
+	// 接続前の状態チェック
+	private handleExistingConnection(roomId: string): void {
+		// 異なるルームに接続している場合は切断
+		if (this.currentRoomId && this.currentRoomId !== roomId) {
+			console.log(
+				`Disconnecting from room ${this.currentRoomId} to connect to ${roomId}`,
+			);
+			this.disconnect();
+		}
+
+		// 既存のWebSocket接続がある場合は切断
+		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+			console.log("Closing existing WebSocket connection");
+			this.disconnect();
+		}
+	}
+
+	// WebSocketエンドポイントの構築
+	private buildWebSocketEndpoint(roomId: string): string {
+		const baseUrl = "wss://localhost:8080";
+		return `${baseUrl}/socket?room=${roomId}`;
+	}
+
+	// アクセストークンの取得
+	private getAccessToken(): string | null {
+		const token = localStorage.getItem("accessToken");
+		if (!token) {
+			console.error("アクセストークンが見つかりません");
+		}
+		return token;
+	}
+
+	// WebSocket URLの構築
+	private buildWebSocketUrl(endpoint: string, token: string): string {
+		const url = new URL(endpoint);
+		url.searchParams.set("token", token);
+		return url.toString();
+	}
+
+	// WebSocketイベントハンドラーの設定
+	private setupWebSocketEventHandlers(
+		resolve: () => void,
+		reject: (error: Error) => void,
+	): void {
+		if (!this.ws) return;
+
+		this.ws.onopen = () => {
+			resolve();
+		};
+
+		this.ws.onmessage = (event) => {
+			// debug
+			console.log("WebSocketメッセージ:", event.data);
+			this.handleWebSocketMessage(event);
+		};
+
+		this.ws.onclose = (_event) => {
+			this.ws = null;
+		};
+
+		this.ws.onerror = (error) => {
+			console.error("WebSocketエラー:", error);
+			reject(new Error("WebSocket接続エラー"));
+		};
+	}
+
+	// WebSocketメッセージの処理
+	private handleWebSocketMessage(event: MessageEvent): void {
+		try {
+			const message: WebSocketMessage = JSON.parse(event.data);
+			if (this.messageCallback) {
+				this.messageCallback(message);
+			}
+		} catch (error) {
+			console.error("メッセージの解析に失敗しました:", error);
+		}
+	}
+
+	// 接続タイムアウトの設定
+	private setupConnectionTimeout(reject: (error: Error) => void): void {
+		setTimeout(() => {
+			if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+				this.ws.close();
+				reject(new Error("WebSocket接続タイムアウト"));
+			}
+		}, 10000);
+	}
+
+	private createConnection(endpoint: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const token = this.getAccessToken();
+			if (!token) {
+				reject(new Error("アクセストークンが見つかりません"));
+				return;
+			}
+
+			const finalUrl = this.buildWebSocketUrl(endpoint, token);
+			this.ws = new WebSocket(finalUrl);
+
+			this.setupWebSocketEventHandlers(resolve, reject);
+			this.setupConnectionTimeout(reject);
+		});
 	}
 }

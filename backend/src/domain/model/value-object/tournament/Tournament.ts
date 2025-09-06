@@ -7,6 +7,7 @@ export type TournamentId = string;
 export type TournamentType = "1on1" | "multi";
 
 export type WSTournamentData = {
+	status: TournamentStatus;
 	next_match_id: MatchId;
 	matches: Match[];
 	current_round: number;
