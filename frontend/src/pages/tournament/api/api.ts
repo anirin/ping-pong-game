@@ -12,6 +12,16 @@ export interface TournamentMatch {
 	winnerId: string | null;
 	status: string;
 	round: number;
+	player1Info?: {
+		id: string;
+		username: string;
+		avatar: string | null;
+	};
+	player2Info?: {
+		id: string;
+		username: string;
+		avatar: string | null;
+	};
 }
 export interface TournamentData {
 	status: string;

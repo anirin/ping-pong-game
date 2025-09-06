@@ -346,6 +346,8 @@ export class TournamentController {
 		}
 
 		try {
+			this.updateTournamentStatus();
+
 			if (this.tournamentData.status === "finished") {
 				await this.handleTournamentFinishedDisplay();
 				return;
@@ -367,20 +369,22 @@ export class TournamentController {
 		}
 
 		try {
-			// マッチ1の更新
 			this.updateMatchDisplay(this.match1, {
-				user1Id: "user-a-span",
-				user2Id: "user-b-span",
-				path1Id: "path-1",
-				path2Id: "path-2",
+				player1NameId: "player-name-1-1",
+				player2NameId: "player-name-1-2",
+				player1ScoreId: "player-score-1-1",
+				player2ScoreId: "player-score-1-2",
+				player1AvatarId: "player-avatar-1-1",
+				player2AvatarId: "player-avatar-1-2",
 			});
 
-			// マッチ2の更新
 			this.updateMatchDisplay(this.match2, {
-				user1Id: "user-c-span",
-				user2Id: "user-d-span",
-				path1Id: "path-3",
-				path2Id: "path-4",
+				player1NameId: "player-name-2-1",
+				player2NameId: "player-name-2-2",
+				player1ScoreId: "player-score-2-1",
+				player2ScoreId: "player-score-2-2",
+				player1AvatarId: "player-avatar-2-1",
+				player2AvatarId: "player-avatar-2-2",
 			});
 		} catch (error) {
 			console.error("round1マッチ表示の更新に失敗しました:", error);
@@ -390,62 +394,80 @@ export class TournamentController {
 	private updateMatchDisplay(
 		match: TournamentMatch,
 		elements: {
-			user1Id: string;
-			user2Id: string;
-			path1Id: string;
-			path2Id: string;
+			player1NameId: string;
+			player2NameId: string;
+			player1ScoreId: string;
+			player2ScoreId: string;
+			player1AvatarId: string;
+			player2AvatarId: string;
 		},
 	): void {
-		this.updateUserElement(elements.user1Id, match.player1Id, match.score1);
-		this.updateUserElement(elements.user2Id, match.player2Id, match.score2);
-		this.updateMatchPath(elements.path1Id, elements.path2Id, match);
+		this.updatePlayerElement(
+			elements.player1NameId,
+			elements.player1ScoreId,
+			elements.player1AvatarId,
+			match.player1Info || { username: match.player1Id, avatar: null },
+			match.score1
+		);
+
+		this.updatePlayerElement(
+			elements.player2NameId,
+			elements.player2ScoreId,
+			elements.player2AvatarId,
+			match.player2Info || { username: match.player2Id, avatar: null },
+			match.score2
+		);
 	}
 
-	private updateUserElement(
-		elementId: string,
-		userId: string,
-		score: number,
+	private updatePlayerElement(
+		nameId: string,
+		scoreId: string,
+		avatarId: string,
+		playerInfo: { username: string; avatar: string | null },
+		score: number
 	): void {
 		try {
-			const element = document.getElementById(elementId);
-			if (element) {
-				element.textContent = `${userId} (Score: ${score})`;
-			} else {
-				console.warn(`要素が見つかりません: ${elementId}`);
+			const nameElement = document.getElementById(nameId);
+			if (nameElement) {
+				nameElement.textContent = playerInfo.username;
+			}
+
+			const scoreElement = document.getElementById(scoreId);
+			if (scoreElement) {
+				scoreElement.textContent = (score ?? 0).toString();
+			}
+
+			const avatarElement = document.getElementById(avatarId) as HTMLImageElement;
+			if (avatarElement) {
+				const avatarUrl = playerInfo.avatar || "/default.png";
+				avatarElement.src = avatarUrl;
+				avatarElement.alt = `${playerInfo.username}'s avatar`;
 			}
 		} catch (error) {
-			console.error(`ユーザー要素の更新に失敗 (${elementId}):`, error);
+			console.error(`プレイヤー要素の更新に失敗 (${nameId}):`, error);
 		}
 	}
 
-	private updateMatchPath(
-		path1Id: string,
-		path2Id: string,
-		match: TournamentMatch,
-	): void {
+	private updateTournamentStatus(): void {
 		try {
-			const path1 = document.getElementById(path1Id) as unknown as SVGElement;
-			const path2 = document.getElementById(path2Id) as unknown as SVGElement;
-
-			if (!path1 || !path2) {
-				console.warn(`パス要素が見つかりません: ${path1Id}, ${path2Id}`);
-				return;
-			}
-
-			if (match.winnerId) {
-				if (match.winnerId === match.player1Id) {
-					path1.style.stroke = "red";
-					path2.style.stroke = "gray";
-				} else {
-					path1.style.stroke = "gray";
-					path2.style.stroke = "red";
+			const statusElement = document.getElementById("tournament-status");
+			if (statusElement && this.tournamentData) {
+				switch (this.tournamentData.status) {
+					case "waiting":
+						statusElement.textContent = "準備中";
+						break;
+					case "playing":
+						statusElement.textContent = "進行中";
+						break;
+					case "finished":
+						statusElement.textContent = "終了";
+						break;
+					default:
+						statusElement.textContent = this.tournamentData.status;
 				}
-			} else {
-				path1.style.stroke = "gray";
-				path2.style.stroke = "gray";
 			}
 		} catch (error) {
-			console.error(`マッチパスの更新に失敗 (${path1Id}, ${path2Id}):`, error);
+			console.error("トーナメントステータスの更新に失敗:", error);
 		}
 	}
 
@@ -473,7 +495,9 @@ export class TournamentController {
 			if (nextMatchSection && nextMatchRound && nextMatchPlayers) {
 				nextMatchSection.style.display = "block";
 				nextMatchRound.textContent = `${match.round}回戦`;
-				nextMatchPlayers.textContent = `${match.player1Id} vs ${match.player2Id}`;
+				const player1Name = match.player1Info?.username || match.player1Id;
+				const player2Name = match.player2Info?.username || match.player2Id;
+				nextMatchPlayers.textContent = `${player1Name} vs ${player2Name}`;
 
 				const goToMatchBtn = document.getElementById("go-to-match-btn");
 				if (goToMatchBtn) {
@@ -583,24 +607,12 @@ export class TournamentController {
 		}
 
 		try {
-			const winnerSection = document.createElement("div");
-			winnerSection.className = "winner-section";
-			winnerSection.innerHTML = `
-				<h2>🏆 トーナメント優勝者 🏆</h2>
-				<div class="winner-info">
-					<img src="${this.tournamentData.winner_id || "./src/pages/tournament/ui/avator.jpg"}" width="40" height="40">
-					<span>${this.tournamentData.winner_id}</span>
-				</div>
-			`;
+			const winnerSection = document.getElementById("winner-section");
+			const winnerName = document.getElementById("winner-name");
 
-			const existingWinner = document.querySelector(".winner-section");
-			if (existingWinner) {
-				existingWinner.remove();
-			}
-
-			const mainContainer = document.querySelector(".main");
-			if (mainContainer) {
-				mainContainer.appendChild(winnerSection);
+			if (winnerSection && winnerName) {
+				winnerSection.style.display = "block";
+				winnerName.textContent = this.tournamentData.winner_id;
 			}
 		} catch (error) {
 			console.error("勝利者表示の更新に失敗しました:", error);
