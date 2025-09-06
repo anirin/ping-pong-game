@@ -11,6 +11,7 @@ export class MatchHistory {
 	readonly score2: number;
 	readonly status: MatchStatus;
 	readonly winnerId: UserId | null;
+	readonly game_date: Date;
 
 	readonly opponentId: string;
 	readonly opponentName: string;
@@ -24,6 +25,7 @@ export class MatchHistory {
 		score2: number;
 		status: MatchStatus;
 		winnerId: UserId | null;
+		game_date: Date;
 		opponentId: string;
 		opponentName: string;
 		opponentAvatarUrl: string;
@@ -34,6 +36,7 @@ export class MatchHistory {
 		this.status = props.status;
 		this.score1 = props.score1;
 		this.score2 = props.score2;
+		this.game_date = props.game_date;
 		this.winnerId = props.winnerId;
 		this.opponentId = props.opponentId;
 		this.opponentName = props.opponentName;
@@ -47,6 +50,7 @@ export class MatchHistory {
 			score1: Number(raw.score1),
 			score2: Number(raw.score2),
 			status: String(raw.status) as MatchStatus,
+			game_date: new Date(raw.game_date),
 			winnerId: String(raw.winnerId),
 			opponentId: String(raw.opponentId),
 			opponentName: String(raw.opponentName),

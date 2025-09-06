@@ -91,6 +91,20 @@ export async function mountProfile(
 		let result = "loss";
 		if (match.winnerId === userId) result = "win";
 
+		const dateText = (() => {
+			if (!match.game_date) return "";
+			const d = new Date(match.game_date);
+
+			return d.toLocaleString("ja-JP", {
+				year: "numeric",
+				month: "2-digit",
+				day: "2-digit",
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			});
+		})();
+
 		const info = document.createElement("div");
 		info.className = "user-info";
 
@@ -103,6 +117,10 @@ export async function mountProfile(
 			nameEl.textContent = displayName;
 		} else nameEl.textContent = `${match.opponentName}`;
 
+		const dateEl = document.createElement("p");
+		dateEl.className = "match-date";
+		dateEl.textContent = dateText;
+
 		const resultEl = document.createElement("span");
 		resultEl.className = `match-result ${result}`;
 		if (result === "win") result = "勝ち";
@@ -113,6 +131,7 @@ export async function mountProfile(
 		scoreEl.className = "match-score";
 		scoreEl.textContent = `${yourScore} - ${oppScore}`;
 		info.appendChild(nameEl);
+		if (dateText) info.appendChild(dateEl);
 		info.append(resultEl);
 		info.appendChild(scoreEl);
 

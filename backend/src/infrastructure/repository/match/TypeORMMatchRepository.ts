@@ -77,12 +77,13 @@ export class TypeORMMatchRepository implements MatchRepository {
 				"m.score2 AS score2",
 				"m.status AS status",
 				"m.winnerId AS winnerId",
+				"m.created_at AS game_date",
 				`CASE WHEN m.player1 = :uid THEN u2.id ELSE u1.id END AS opponentId`,
 				`CASE WHEN m.player1 = :uid THEN u2.username ELSE u1.username END AS opponentName`,
 				`CASE WHEN m.player1 = :uid THEN u2.avatar_url ELSE u1.avatar_url END AS opponentAvatarUrl`,
 			])
 			.setParameter("uid", userId)
-			.orderBy("m.id", "DESC")
+			.orderBy("m.created_at", "DESC")
 			.getRawMany();
 
 		return rows.map((r: any) => MatchHistory.fromRaw(r, String(userId)));

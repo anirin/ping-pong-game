@@ -15,6 +15,7 @@ export type User = {
 	score2: number;
 	status: string;
 	winnerId: string | null;
+	game_date: string | null;
 	opponentId: string;
 	opponentName: string;
 	opponentAvatarUrl: string;
