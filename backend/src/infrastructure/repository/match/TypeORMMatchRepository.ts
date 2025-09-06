@@ -41,7 +41,7 @@ export class TypeORMMatchRepository implements MatchRepository {
 	private toDomain(entity: MatchEntity): Match {
 		const matchRule = new MatchRule(
 			4, // pointToWin: 勝利ポイントを5に変更
-			{ vx: 3, vy: 3 }, // initialBallSpeed: ボールスピードを遅くする（7→3）
+			{ vx: 1.5, vy: 1.5 }, // initialBallSpeed: ボールスピードを半分に（3→1.5）
 			{ width: 800, height: 600 }, // fieldSize: デフォルト値
 		);
 
