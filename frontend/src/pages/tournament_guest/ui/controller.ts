@@ -114,18 +114,12 @@ class GuestTournamentController {
 		
 		this.updateTournamentDisplay();
 		this.setupEventListeners();
+		
+		// トーナメントを自動的に開始
+		this.startTournament();
 	}
 
 	private setupEventListeners(): void {
-		// トーナメント開始ボタン
-		const startTournamentBtn = document.getElementById("start-tournament-btn");
-		if (startTournamentBtn) {
-			startTournamentBtn.addEventListener("click", () => {
-				this.startTournament();
-				startTournamentBtn.style.display = "none"; // ボタンを非表示
-			});
-		}
-
 		// マッチ開始ボタン
 		const goToMatchBtn = document.getElementById("go-to-match-btn");
 		if (goToMatchBtn) {
@@ -323,6 +317,11 @@ class GuestTournamentController {
 
 			this.showWinner(winner);
 			this.updateTournamentStatus("完了");
+			
+			// 3秒後にlobbyに戻る
+			setTimeout(() => {
+				this.returnToLobby();
+			}, 3000);
 		}
 	}
 
@@ -394,16 +393,22 @@ class GuestTournamentController {
 			console.log("次のマッチインデックス:", this.currentMatchIndex);
 			console.log("マッチ数:", this.tournamentData.matches.length);
 			
-			// すべてのマッチが完了したかチェック
-			if (this.currentMatchIndex >= this.tournamentData.matches.length) {
+		// すべてのマッチが完了したかチェック
+		if (this.currentMatchIndex >= this.tournamentData.matches.length) {
+			// 決勝戦が完了したかチェック
+			if (this.tournamentData.currentRound === 2) {
+				console.log("決勝戦が完了しました！トーナメント完了");
+				this.completeTournament();
+			} else {
 				console.log("決勝戦の準備を開始します");
 				// 決勝戦の準備
 				this.prepareFinalMatch();
-			} else {
-				console.log("次のマッチの準備を開始します");
-				// 次のマッチの準備
-				this.updateNextMatchInfo();
 			}
+		} else {
+			console.log("次のマッチの準備を開始します");
+			// 次のマッチの準備
+			this.updateNextMatchInfo();
+		}
 		} else {
 			console.log("マッチがまだ完了していません。現在のマッチを継続します。");
 		}
@@ -453,6 +458,16 @@ class GuestTournamentController {
 
 			this.updateMatchDisplay();
 		}
+	}
+
+	private returnToLobby(): void {
+		console.log("トーナメント完了！lobbyに戻ります");
+		
+		// 状態管理マネージャーを完全にクリア
+		this.stateManager.clearState();
+		
+		// lobbyに戻る
+		navigate("/lobby_guest");
 	}
 
 	public destroy(): void {

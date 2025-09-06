@@ -187,8 +187,6 @@ export class GuestMatchController {
 		// ボタンイベント
 		const upButton = document.getElementById("button-up");
 		const downButton = document.getElementById("button-down");
-		const readyButton = document.getElementById("ready-button");
-
 		if (upButton) {
 			upButton.addEventListener("mousedown", () => this.startMoving("up"));
 			upButton.addEventListener("mouseup", () => this.stopMoving("up"));
@@ -199,10 +197,6 @@ export class GuestMatchController {
 			downButton.addEventListener("mousedown", () => this.startMoving("down"));
 			downButton.addEventListener("mouseup", () => this.stopMoving("down"));
 			downButton.addEventListener("mouseleave", () => this.stopMoving("down"));
-		}
-
-		if (readyButton) {
-			readyButton.addEventListener("click", () => this.toggleReady());
 		}
 	}
 
@@ -244,35 +238,11 @@ export class GuestMatchController {
 		}
 	}
 
-	private toggleReady(): void {
-		const readyButton = document.getElementById("ready-button");
-		if (!readyButton) return;
-
-		if (readyButton.disabled) {
-			// Ready状態に変更
-			readyButton.disabled = false;
-			readyButton.textContent = "Ready";
-			readyButton.classList.add("ready");
-			this.startGame();
-		} else {
-			// ゲーム開始
-			this.gameState.gameStatus = "playing";
-			this.updateGameStatus("Game in progress...");
-			readyButton.style.display = "none";
-			this.startGameLoop();
-		}
-	}
 
 	private startGame(): void {
 		// ゲストモードでは即座にゲームを開始
 		this.gameState.gameStatus = "playing";
 		this.updateGameStatus("Game in progress...");
-		
-		const readyButton = document.getElementById("ready-button");
-		if (readyButton) {
-			readyButton.style.display = "none";
-		}
-
 		this.startGameLoop();
 	}
 
