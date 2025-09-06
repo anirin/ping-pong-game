@@ -16,11 +16,11 @@ const CONSTANTS = {
 
 const KEY_BINDINGS = {
 	// プレイヤー1（左側）の操作
-	PLAYER1_UP: ["ArrowUp", "w"],
-	PLAYER1_DOWN: ["ArrowDown", "s"],
+	PLAYER1_UP: ["ArrowUp", "w"] as const,
+	PLAYER1_DOWN: ["ArrowDown", "s"] as const,
 	// プレイヤー2（右側）の操作
-	PLAYER2_UP: ["ArrowLeft", "a"],
-	PLAYER2_DOWN: ["ArrowRight", "d"],
+	PLAYER2_UP: ["ArrowLeft", "a"] as const,
+	PLAYER2_DOWN: ["ArrowRight", "d"] as const,
 } as const;
 
 interface GuestMatchState {
@@ -43,7 +43,6 @@ export class GuestMatchController {
 	private round: number = 1;
 	private animationFrameId: number | null = null;
 	private gameState: GuestMatchState;
-	private myPlayerNumber: "player1" | "player2" = "player1";
 	// プレイヤー1の操作状態
 	private player1MovingUp: boolean = false;
 	private player1MovingDown: boolean = false;
@@ -53,7 +52,7 @@ export class GuestMatchController {
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private isDestroyed: boolean = false;
-	private gameLoopInterval: number | null = null;
+	private gameLoopInterval: ReturnType<typeof setInterval> | null = null;
 
 	constructor(params?: { [key: string]: string }) {
 		console.log("GuestMatchController constructor", params);
@@ -211,18 +210,18 @@ export class GuestMatchController {
 
 	private handleKeyDown(event: KeyboardEvent): void {
 		// プレイヤー1の操作
-		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key)) {
+		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key as "ArrowUp" | "w")) {
 			event.preventDefault();
 			this.player1MovingUp = true;
-		} else if (KEY_BINDINGS.PLAYER1_DOWN.includes(event.key)) {
+		} else if (KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")) {
 			event.preventDefault();
 			this.player1MovingDown = true;
 		}
 		// プレイヤー2の操作
-		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key)) {
+		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key as "ArrowLeft" | "a")) {
 			event.preventDefault();
 			this.player2MovingUp = true;
-		} else if (KEY_BINDINGS.PLAYER2_DOWN.includes(event.key)) {
+		} else if (KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")) {
 			event.preventDefault();
 			this.player2MovingDown = true;
 		}
@@ -230,20 +229,36 @@ export class GuestMatchController {
 
 	private handleKeyUp(event: KeyboardEvent): void {
 		// プレイヤー1の操作
-		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key)) {
+		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key as "ArrowUp" | "w")) {
 			event.preventDefault();
 			this.player1MovingUp = false;
-		} else if (KEY_BINDINGS.PLAYER1_DOWN.includes(event.key)) {
+		} else if (KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")) {
 			event.preventDefault();
 			this.player1MovingDown = false;
 		}
 		// プレイヤー2の操作
-		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key)) {
+		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key as "ArrowLeft" | "a")) {
 			event.preventDefault();
 			this.player2MovingUp = false;
-		} else if (KEY_BINDINGS.PLAYER2_DOWN.includes(event.key)) {
+		} else if (KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")) {
 			event.preventDefault();
 			this.player2MovingDown = false;
+		}
+	}
+
+	private startMoving(direction: "up" | "down"): void {
+		if (direction === "up") {
+			this.player1MovingUp = true;
+		} else if (direction === "down") {
+			this.player1MovingDown = true;
+		}
+	}
+
+	private stopMoving(direction: "up" | "down"): void {
+		if (direction === "up") {
+			this.player1MovingUp = false;
+		} else if (direction === "down") {
+			this.player1MovingDown = false;
 		}
 	}
 
