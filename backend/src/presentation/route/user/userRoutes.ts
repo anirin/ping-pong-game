@@ -3,6 +3,7 @@ import { AppDataSource } from "@infrastructure/data-source.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import type { FastifyInstance } from "fastify";
 
+// todo : infra は application に押し込める
 export async function registerUserRoutes(app: FastifyInstance) {
 	const userRepository = new TypeOrmUserRepository(
 		AppDataSource.getRepository("UserEntity"),
