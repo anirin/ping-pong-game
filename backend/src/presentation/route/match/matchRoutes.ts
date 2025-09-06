@@ -1,9 +1,20 @@
+import { MatchRoutesService } from "@application/services/match/MatchRotesService.js";
 import { MatchService } from "@application/services/match/MatchService.js";
+import { Match } from "@domain/model/entity/match/Match.js";
+import type { MatchHistory } from "@domain/model/entity/match/MatchHistory.js";
+import { AppDataSource } from "@infrastructure/data-source.js";
+import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
+import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import type {
 	MatchIncomingMsg,
 	MatchOutgoingMsg,
 } from "@presentation/websocket/match/match-msg.js";
+import type { FastifyInstance } from "fastify";
+import jwt from "jsonwebtoken";
+import type { Repository } from "typeorm";
 import type { WebSocketContext } from "../../websocket/ws-manager.js";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
 // 重複リクエストを防ぐためのMap
 const pendingStartRequests = new Set<string>();
@@ -124,4 +135,38 @@ export async function MatchWSHandler(
 			},
 		};
 	}
+}
+
+export async function registerMatchRoutes(app: FastifyInstance) {
+	const matchRepository = new TypeORMMatchRepository(
+		AppDataSource.getRepository(MatchEntity),
+	);
+	const matchService = new MatchRoutesService(matchRepository);
+
+	app.get<{
+		Params: { id: string };
+	}>("/match", async (request, reply) => {
+		const { id: friendId } = request.params;
+		const authHeader = request.headers["authorization"];
+
+		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+			return reply.status(401).send({ error: "Token required" });
+		}
+
+		const token = authHeader.split(" ")[1]!;
+		let userId: string;
+		const payload = jwt.verify(token, JWT_SECRET) as { id: string };
+		userId = payload.id || "";
+		if (!userId) {
+			return reply.status(403).send({ error: "Invalid Token" });
+		}
+		try {
+			const match: MatchHistory[] | null =
+				await matchService.getMatchList(userId);
+			// friendがいない時に404を返すより、何も表示しないことにしました。
+			return reply.status(200).send(match);
+		} catch (error: any) {
+			return reply.status(500).send({ error: error.message });
+		}
+	});
 }

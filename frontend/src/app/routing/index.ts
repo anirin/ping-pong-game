@@ -14,6 +14,7 @@ import { renderGuestTournamentPage } from "@pages/tournament_guest";
 import { isLoggedIn } from "@/app/auth";
 import { renderFriendListPage } from "@/pages/friends";
 import { renderMatchPage } from "@/pages/match";
+import { renderProfilePage } from "@/pages/profile";
 import { WebSocketManager } from "@/shared/websocket/WebSocketManager";
 
 let currentCleanup: (() => void) | null = null;
@@ -82,6 +83,10 @@ const routes: Route[] = [
 	{
 		path: "/friend/:id",
 		handler: renderFriendProfilePage,
+	},
+	{
+		path: "/profile",
+		handler: renderProfilePage,
 	},
 	{
 		path: "/rooms/:roomId",
