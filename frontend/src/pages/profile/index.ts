@@ -5,8 +5,7 @@ import { mountProfile } from "./ui/controller";
 import html from "./ui/profile.html?raw";
 
 export function renderProfilePage() {
-	const app = document.getElementById("app");
-	app.innerHTML = html;
+	const app = document.getElementById("app")!;
 
 	const headerHost = app?.querySelector("#header-widget") as HTMLElement;
 	HeaderWidget(headerHost);
