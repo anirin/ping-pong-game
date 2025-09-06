@@ -213,7 +213,9 @@ export class GuestMatchController {
 		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key as "ArrowUp" | "w")) {
 			event.preventDefault();
 			this.player1MovingUp = true;
-		} else if (KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")) {
+		} else if (
+			KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")
+		) {
 			event.preventDefault();
 			this.player1MovingDown = true;
 		}
@@ -221,7 +223,9 @@ export class GuestMatchController {
 		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key as "ArrowLeft" | "a")) {
 			event.preventDefault();
 			this.player2MovingUp = true;
-		} else if (KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")) {
+		} else if (
+			KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")
+		) {
 			event.preventDefault();
 			this.player2MovingDown = true;
 		}
@@ -232,7 +236,9 @@ export class GuestMatchController {
 		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key as "ArrowUp" | "w")) {
 			event.preventDefault();
 			this.player1MovingUp = false;
-		} else if (KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")) {
+		} else if (
+			KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")
+		) {
 			event.preventDefault();
 			this.player1MovingDown = false;
 		}
@@ -240,7 +246,9 @@ export class GuestMatchController {
 		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key as "ArrowLeft" | "a")) {
 			event.preventDefault();
 			this.player2MovingUp = false;
-		} else if (KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")) {
+		} else if (
+			KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")
+		) {
 			event.preventDefault();
 			this.player2MovingDown = false;
 		}
