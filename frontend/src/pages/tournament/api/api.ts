@@ -12,6 +12,16 @@ export interface TournamentMatch {
 	winnerId: string | null;
 	status: string;
 	round: number;
+	player1Info?: {
+		id: string;
+		username: string;
+		avatar: string | null;
+	};
+	player2Info?: {
+		id: string;
+		username: string;
+		avatar: string | null;
+	};
 }
 export interface TournamentData {
 	status: string;
@@ -107,6 +117,15 @@ export class TournamentAPI {
 			console.log("TournamentAPI: Force lobby", message.data);
 			if (this.controllerCallback) {
 				this.controllerCallback(message.data, "force_lobby");
+			}
+			return;
+		}
+
+		if (message.status === "Match" && message.data?.type === "match_finished") {
+			// マッチ終了の通知
+			console.log("TournamentAPI: Match finished", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "match_finished");
 			}
 			return;
 		}
