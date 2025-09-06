@@ -306,7 +306,8 @@ class GuestTournamentController {
 	private completeTournament(): void {
 		if (!this.tournamentData) return;
 
-		const finalMatch = this.tournamentData.matches[2]; // 決勝戦
+		// 決勝戦を探す（round: 2のマッチ）
+		const finalMatch = this.tournamentData.matches.find(match => match.round === 2);
 		if (finalMatch) {
 			const winner = this.determineMatchWinner(finalMatch);
 			this.tournamentData.winner = winner;
@@ -390,25 +391,32 @@ class GuestTournamentController {
 			// 状態管理マネージャーを更新
 			this.stateManager.advanceToNextMatch();
 			
+			// 状態管理マネージャーから最新の状態を取得
+			const updatedData = this.stateManager.getTournamentData();
+			if (updatedData) {
+				this.tournamentData = updatedData;
+				this.currentMatchIndex = this.stateManager.getCurrentMatchIndex();
+			}
+			
 			console.log("次のマッチインデックス:", this.currentMatchIndex);
 			console.log("マッチ数:", this.tournamentData.matches.length);
 			
-		// すべてのマッチが完了したかチェック
-		if (this.currentMatchIndex >= this.tournamentData.matches.length) {
-			// 決勝戦が完了したかチェック
-			if (this.tournamentData.currentRound === 2) {
-				console.log("決勝戦が完了しました！トーナメント完了");
-				this.completeTournament();
+			// すべてのマッチが完了したかチェック
+			if (this.currentMatchIndex >= this.tournamentData.matches.length) {
+				// 決勝戦が完了したかチェック
+				if (this.tournamentData.currentRound === 2) {
+					console.log("決勝戦が完了しました！トーナメント完了");
+					this.completeTournament();
+				} else {
+					console.log("決勝戦の準備を開始します");
+					// 決勝戦の準備
+					this.prepareFinalMatch();
+				}
 			} else {
-				console.log("決勝戦の準備を開始します");
-				// 決勝戦の準備
-				this.prepareFinalMatch();
+				console.log("次のマッチの準備を開始します");
+				// 次のマッチの準備
+				this.updateNextMatchInfo();
 			}
-		} else {
-			console.log("次のマッチの準備を開始します");
-			// 次のマッチの準備
-			this.updateNextMatchInfo();
-		}
 		} else {
 			console.log("マッチがまだ完了していません。現在のマッチを継続します。");
 		}
@@ -422,26 +430,18 @@ class GuestTournamentController {
 		const match1Winner = this.determineMatchWinner(this.tournamentData.matches[0]);
 		const match2Winner = this.determineMatchWinner(this.tournamentData.matches[1]);
 
-		// 状態管理マネージャーで決勝戦を追加
+		// 状態管理マネージャーで決勝戦を追加（これがローカルの状態も更新する）
 		this.stateManager.addFinalMatch(match1Winner, match2Winner);
 		
-		// ローカルの状態も更新
-		const finalMatch: GuestTournamentMatch = {
-			id: "final-match",
-			round: 2,
-			player1: match1Winner,
-			player2: match2Winner,
-			score1: 0,
-			score2: 0,
-			status: "waiting",
-		};
-
-		this.tournamentData.matches.push(finalMatch);
-		this.tournamentData.currentRound = 2;
-		this.currentMatchIndex = 2; // 決勝戦のインデックス
+		// 状態管理マネージャーから更新されたデータを取得
+		this.tournamentData = this.stateManager.getTournamentData();
+		this.currentMatchIndex = this.stateManager.getCurrentMatchIndex();
 
 		// 決勝戦の表示を更新
-		this.updateFinalMatchDisplay(finalMatch);
+		const finalMatch = this.tournamentData?.matches.find(match => match.round === 2);
+		if (finalMatch) {
+			this.updateFinalMatchDisplay(finalMatch);
+		}
 		this.updateNextMatchInfo();
 	}
 

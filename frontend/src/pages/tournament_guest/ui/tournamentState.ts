@@ -110,6 +110,13 @@ class TournamentStateManager {
 			return;
 		}
 
+		// 既に決勝戦が存在するかチェック
+		const existingFinalMatch = this.state.data.matches.find(match => match.round === 2);
+		if (existingFinalMatch) {
+			console.log("決勝戦は既に存在します:", existingFinalMatch);
+			return;
+		}
+
 		const finalMatch: GuestTournamentMatch = {
 			id: "final-match",
 			round: 2,
@@ -122,8 +129,11 @@ class TournamentStateManager {
 
 		this.state.data.matches.push(finalMatch);
 		this.state.data.currentRound = 2;
-		this.state.currentMatchIndex = 2;
+		// 決勝戦のインデックスは配列の最後の要素
+		this.state.currentMatchIndex = this.state.data.matches.length - 1;
 		console.log("決勝戦を追加:", finalMatch);
+		console.log("決勝戦のインデックス:", this.state.currentMatchIndex);
+		console.log("現在のマッチ数:", this.state.data.matches.length);
 	}
 
 	// トーナメントを完了
