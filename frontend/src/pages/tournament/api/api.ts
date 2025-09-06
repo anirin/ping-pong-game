@@ -102,6 +102,15 @@ export class TournamentAPI {
 			return;
 		}
 
+		if (message.status === "Room" && message.data?.action === "FORCE_LOBBY") {
+			// 強制的にlobbyに戻す通知
+			console.log("TournamentAPI: Force lobby", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "force_lobby");
+			}
+			return;
+		}
+
 		if (message.status !== "Tournament") {
 			return;
 		}
