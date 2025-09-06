@@ -19,7 +19,7 @@ function decodeJwt(token: string): any {
 
 export async function mountProfile(
 	root: HTMLElement,
-	navigate: (path: string) => void,
+	navigate: (path: string) => void
 ) {
 	const token = localStorage.getItem("accessToken");
 	if (!token) {
