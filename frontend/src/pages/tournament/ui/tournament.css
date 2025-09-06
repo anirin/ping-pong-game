@@ -51,14 +51,27 @@
 .tournament-matches {
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 30px;
 }
 
-.match-section h3 {
+.round-section h3 {
+	margin-top: 0;
+	margin-bottom: 20px;
+	font-size: 20px;
+	color: #333;
+	border-bottom: 2px solid #007bff;
+	padding-bottom: 10px;
+}
+
+.match-section {
+	margin-bottom: 20px;
+}
+
+.match-section h4 {
 	margin-top: 0;
 	margin-bottom: 15px;
-	font-size: 18px;
-	color: #333;
+	font-size: 16px;
+	color: #666;
 	border-bottom: 1px solid #eee;
 	padding-bottom: 8px;
 }

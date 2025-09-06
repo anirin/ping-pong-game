@@ -150,6 +150,13 @@ export class TournamentController {
 						console.error("トーナメント表示の更新に失敗:", error);
 					});
 					break;
+				case "match_finished":
+					console.log("TournamentController: マッチ終了を受信");
+					this.updateLocalData();
+					this.updateTournamentDisplay().catch((error) => {
+						console.error("トーナメント表示の更新に失敗:", error);
+					});
+					break;
 				case "navigate_to_match":
 					console.log(
 						"TournamentController: マッチへのナビゲーションを受信",
@@ -355,6 +362,7 @@ export class TournamentController {
 
 			await Promise.all([
 				this.updateRound1Matches(),
+				this.updateRound2Matches(),
 				this.updateNextMatchInfo(),
 				this.updateWinnerDisplay(),
 			]);
@@ -369,6 +377,22 @@ export class TournamentController {
 		}
 
 		try {
+			console.log("Match 1 data:", {
+				id: this.match1.id,
+				score1: this.match1.score1,
+				score2: this.match1.score2,
+				status: this.match1.status,
+				winnerId: this.match1.winnerId
+			});
+
+			console.log("Match 2 data:", {
+				id: this.match2.id,
+				score1: this.match2.score1,
+				score2: this.match2.score2,
+				status: this.match2.status,
+				winnerId: this.match2.winnerId
+			});
+
 			this.updateMatchDisplay(this.match1, {
 				player1NameId: "player-name-1-1",
 				player2NameId: "player-name-1-2",
@@ -388,6 +412,33 @@ export class TournamentController {
 			});
 		} catch (error) {
 			console.error("round1マッチ表示の更新に失敗しました:", error);
+		}
+	}
+
+	private async updateRound2Matches(): Promise<void> {
+		if (!this.tournamentData || this.isDestroyed) {
+			return;
+		}
+
+		try {
+			const finalMatch = this.tournamentData.matches.find(match => match.round === 2);
+			if (finalMatch) {
+				const round2Section = document.getElementById("round-2-section");
+				if (round2Section) {
+					round2Section.style.display = "block";
+				}
+
+				this.updateMatchDisplay(finalMatch, {
+					player1NameId: "player-name-final-1",
+					player2NameId: "player-name-final-2",
+					player1ScoreId: "player-score-final-1",
+					player2ScoreId: "player-score-final-2",
+					player1AvatarId: "player-avatar-final-1",
+					player2AvatarId: "player-avatar-final-2",
+				});
+			}
+		} catch (error) {
+			console.error("round2マッチ表示の更新に失敗しました:", error);
 		}
 	}
 
@@ -434,7 +485,9 @@ export class TournamentController {
 
 			const scoreElement = document.getElementById(scoreId);
 			if (scoreElement) {
-				scoreElement.textContent = (score ?? 0).toString();
+				// scoreがundefinedの場合は0を表示
+				const displayScore = score !== undefined ? score : 0;
+				scoreElement.textContent = displayScore.toString();
 			}
 
 			const avatarElement = document.getElementById(avatarId) as HTMLImageElement;

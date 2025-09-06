@@ -292,8 +292,11 @@ export class TournamentService {
 					const player1 = await this.userRepository.findById(match.player1Id);
 					const player2 = await this.userRepository.findById(match.player2Id);
 
+					// マッチオブジェクトを正しくシリアライズ
+					const serializedMatch = match.toJSON ? match.toJSON() : match;
+
 					return {
-						...match,
+						...serializedMatch,
 						player1Info: {
 							id: match.player1Id,
 							username: player1?.username?.value || "Unknown Player",
@@ -307,8 +310,9 @@ export class TournamentService {
 					};
 				} catch (error) {
 					console.error(`Failed to enrich match ${match.id} with player info:`, error);
+					const serializedMatch = match.toJSON ? match.toJSON() : match;
 					return {
-						...match,
+						...serializedMatch,
 						player1Info: {
 							id: match.player1Id,
 							username: "Unknown Player",

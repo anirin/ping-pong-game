@@ -121,6 +121,15 @@ export class TournamentAPI {
 			return;
 		}
 
+		if (message.status === "Match" && message.data?.type === "match_finished") {
+			// マッチ終了の通知
+			console.log("TournamentAPI: Match finished", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "match_finished");
+			}
+			return;
+		}
+
 		if (message.status !== "Tournament") {
 			return;
 		}
