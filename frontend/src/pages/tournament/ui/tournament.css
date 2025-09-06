@@ -206,16 +206,16 @@
 	.content-body {
 		padding: 15px 20px;
 	}
-	
+
 	.tournament-widget-container {
 		padding: 20px;
 	}
-	
+
 	.match-info {
 		flex-direction: column;
 		gap: 15px;
 	}
-	
+
 	.vs {
 		order: -1;
 	}

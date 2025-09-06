@@ -247,7 +247,9 @@ export class TournamentService {
 			);
 
 			if (tournament.status === "finished") {
-				const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(tournament.matches);
+				const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(
+					tournament.matches,
+				);
 				return {
 					status: tournament.status,
 					next_match_id: "",
@@ -271,7 +273,9 @@ export class TournamentService {
 			tournament.currentRound = currentRound;
 
 			const nextMatch = tournament.getNextMatch();
-			const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(tournament.matches);
+			const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(
+				tournament.matches,
+			);
 
 			return {
 				status: tournament.status,
@@ -309,7 +313,10 @@ export class TournamentService {
 						},
 					};
 				} catch (error) {
-					console.error(`Failed to enrich match ${match.id} with player info:`, error);
+					console.error(
+						`Failed to enrich match ${match.id} with player info:`,
+						error,
+					);
 					const serializedMatch = match.toJSON ? match.toJSON() : match;
 					return {
 						...serializedMatch,
@@ -325,7 +332,7 @@ export class TournamentService {
 						},
 					};
 				}
-			})
+			}),
 		);
 
 		return enrichedMatches;

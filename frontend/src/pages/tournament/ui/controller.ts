@@ -382,7 +382,7 @@ export class TournamentController {
 				score1: this.match1.score1,
 				score2: this.match1.score2,
 				status: this.match1.status,
-				winnerId: this.match1.winnerId
+				winnerId: this.match1.winnerId,
 			});
 
 			console.log("Match 2 data:", {
@@ -390,7 +390,7 @@ export class TournamentController {
 				score1: this.match2.score1,
 				score2: this.match2.score2,
 				status: this.match2.status,
-				winnerId: this.match2.winnerId
+				winnerId: this.match2.winnerId,
 			});
 
 			this.updateMatchDisplay(this.match1, {
@@ -421,7 +421,9 @@ export class TournamentController {
 		}
 
 		try {
-			const finalMatch = this.tournamentData.matches.find(match => match.round === 2);
+			const finalMatch = this.tournamentData.matches.find(
+				(match) => match.round === 2,
+			);
 			if (finalMatch) {
 				const round2Section = document.getElementById("round-2-section");
 				if (round2Section) {
@@ -458,7 +460,7 @@ export class TournamentController {
 			elements.player1ScoreId,
 			elements.player1AvatarId,
 			match.player1Info || { username: match.player1Id, avatar: null },
-			match.score1
+			match.score1,
 		);
 
 		this.updatePlayerElement(
@@ -466,7 +468,7 @@ export class TournamentController {
 			elements.player2ScoreId,
 			elements.player2AvatarId,
 			match.player2Info || { username: match.player2Id, avatar: null },
-			match.score2
+			match.score2,
 		);
 	}
 
@@ -475,7 +477,7 @@ export class TournamentController {
 		scoreId: string,
 		avatarId: string,
 		playerInfo: { username: string; avatar: string | null },
-		score: number
+		score: number,
 	): void {
 		try {
 			const nameElement = document.getElementById(nameId);
@@ -490,7 +492,9 @@ export class TournamentController {
 				scoreElement.textContent = displayScore.toString();
 			}
 
-			const avatarElement = document.getElementById(avatarId) as HTMLImageElement;
+			const avatarElement = document.getElementById(
+				avatarId,
+			) as HTMLImageElement;
 			if (avatarElement) {
 				const avatarUrl = playerInfo.avatar || "/default.png";
 				avatarElement.src = avatarUrl;
