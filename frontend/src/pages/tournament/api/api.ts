@@ -92,7 +92,7 @@ export class TournamentAPI {
 
 	private handleMessage(message: WebSocketMessage): void {
 		console.log("TournamentAPI received message:", message);
-		
+
 		if (message.status === "Room" && message.data?.action === "DELETE") {
 			// ルーム削除の通知
 			console.log("TournamentAPI: Room deleted", message.data);
@@ -101,7 +101,7 @@ export class TournamentAPI {
 			}
 			return;
 		}
-		
+
 		if (message.status !== "Tournament") {
 			return;
 		}

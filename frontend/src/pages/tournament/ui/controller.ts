@@ -29,10 +29,10 @@ export class TournamentController {
 	private async initialize(): Promise<void> {
 		// WebSocket接続を確認し、必要に応じて再接続
 		await this.ensureWebSocketConnection();
-		
+
 		// 少し待ってからトーナメントデータを取得
-		await new Promise(resolve => setTimeout(resolve, 500));
-		
+		await new Promise((resolve) => setTimeout(resolve, 500));
+
 		this.tournamentAPI.getTournamentData();
 		await this.waitForTournamentData();
 		this.updateTournamentDisplay();
@@ -41,7 +41,7 @@ export class TournamentController {
 	// WebSocket接続を確保する（必要に応じて再接続）
 	private async ensureWebSocketConnection(): Promise<void> {
 		const wsManager = this.tournamentAPI["wsManager"];
-		
+
 		// roomIdが取得できない場合はエラー
 		if (!this.roomId) {
 			throw new Error("Room ID is required for tournament page");
@@ -53,13 +53,16 @@ export class TournamentController {
 		}
 
 		// 既に同じルームに接続済みの場合は何もしない
-		if (wsManager.isConnected() && wsManager.getCurrentRoomId() === this.roomId) {
+		if (
+			wsManager.isConnected() &&
+			wsManager.getCurrentRoomId() === this.roomId
+		) {
 			console.log(`Already connected to room ${this.roomId} for tournament`);
 			return;
 		}
 
 		console.log(`Connecting to room ${this.roomId} for tournament`);
-		
+
 		try {
 			await wsManager.connect(this.roomId);
 			console.log("WebSocket connection established for tournament");
@@ -68,7 +71,6 @@ export class TournamentController {
 			throw error;
 		}
 	}
-
 
 	// ユーザーIDを取得
 	private getUserId(): string | null {
@@ -80,7 +82,7 @@ export class TournamentController {
 			}
 
 			// JWTトークンをデコードしてユーザーIDを取得
-			const payload = JSON.parse(atob(token.split('.')[1]));
+			const payload = JSON.parse(atob(token.split(".")[1]));
 			return payload.id || null;
 		} catch (error) {
 			console.error("ユーザーIDの取得に失敗しました:", error);
@@ -111,11 +113,16 @@ export class TournamentController {
 					this.updateLocalData();
 					resolve();
 				} else if (dataRetryCount >= maxDataRetries) {
-					console.error("Tournament data timeout - retry count:", dataRetryCount);
+					console.error(
+						"Tournament data timeout - retry count:",
+						dataRetryCount,
+					);
 					reject(new Error("トーナメントデータの取得に失敗しました。"));
 				} else {
 					dataRetryCount++;
-					console.log(`Waiting for tournament data... (${dataRetryCount}/${maxDataRetries})`);
+					console.log(
+						`Waiting for tournament data... (${dataRetryCount}/${maxDataRetries})`,
+					);
 					setTimeout(checkData, dataRetryDelay);
 				}
 			};
@@ -198,7 +205,9 @@ export class TournamentController {
 		const reason = data?.reason || "unknown";
 		const message = data?.message || "Room has been deleted.";
 
-		console.log(`Tournament room deleted - Reason: ${reason}, Message: ${message}`);
+		console.log(
+			`Tournament room deleted - Reason: ${reason}, Message: ${message}`,
+		);
 
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
@@ -236,7 +245,9 @@ export class TournamentController {
 				},
 			);
 
-			const content = modal.querySelector(".room-deleted-content") as HTMLElement;
+			const content = modal.querySelector(
+				".room-deleted-content",
+			) as HTMLElement;
 			if (content) {
 				Object.assign(content.style, {
 					background: "#f8d7da",
@@ -562,6 +573,8 @@ export class TournamentController {
 	}
 }
 
-export function createTournamentController(params?: { [key: string]: string }): TournamentController {
+export function createTournamentController(params?: {
+	[key: string]: string;
+}): TournamentController {
 	return new TournamentController(params);
 }

@@ -1,7 +1,7 @@
-import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
+import type { WSTournamentData } from "@domain/model/value-object/tournament/Tournament.js";
 
-export type TournamentIncomingMsg = 
+export type TournamentIncomingMsg =
 	| {
 			status: "Tournament";
 			action: "get_status";
@@ -12,7 +12,7 @@ export type TournamentIncomingMsg =
 			matchId: MatchId;
 	  };
 
-export type TournamentOutgoingMsg = 
+export type TournamentOutgoingMsg =
 	| {
 			status: "Tournament";
 			data: WSTournamentData;

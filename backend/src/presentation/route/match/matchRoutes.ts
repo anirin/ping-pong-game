@@ -21,9 +21,14 @@ export async function MatchWSHandler(
 		switch (msg.action) {
 			case "start": {
 				// player1からのみstart matchを受け付ける
-				const isPlayer1 = await matchService.isPlayer1(msg.matchId, context.authedUser);
+				const isPlayer1 = await matchService.isPlayer1(
+					msg.matchId,
+					context.authedUser,
+				);
 				if (!isPlayer1) {
-					console.log(`Non-player1 user ${context.authedUser} attempted to start match ${msg.matchId}, ignoring`);
+					console.log(
+						`Non-player1 user ${context.authedUser} attempted to start match ${msg.matchId}, ignoring`,
+					);
 					return {
 						status: "Match",
 						data: {
@@ -36,7 +41,9 @@ export async function MatchWSHandler(
 				// 重複リクエストを防ぐ
 				const requestKey = `${msg.matchId}-${context.joinedRoom}`;
 				if (pendingStartRequests.has(requestKey)) {
-					console.log(`Duplicate start request for match ${msg.matchId}, ignoring`);
+					console.log(
+						`Duplicate start request for match ${msg.matchId}, ignoring`,
+					);
 					return {
 						status: "Match",
 						data: {
@@ -76,7 +83,11 @@ export async function MatchWSHandler(
 				};
 			}
 			case "ready": {
-				await matchService.setPlayerReady(msg.matchId, context.authedUser, msg.data.isReady);
+				await matchService.setPlayerReady(
+					msg.matchId,
+					context.authedUser,
+					msg.data.isReady,
+				);
 				return {
 					status: "Match",
 					data: {

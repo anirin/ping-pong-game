@@ -69,11 +69,11 @@ function setupEventListeners(state: MatchPageState): void {
 		// 戻る操作を即座に無効化
 		popStateEvent.preventDefault();
 		popStateEvent.stopImmediatePropagation();
-		
+
 		// 現在のURLをプッシュして戻る操作を無効化
 		window.history.pushState(null, "", window.location.href);
 		console.log("マッチ画面での戻る操作を無効化しました");
-		
+
 		// 警告を表示
 		alert("マッチ中は戻る操作はできません");
 	};
@@ -95,7 +95,11 @@ function setupEventListeners(state: MatchPageState): void {
 			console.log("マッチ画面でのキーボード進む操作を無効化しました");
 		}
 		// Backspaceキーも無効化（一部のブラウザで戻る操作に使用される）
-		if (keyboardEvent.key === "Backspace" && !keyboardEvent.ctrlKey && !keyboardEvent.metaKey) {
+		if (
+			keyboardEvent.key === "Backspace" &&
+			!keyboardEvent.ctrlKey &&
+			!keyboardEvent.metaKey
+		) {
 			const target = keyboardEvent.target as HTMLElement;
 			if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
 				keyboardEvent.preventDefault();
@@ -124,7 +128,7 @@ function setupEventListeners(state: MatchPageState): void {
 
 	// 初期状態をプッシュして戻る操作を無効化
 	window.history.pushState(null, "", window.location.href);
-	
+
 	// 追加の履歴エントリを作成して戻る操作を無効化
 	setTimeout(() => {
 		window.history.pushState(null, "", window.location.href);

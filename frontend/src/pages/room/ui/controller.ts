@@ -137,14 +137,18 @@ export class RoomController {
 		}
 
 		// ボタンを無効化
-		const startButton = document.getElementById("start-game-button") as HTMLButtonElement;
-		const leaveButton = document.getElementById("leave-delete-button") as HTMLButtonElement;
-		
+		const startButton = document.getElementById(
+			"start-game-button",
+		) as HTMLButtonElement;
+		const leaveButton = document.getElementById(
+			"leave-delete-button",
+		) as HTMLButtonElement;
+
 		if (startButton) {
 			startButton.disabled = true;
 			startButton.textContent = "Room Deleted";
 		}
-		
+
 		if (leaveButton) {
 			leaveButton.disabled = true;
 			leaveButton.textContent = "Redirecting...";

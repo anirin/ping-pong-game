@@ -1,6 +1,7 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
 import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
+import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
@@ -11,7 +12,6 @@ import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORM
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
 import { wsManager } from "@presentation/websocket/ws-manager.js";
 import { v4 as uuidv4 } from "uuid";
-import type { MatchId } from "@domain/model/value-object/match/Match.js";
 
 // コメント : 全体を通じて service 層は entity と db 操作双方を行って管理しているので注意が必要
 export class TournamentService {
@@ -34,15 +34,15 @@ export class TournamentService {
 
 	// room idでシングルトンインスタンスを取得
 	public static getInstance(roomId: RoomId): TournamentService {
-		if (!this.instances.has(roomId)) {
-			this.instances.set(roomId, new TournamentService(roomId));
+		if (!TournamentService.instances.has(roomId)) {
+			TournamentService.instances.set(roomId, new TournamentService(roomId));
 		}
-		return this.instances.get(roomId)!;
+		return TournamentService.instances.get(roomId)!;
 	}
 
 	// インスタンスを削除（roomが削除された時など）
 	public static removeInstance(roomId: RoomId): void {
-		this.instances.delete(roomId);
+		TournamentService.instances.delete(roomId);
 	}
 
 	async startTournament(
@@ -52,7 +52,9 @@ export class TournamentService {
 	) {
 		// roomIdの検証を追加
 		if (room_id !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${room_id}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${room_id}`,
+			);
 		}
 		// 参加者数の検証
 		if (!participants || participants.length !== 4) {
@@ -100,7 +102,11 @@ export class TournamentService {
 		});
 	}
 
-	async processAfterMatch(tournamentId: TournamentId, matchId: MatchId, winnerId: UserId) {
+	async processAfterMatch(
+		tournamentId: TournamentId,
+		matchId: MatchId,
+		winnerId: UserId,
+	) {
 		let tournament: Tournament | null;
 
 		try {
@@ -147,9 +153,12 @@ export class TournamentService {
 			try {
 				console.log("saveAll matches");
 				await this.matchRepository.saveAll(tournament!.matches);
-				console.log("save tournament currentRound : ", tournament!.currentRound);
+				console.log(
+					"save tournament currentRound : ",
+					tournament!.currentRound,
+				);
 				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
-				
+
 				// debug
 				await this.tournamentRepository.findById(tournamentId);
 				console.log("tournament currentRound : ", tournament!.currentRound);
@@ -159,7 +168,9 @@ export class TournamentService {
 		} else {
 			// case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了
 			// tournament finish を broadcast
-			console.log("case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了");
+			console.log(
+				"case 3 : 全て finised で next round 生成不可能な場合 = tournament 終了",
+			);
 			this.finishTournament(tournamentId, winnerId);
 		}
 
@@ -177,7 +188,7 @@ export class TournamentService {
 
 	async finishTournament(tournamentId: TournamentId, winnerId: UserId) {
 		console.log("finishTournament called with winnerId:", winnerId);
-		
+
 		const tournament = await this.tournamentRepository.findById(tournamentId);
 		if (!tournament) {
 			throw new Error("Tournament not found");
@@ -189,7 +200,10 @@ export class TournamentService {
 		// db操作
 		try {
 			await this.tournamentRepository.save(tournament);
-			console.log("Tournament saved to database with winner_id:", tournament.winner_id);
+			console.log(
+				"Tournament saved to database with winner_id:",
+				tournament.winner_id,
+			);
 		} catch (error) {
 			throw new Error("Failed to save tournament");
 		}
@@ -211,7 +225,9 @@ export class TournamentService {
 	async getTournamentStatus(roomId: RoomId) {
 		// roomIdの検証を追加
 		if (roomId !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomId}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomId}`,
+			);
 		}
 		try {
 			const tournament = await this.tournamentRepository.findByRoomId(roomId);
@@ -219,7 +235,10 @@ export class TournamentService {
 				throw new Error("Tournament not found for this room");
 			}
 
-			console.log("get status : tournament currentRound : ", tournament.currentRound);
+			console.log(
+				"get status : tournament currentRound : ",
+				tournament.currentRound,
+			);
 
 			if (tournament.status === "finished") {
 				return {
@@ -243,7 +262,7 @@ export class TournamentService {
 			tournament.matches = matches;
 			// currentRoundを復元（データベースから取得した正しい値を使用）
 			tournament.currentRound = currentRound;
-			
+
 			const nextMatch = tournament.getNextMatch();
 
 			return {

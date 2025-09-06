@@ -97,7 +97,9 @@ export class Tournament {
 			this.matches.filter((match) => match.round === this.currentRound)
 				.length === 1
 		) {
-			const finalMatch = this.matches.find((match) => match.round === this.currentRound);
+			const finalMatch = this.matches.find(
+				(match) => match.round === this.currentRound,
+			);
 			if (finalMatch && finalMatch.winnerId) {
 				this.finish(finalMatch.winnerId); // service 層に tournament 終了を教える必要がある
 			}

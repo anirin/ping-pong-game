@@ -23,7 +23,9 @@ import { renderFriendRequestPage } from "@/pages/friend_request";
 interface Route {
 	path: string;
 	// handler: () => void;
-	handler: (params?: { [key: string]: string }) => (() => void) | void | Promise<(() => void) | void>;
+	handler: (params?: {
+		[key: string]: string;
+	}) => (() => void) | void | Promise<(() => void) | void>;
 }
 
 const routes: Route[] = [
@@ -129,7 +131,7 @@ export function navigate(to?: string) {
 	if (to && to !== window.location.pathname) {
 		window.history.pushState({}, "", to);
 	}
-	
+
 	// 現在のページのクリーンアップを実行
 	if (currentCleanup) {
 		currentCleanup();
@@ -140,10 +142,11 @@ export function navigate(to?: string) {
 
 	// WebSocket接続のクリーンアップ
 	// tournament、match、room以外のページに移動する場合はWebSocketを切断
-	const isWebSocketPage = path.startsWith('/tournament') || 
-	                       path.startsWith('/match/') || 
-	                       path.startsWith('/rooms/');
-	
+	const isWebSocketPage =
+		path.startsWith("/tournament") ||
+		path.startsWith("/match/") ||
+		path.startsWith("/rooms/");
+
 	if (!isWebSocketPage) {
 		const wsManager = WebSocketManager.getInstance();
 		wsManager.clearWsManager();

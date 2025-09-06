@@ -59,9 +59,9 @@ export class MatchController {
 
 			// WebSocket接続を確保
 			await this.ensureWebSocketConnection();
-			
+
 			// 少し待ってからマッチデータを取得
-			await new Promise(resolve => setTimeout(resolve, 500));
+			await new Promise((resolve) => setTimeout(resolve, 500));
 
 			this.initializeMatchState();
 			this.setupMatchAPI();
@@ -76,7 +76,7 @@ export class MatchController {
 	// WebSocket接続を確保する（必要に応じて再接続）
 	private async ensureWebSocketConnection(): Promise<void> {
 		const wsManager = this.matchAPI["wsManager"];
-		
+
 		// roomIdが取得できない場合はエラー
 		if (!this.roomId) {
 			throw new Error("Room ID is required for match page");
@@ -88,13 +88,16 @@ export class MatchController {
 		}
 
 		// 既に同じルームに接続済みの場合は何もしない
-		if (wsManager.isConnected() && wsManager.getCurrentRoomId() === this.roomId) {
+		if (
+			wsManager.isConnected() &&
+			wsManager.getCurrentRoomId() === this.roomId
+		) {
 			console.log(`Already connected to room ${this.roomId} for match`);
 			return;
 		}
 
 		console.log(`Connecting to room ${this.roomId} for match`);
-		
+
 		try {
 			await wsManager.connect(this.roomId);
 			console.log("WebSocket connection established for match");
@@ -114,7 +117,7 @@ export class MatchController {
 			}
 
 			// JWTトークンをデコードしてユーザーIDを取得
-			const payload = JSON.parse(atob(token.split('.')[1]));
+			const payload = JSON.parse(atob(token.split(".")[1]));
 			return payload.id || null;
 		} catch (error) {
 			console.error("ユーザーIDの取得に失敗しました:", error);
@@ -195,7 +198,9 @@ export class MatchController {
 	private showRoomDeletedNotification(message: string): void {
 		try {
 			// キャンバス上に通知を表示
-			const canvas = document.getElementById("matchCanvas") as HTMLCanvasElement;
+			const canvas = document.getElementById(
+				"matchCanvas",
+			) as HTMLCanvasElement;
 			if (canvas) {
 				const ctx = canvas.getContext("2d");
 				if (ctx) {
@@ -206,7 +211,7 @@ export class MatchController {
 					// 通知メッセージを表示
 					ctx.fillStyle = "#f8d7da";
 					ctx.fillRect(50, 200, canvas.width - 100, 200);
-					
+
 					ctx.fillStyle = "#721c24";
 					ctx.font = "24px Arial";
 					ctx.textAlign = "center";
@@ -217,7 +222,9 @@ export class MatchController {
 			}
 
 			// ボタンを無効化
-			const readyButton = document.getElementById("ready-button") as HTMLButtonElement;
+			const readyButton = document.getElementById(
+				"ready-button",
+			) as HTMLButtonElement;
 			if (readyButton) {
 				readyButton.disabled = true;
 				readyButton.textContent = "Room Deleted";
@@ -243,7 +250,7 @@ export class MatchController {
 
 			console.log("Sending match start request...");
 			this.matchAPI.sendMatchStart();
-			
+
 			// マッチデータの受信を待機
 			await this.waitForMatchData();
 		} catch (error) {
@@ -269,7 +276,9 @@ export class MatchController {
 					reject(new Error("マッチデータの取得に失敗しました。"));
 				} else {
 					dataRetryCount++;
-					console.log(`Waiting for match data... (${dataRetryCount}/${maxDataRetries})`);
+					console.log(
+						`Waiting for match data... (${dataRetryCount}/${maxDataRetries})`,
+					);
 					setTimeout(checkData, dataRetryDelay);
 				}
 			};
@@ -435,7 +444,11 @@ export class MatchController {
 			return;
 		}
 
-		if (this.serverState && (this.serverState.status === "playing" || this.serverState.status === "finished")) {
+		if (
+			this.serverState &&
+			(this.serverState.status === "playing" ||
+				this.serverState.status === "finished")
+		) {
 			console.warn("Cannot set ready state: match is not in scheduled state");
 			return;
 		}
@@ -488,7 +501,10 @@ export class MatchController {
 		}
 
 		// マッチが既に開始されている場合は無効化
-		if (this.serverState.status === "playing" || this.serverState.status === "finished") {
+		if (
+			this.serverState.status === "playing" ||
+			this.serverState.status === "finished"
+		) {
 			return {
 				disabled: true,
 				text: this.serverState.status === "playing" ? "Playing..." : "Finished",

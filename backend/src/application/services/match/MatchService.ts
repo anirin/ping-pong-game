@@ -20,10 +20,10 @@ export class MatchService {
 	private intervals: Map<MatchId, Info> = new Map();
 	private readonly matchRepository: MatchRepository;
 	private readonly roomId: RoomId;
-	
+
 	// 重複実行を防ぐためのSet
 	private startingMatches: Set<MatchId> = new Set();
-	
+
 	// ready状態を管理するMap (matchId -> Set<UserId>)
 	private readyPlayers: Map<MatchId, Set<UserId>> = new Map();
 
@@ -39,33 +39,37 @@ export class MatchService {
 
 	// room idでシングルトンインスタンスを取得
 	public static getInstance(roomId: RoomId): MatchService {
-		if (!this.instances.has(roomId)) {
-			this.instances.set(roomId, new MatchService(roomId));
+		if (!MatchService.instances.has(roomId)) {
+			MatchService.instances.set(roomId, new MatchService(roomId));
 		}
-		return this.instances.get(roomId)!;
+		return MatchService.instances.get(roomId)!;
 	}
 
 	// インスタンスを削除（roomが削除された時など）
 	public static removeInstance(roomId: RoomId): void {
-		const instance = this.instances.get(roomId);
+		const instance = MatchService.instances.get(roomId);
 		if (instance) {
 			// 全てのmatchを停止
 			for (const [matchId] of instance.intervals) {
 				instance.stopMatch(matchId);
 			}
-			this.instances.delete(roomId);
+			MatchService.instances.delete(roomId);
 		}
 	}
 
 	async startMatch(matchId: MatchId, roomId: RoomId): Promise<void> {
 		// roomIdの検証を追加
 		if (roomId !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomId}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomId}`,
+			);
 		}
 
 		// 重複実行を防ぐ
 		if (this.startingMatches.has(matchId)) {
-			console.log(`Match ${matchId} is already starting, skipping duplicate request`);
+			console.log(
+				`Match ${matchId} is already starting, skipping duplicate request`,
+			);
 			return;
 		}
 
@@ -84,7 +88,9 @@ export class MatchService {
 
 			// 既に開始済みまたは終了済みの場合は処理をスキップ
 			if (match.status === "playing" || match.status === "finished") {
-				console.log(`Match ${matchId} is already ${match.status}, skipping start`);
+				console.log(
+					`Match ${matchId} is already ${match.status}, skipping start`,
+				);
 				return;
 			}
 
@@ -100,7 +106,7 @@ export class MatchService {
 			// 60fpsでゲームループを開始
 			let lastScore1 = match.score1;
 			let lastScore2 = match.score2;
-			
+
 			const interval = setInterval(async () => {
 				match.advanceFrame();
 
@@ -134,7 +140,10 @@ export class MatchService {
 					try {
 						await this.finishMatch(matchId, this.roomId, match.winnerId!);
 					} catch (error) {
-						console.error(`[MatchService] Error in finishMatch for match ${matchId}:`, error);
+						console.error(
+							`[MatchService] Error in finishMatch for match ${matchId}:`,
+							error,
+						);
 						throw new Error("Failed to finish match");
 					}
 					return;
@@ -165,7 +174,9 @@ export class MatchService {
 	): Promise<void> {
 		// roomIdの検証を追加
 		if (roomId !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomId}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomId}`,
+			);
 		}
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
@@ -174,7 +185,7 @@ export class MatchService {
 		}
 
 		// 試合が終了した時点で、現在のscoreを保存
-		if (match.status !== 'finished') {
+		if (match.status !== "finished") {
 			match.finish(winnerId);
 		}
 
@@ -183,12 +194,18 @@ export class MatchService {
 		try {
 			await this.matchRepository.save(match);
 			savedMatch = await this.matchRepository.findById(matchId);
-			if (!savedMatch) {  // 保存が失敗した場合
-				console.error(`[MatchService] Failed to verify saved match for matchId: ${matchId}`);
+			if (!savedMatch) {
+				// 保存が失敗した場合
+				console.error(
+					`[MatchService] Failed to verify saved match for matchId: ${matchId}`,
+				);
 				throw new Error("Failed to verify saved match");
 			}
 		} catch (error) {
-			console.error(`[MatchService] Database operation failed for matchId: ${matchId}:`, error);
+			console.error(
+				`[MatchService] Database operation failed for matchId: ${matchId}:`,
+				error,
+			);
 			throw new Error("Failed to save match");
 		}
 
@@ -197,8 +214,13 @@ export class MatchService {
 
 		// tournament event を発火
 		const tournamentId: TournamentId = savedMatch.tournamentId;
-		globalEventEmitter.emit("match.finished", tournamentId, this.roomId, winnerId, matchId);
-
+		globalEventEmitter.emit(
+			"match.finished",
+			tournamentId,
+			this.roomId,
+			winnerId,
+			matchId,
+		);
 	}
 
 	async handlePlayerInput(
@@ -230,7 +252,11 @@ export class MatchService {
 	}
 
 	// プレイヤーのready状態を設定
-	async setPlayerReady(matchId: MatchId, userId: UserId, isReady: boolean): Promise<void> {
+	async setPlayerReady(
+		matchId: MatchId,
+		userId: UserId,
+		isReady: boolean,
+	): Promise<void> {
 		// matchが存在するかチェック
 		const match = await this.matchRepository.findById(matchId);
 		if (!match) {
@@ -239,7 +265,9 @@ export class MatchService {
 
 		// プレイヤーがmatchに参加しているかチェック
 		if (match.player1Id !== userId && match.player2Id !== userId) {
-			console.log(`User ${userId} attempted to set ready state for match ${matchId}, but is not a player. Match players: ${match.player1Id}, ${match.player2Id}`);
+			console.log(
+				`User ${userId} attempted to set ready state for match ${matchId}, but is not a player. Match players: ${match.player1Id}, ${match.player2Id}`,
+			);
 			throw new Error(`User ${userId} is not a player in match ${matchId}`);
 		}
 
@@ -255,7 +283,9 @@ export class MatchService {
 			readySet.delete(userId);
 		}
 
-		console.log(`Player ${userId} ready state: ${isReady}, Total ready: ${readySet.size}/2`);
+		console.log(
+			`Player ${userId} ready state: ${isReady}, Total ready: ${readySet.size}/2`,
+		);
 
 		// ready状態をブロードキャスト
 		this.broadcastReadyState(matchId);
@@ -289,7 +319,10 @@ export class MatchService {
 	}
 
 	// ready状態を取得
-	getReadyState(matchId: MatchId): { readyPlayers: UserId[]; readyCount: number } {
+	getReadyState(matchId: MatchId): {
+		readyPlayers: UserId[];
+		readyCount: number;
+	} {
 		const readySet = this.readyPlayers.get(matchId);
 		if (!readySet) {
 			return { readyPlayers: [], readyCount: 0 };

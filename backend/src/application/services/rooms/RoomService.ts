@@ -31,15 +31,15 @@ export class RoomService {
 
 	// room idでシングルトンインスタンスを取得
 	public static getInstance(roomId: RoomId): RoomService {
-		if (!this.instances.has(roomId)) {
-			this.instances.set(roomId, new RoomService(roomId));
+		if (!RoomService.instances.has(roomId)) {
+			RoomService.instances.set(roomId, new RoomService(roomId));
 		}
-		return this.instances.get(roomId)!;
+		return RoomService.instances.get(roomId)!;
 	}
 
 	// インスタンスを削除（roomが削除された時など）
 	public static removeInstance(roomId: RoomId): void {
-		this.instances.delete(roomId);
+		RoomService.instances.delete(roomId);
 	}
 
 	// createRoom用の静的メソッド（roomIdがまだ存在しない場合）
@@ -49,10 +49,10 @@ export class RoomService {
 			AppDataSource.getRepository("RoomEntity"),
 		);
 		await repository.save(room);
-		
+
 		// ルーム作成後に参加者リストも初期化
 		await repository.storeParticipants(room.id, []);
-		
+
 		return room;
 	}
 
@@ -65,7 +65,9 @@ export class RoomService {
 	async getRoomById(roomid: string): Promise<Room | null> {
 		// roomIdの検証を追加
 		if (roomid !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomid}`,
+			);
 		}
 		return this.roomRepository.findById(roomid);
 	}
@@ -73,7 +75,9 @@ export class RoomService {
 	async startRoom(roomid: string, userid: UserId): Promise<boolean> {
 		// roomIdの検証を追加
 		if (roomid !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomid}`,
+			);
 		}
 		console.log("RoomService.startRoom has called: ", roomid, userid);
 		const room = await this.roomRepository.findById(roomid);
@@ -101,7 +105,9 @@ export class RoomService {
 	async deleteRoom(roomid: string, userid: UserId): Promise<boolean> {
 		// roomIdの検証を追加
 		if (roomid !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomid}`,
+			);
 		}
 		const room = await this.roomRepository.findById(roomid);
 		if (room === null) return false;
@@ -143,36 +149,38 @@ export class RoomUserService {
 
 	// room idでシングルトンインスタンスを取得
 	public static getInstance(roomId: RoomId): RoomUserService {
-		if (!this.instances.has(roomId)) {
-			this.instances.set(roomId, new RoomUserService(roomId));
+		if (!RoomUserService.instances.has(roomId)) {
+			RoomUserService.instances.set(roomId, new RoomUserService(roomId));
 		}
-		return this.instances.get(roomId)!;
+		return RoomUserService.instances.get(roomId)!;
 	}
 
 	// インスタンスを削除（roomが削除された時など）
 	public static removeInstance(roomId: RoomId): void {
-		this.instances.delete(roomId);
+		RoomUserService.instances.delete(roomId);
 	}
 
 	async joinRoom(userid: UserId, roomid: RoomId): Promise<boolean> {
 		// roomIdの検証を追加
 		if (roomid !== this.roomId) {
-			throw new Error(`Room ID mismatch: expected ${this.roomId}, got ${roomid}`);
+			throw new Error(
+				`Room ID mismatch: expected ${this.roomId}, got ${roomid}`,
+			);
 		}
 		const user = await this.userRepository.findById(userid);
 		if (!user) throw Error("no user found");
 		const room = await this.roomRepository.findById(roomid);
 		if (!room) throw Error("no room found");
 		if (room.isFull()) throw Error("the room is full");
-		
+
 		// 既に参加しているかチェック
 		const participants = await this.roomRepository.findParticipants(roomid);
-		const isAlreadyParticipant = participants.some(p => p.id === userid);
+		const isAlreadyParticipant = participants.some((p) => p.id === userid);
 		if (isAlreadyParticipant) {
 			console.log(`User ${userid} is already in room ${roomid}`);
 			return true; // 既に参加済みの場合は成功として扱う
 		}
-		
+
 		participants.push(user);
 		return this.roomRepository.storeParticipants(roomid, participants);
 	}
@@ -185,25 +193,33 @@ export class RoomUserService {
 		const room = await this.roomRepository.findById(roomid);
 		if (!room) throw Error("no roon found");
 		if (room.isEmpty()) throw Error("no one is in the room");
-		
+
 		// Ownerの場合は、ルームの状態を確認してから離脱を許可するかどうかを決める
 		if (room.checkOwner(userid)) {
 			// ルームが待機状態の場合は、ownerの一時的な離脱を許可
 			if (room.status === "waiting") {
-				console.log(`Owner ${userid} temporarily leaving room ${roomid} (status: ${room.status})`);
-				const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
+				console.log(
+					`Owner ${userid} temporarily leaving room ${roomid} (status: ${room.status})`,
+				);
+				const newParticipants = room.allParticipants.filter(
+					(p) => p.id !== userid,
+				);
 				return this.roomRepository.storeParticipants(roomid, newParticipants);
 			} else if (room.status === "playing") {
 				// ルームが進行中の場合は、ownerも他のプレイヤーと同列に扱う
-				console.log(`Owner ${userid} leaving room ${roomid} during ongoing game (status: ${room.status})`);
-				const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
+				console.log(
+					`Owner ${userid} leaving room ${roomid} during ongoing game (status: ${room.status})`,
+				);
+				const newParticipants = room.allParticipants.filter(
+					(p) => p.id !== userid,
+				);
 				return this.roomRepository.storeParticipants(roomid, newParticipants);
 			} else {
 				// ルームが終了状態の場合は、ownerの離脱を拒否
 				throw Error("owner cannot leave room that is finished");
 			}
 		}
-		
+
 		const newParticipants = room.allParticipants.filter((p) => p.id !== userid);
 		return this.roomRepository.storeParticipants(roomid, newParticipants);
 	}

@@ -164,7 +164,7 @@ export class MatchAPI {
 
 	private handleMessage(message: WebSocketMessage): void {
 		console.log("MatchAPI received message:", message);
-		
+
 		if (message.status === "Room" && message.data?.action === "DELETE") {
 			// ルーム削除の通知
 			console.log("MatchAPI: Room deleted", message.data);
@@ -173,7 +173,7 @@ export class MatchAPI {
 			}
 			return;
 		}
-		
+
 		if (message.status !== "Match") {
 			console.error("MatchAPI: 不明なステータス", message.status);
 			return;
@@ -186,7 +186,10 @@ export class MatchAPI {
 				message.data.state
 			) {
 				this.matchData = message.data.state as RealtimeMatchStateDto;
-				console.log("MatchAPI: match statusを受信しました:", this.matchData.status);
+				console.log(
+					"MatchAPI: match statusを受信しました:",
+					this.matchData.status,
+				);
 				if (this.controllerCallback) {
 					this.controllerCallback(this.matchData, "match_state");
 				}
@@ -300,6 +303,4 @@ export class MatchAPI {
 		this.controllerCallback = null;
 		this.resetReadyState();
 	}
-
-
 }

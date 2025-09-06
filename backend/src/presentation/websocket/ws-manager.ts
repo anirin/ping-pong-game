@@ -65,19 +65,23 @@ export class WebSocketManager {
 
 		// 新しい接続を追加
 		this.userConnections.set(userId, ws);
-		
+
 		let set = this.rooms.get(roomId);
 		if (!set) set = new Set<WebSocket.WebSocket>();
 		set.add(ws);
 		this.rooms.set(roomId, set);
 	}
 
-	removeWebSocketFromRoom(roomId: RoomId, ws: WebSocket.WebSocket, userId?: UserId) {
+	removeWebSocketFromRoom(
+		roomId: RoomId,
+		ws: WebSocket.WebSocket,
+		userId?: UserId,
+	) {
 		const roomSet = this.rooms.get(roomId);
 		if (roomSet) {
 			roomSet.delete(ws);
 		}
-		
+
 		// ユーザー接続マップからも削除
 		if (userId) {
 			const userConnection = this.userConnections.get(userId);

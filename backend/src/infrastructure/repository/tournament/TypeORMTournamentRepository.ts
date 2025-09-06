@@ -37,7 +37,7 @@ export class TypeORMTournamentRepository implements TournamentRepository {
 		const createdBy = entity.created_by;
 		const roomId = entity.room_id;
 		const tournament = new Tournament(id, [], createdBy, roomId);
-		
+
 		// エンティティからドメインオブジェクトに値を設定
 		tournament.status = entity.status as any;
 		tournament.currentRound = entity.current_round;
