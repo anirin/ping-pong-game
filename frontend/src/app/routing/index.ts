@@ -12,6 +12,7 @@ import { renderTournamentPage } from "@pages/tournament";
 import { isLoggedIn } from "@/app/auth";
 import { renderFriendListPage } from "@/pages/friends";
 import { renderMatchPage } from "@/pages/match";
+import { WebSocketManager } from "@/shared/websocket/WebSocketManager";
 
 let currentCleanup: (() => void) | null = null;
 
@@ -128,12 +129,26 @@ export function navigate(to?: string) {
 	if (to && to !== window.location.pathname) {
 		window.history.pushState({}, "", to);
 	}
+	
+	// 現在のページのクリーンアップを実行
 	if (currentCleanup) {
 		currentCleanup();
 		currentCleanup = null;
 	}
 
 	const path = window.location.pathname;
+
+	// WebSocket接続のクリーンアップ
+	// tournament、match、room以外のページに移動する場合はWebSocketを切断
+	const isWebSocketPage = path.startsWith('/tournament') || 
+	                       path.startsWith('/match/') || 
+	                       path.startsWith('/rooms/');
+	
+	if (!isWebSocketPage) {
+		const wsManager = WebSocketManager.getInstance();
+		wsManager.clearWsManager();
+		console.log("WebSocket接続をクリーンアップしました");
+	}
 
 	const match = matchRoute(path);
 	if (match) {
