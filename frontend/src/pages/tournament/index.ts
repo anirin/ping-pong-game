@@ -38,10 +38,14 @@ export function renderTournamentPage(params?: { [key: string]: string }) {
 }
 
 function setupEventListeners(state: TournamentPageState): void {
-	const handleBeforeUnload = () => {
+	const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 		if (!state.isDestroyed && state.controller) {
 			state.controller.destroy();
 		}
+		// ページ離脱を防ぐ
+		event.preventDefault();
+		event.returnValue = "トーナメント中です。本当にページを離れますか？";
+		return "トーナメント中です。本当にページを離れますか？";
 	};
 
 	const handleVisibilityChange = () => {
@@ -58,6 +62,48 @@ function setupEventListeners(state: TournamentPageState): void {
 		}
 	};
 
+	// ブラウザの戻るボタンを無効にする（より強力な方法）
+	const handlePopState = (event: Event) => {
+		const popStateEvent = event as PopStateEvent;
+		// 戻る操作を即座に無効化
+		popStateEvent.preventDefault();
+		popStateEvent.stopImmediatePropagation();
+		
+		// 現在のURLをプッシュして戻る操作を無効化
+		window.history.pushState(null, "", window.location.href);
+		console.log("トーナメント画面での戻る操作を無効化しました");
+		
+		// 警告を表示
+		alert("トーナメント中は戻る操作はできません");
+	};
+
+	// キーボードショートカット（Alt+←など）を無効にする
+	const handleKeyDown = (event: Event) => {
+		const keyboardEvent = event as KeyboardEvent;
+		// Alt + 左矢印キー（戻る）を無効化
+		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowLeft") {
+			keyboardEvent.preventDefault();
+			keyboardEvent.stopPropagation();
+			console.log("トーナメント画面でのキーボード戻る操作を無効化しました");
+			alert("トーナメント中は戻る操作はできません");
+		}
+		// Alt + 右矢印キー（進む）も無効化
+		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowRight") {
+			keyboardEvent.preventDefault();
+			keyboardEvent.stopPropagation();
+			console.log("トーナメント画面でのキーボード進む操作を無効化しました");
+		}
+		// Backspaceキーも無効化（一部のブラウザで戻る操作に使用される）
+		if (keyboardEvent.key === "Backspace" && !keyboardEvent.ctrlKey && !keyboardEvent.metaKey) {
+			const target = keyboardEvent.target as HTMLElement;
+			if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
+				keyboardEvent.preventDefault();
+				keyboardEvent.stopPropagation();
+				console.log("トーナメント画面でのBackspaceキーを無効化しました");
+			}
+		}
+	};
+
 	const events = [
 		{ element: window, event: "beforeunload", handler: handleBeforeUnload },
 		{
@@ -66,12 +112,22 @@ function setupEventListeners(state: TournamentPageState): void {
 			handler: handleVisibilityChange,
 		},
 		{ element: window, event: "pagehide", handler: handlePageHide },
+		{ element: window, event: "popstate", handler: handlePopState },
+		{ element: document, event: "keydown", handler: handleKeyDown },
 	];
 
 	events.forEach(({ element, event, handler }) => {
-		element.addEventListener(event, handler);
+		element.addEventListener(event, handler, true); // capture phaseで実行
 		state.eventListeners.push({ element, event, handler });
 	});
+
+	// 初期状態をプッシュして戻る操作を無効化
+	window.history.pushState(null, "", window.location.href);
+	
+	// 追加の履歴エントリを作成して戻る操作を無効化
+	setTimeout(() => {
+		window.history.pushState(null, "", window.location.href);
+	}, 100);
 }
 
 function createCleanupFunction(state: TournamentPageState): () => void {
@@ -164,7 +220,7 @@ function showErrorPage(app: HTMLElement, error: unknown): void {
 						cursor: pointer;
 						font-size: 1rem;
 					">再読み込み</button>
-					<button onclick="history.back()" style="
+					<button onclick="alert('トーナメント画面では戻る操作は無効です')" style="
 						background: #6c757d;
 						color: white;
 						border: none;
@@ -172,7 +228,7 @@ function showErrorPage(app: HTMLElement, error: unknown): void {
 						border-radius: 5px;
 						cursor: pointer;
 						font-size: 1rem;
-					">戻る</button>
+					">戻る（無効）</button>
 				</div>
 			</div>
 		</div>
