@@ -19,7 +19,7 @@ function decodeJwt(token: string): any {
 
 export async function mountProfile(
 	root: HTMLElement,
-	navigate: (path: string) => void
+	navigate: (path: string) => void,
 ) {
 	const token = localStorage.getItem("accessToken");
 	if (!token) {
@@ -51,7 +51,9 @@ export async function mountProfile(
 
 	const total = matches.length;
 	const wins = matches.filter((m) => m.winnerId === userId).length;
-	const loss = matches.filter((m) => m.winnerId && m.winnerId !== userId).length;
+	const loss = matches.filter(
+		(m) => m.winnerId && m.winnerId !== userId,
+	).length;
 	const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
 
 	const summary = document.createElement("div");
