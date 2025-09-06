@@ -34,13 +34,13 @@ export function renderGuestTournamentPage() {
 
 		guestPlayers = [p1, p2, p3, p4];
 		console.log("トーナメント参加者:", guestPlayers);
-		
+
 		// プレイヤー名をURLクエリパラメータとして渡してトーナメント画面に遷移
 		const queryParams = new URLSearchParams({
 			player1: p1,
 			player2: p2,
 			player3: p3,
-			player4: p4
+			player4: p4,
 		});
 		navigate(`/tournament_guest?${queryParams.toString()}`);
 	});

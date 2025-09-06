@@ -41,7 +41,7 @@ class TournamentStateManager {
 		data: null,
 		currentMatchIndex: 0,
 		currentMatch: null,
-		pendingMatchResult: null
+		pendingMatchResult: null,
 	};
 
 	private constructor() {}
@@ -65,7 +65,9 @@ class TournamentStateManager {
 	}
 
 	// トーナメントのステータスを更新
-	public updateTournamentStatus(status: "waiting" | "in_progress" | "completed"): void {
+	public updateTournamentStatus(
+		status: "waiting" | "in_progress" | "completed",
+	): void {
 		if (this.state.data) {
 			this.state.data.status = status;
 			console.log("トーナメントステータスを更新:", status);
@@ -73,10 +75,13 @@ class TournamentStateManager {
 	}
 
 	// マッチのステータスを更新
-	public updateMatchStatus(matchId: string, status: "waiting" | "in_progress" | "completed"): void {
+	public updateMatchStatus(
+		matchId: string,
+		status: "waiting" | "in_progress" | "completed",
+	): void {
 		if (!this.state.data) return;
 
-		const match = this.state.data.matches.find(m => m.id === matchId);
+		const match = this.state.data.matches.find((m) => m.id === matchId);
 		if (match) {
 			match.status = status;
 			console.log(`マッチ ${matchId} のステータスを更新:`, status);
@@ -95,7 +100,12 @@ class TournamentStateManager {
 	}
 
 	// マッチ結果を更新
-	public updateMatchResult(matchId: string, winner: string, score1: number, score2: number): void {
+	public updateMatchResult(
+		matchId: string,
+		winner: string,
+		score1: number,
+		score2: number,
+	): void {
 		if (!this.state.data) {
 			console.error("トーナメントデータが存在しません");
 			return;
@@ -107,7 +117,9 @@ class TournamentStateManager {
 			match.score2 = score2;
 			match.status = "completed";
 			match.winner = winner;
-			console.log(`マッチ結果を更新: ${match.player1} vs ${match.player2} - 勝者: ${winner} (${score1}-${score2})`);
+			console.log(
+				`マッチ結果を更新: ${match.player1} vs ${match.player2} - 勝者: ${winner} (${score1}-${score2})`,
+			);
 		}
 	}
 
@@ -130,7 +142,9 @@ class TournamentStateManager {
 		}
 
 		// 既に決勝戦が存在するかチェック
-		const existingFinalMatch = this.state.data.matches.find(match => match.round === 2);
+		const existingFinalMatch = this.state.data.matches.find(
+			(match) => match.round === 2,
+		);
 		if (existingFinalMatch) {
 			console.log("決勝戦は既に存在します:", existingFinalMatch);
 			return;
@@ -168,18 +182,28 @@ class TournamentStateManager {
 	}
 
 	// 現在のマッチを設定（マッチ開始時に呼び出し）
-	public setCurrentMatch(matchId: string, player1: string, player2: string, round: number): void {
+	public setCurrentMatch(
+		matchId: string,
+		player1: string,
+		player2: string,
+		round: number,
+	): void {
 		this.state.currentMatch = {
 			matchId,
 			player1,
 			player2,
-			round
+			round,
 		};
 		console.log("現在のマッチを設定:", this.state.currentMatch);
 	}
 
 	// 現在のマッチを取得
-	public getCurrentMatch(): { matchId: string; player1: string; player2: string; round: number; } | null {
+	public getCurrentMatch(): {
+		matchId: string;
+		player1: string;
+		player2: string;
+		round: number;
+	} | null {
 		return this.state.currentMatch;
 	}
 
@@ -190,18 +214,28 @@ class TournamentStateManager {
 	}
 
 	// マッチ結果を保存（マッチ完了時に呼び出し）
-	public setPendingMatchResult(matchId: string, winner: string, score1: number, score2: number): void {
+	public setPendingMatchResult(
+		matchId: string,
+		winner: string,
+		score1: number,
+		score2: number,
+	): void {
 		this.state.pendingMatchResult = {
 			matchId,
 			winner,
 			score1,
-			score2
+			score2,
 		};
 		console.log("マッチ結果を保存:", this.state.pendingMatchResult);
 	}
 
 	// 保留中のマッチ結果を取得
-	public getPendingMatchResult(): { matchId: string; winner: string; score1: number; score2: number; } | null {
+	public getPendingMatchResult(): {
+		matchId: string;
+		winner: string;
+		score1: number;
+		score2: number;
+	} | null {
 		return this.state.pendingMatchResult;
 	}
 
@@ -217,7 +251,7 @@ class TournamentStateManager {
 			data: null,
 			currentMatchIndex: 0,
 			currentMatch: null,
-			pendingMatchResult: null
+			pendingMatchResult: null,
 		};
 		console.log("トーナメント状態をクリア");
 	}
@@ -236,4 +270,8 @@ class TournamentStateManager {
 	}
 }
 
-export { TournamentStateManager, type GuestTournamentData, type GuestTournamentMatch };
+export {
+	TournamentStateManager,
+	type GuestTournamentData,
+	type GuestTournamentMatch,
+};

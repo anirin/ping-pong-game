@@ -80,13 +80,17 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowLeft") {
 			keyboardEvent.preventDefault();
 			keyboardEvent.stopPropagation();
-			console.log("ゲストトーナメント画面でのキーボード戻る操作を無効化しました");
+			console.log(
+				"ゲストトーナメント画面でのキーボード戻る操作を無効化しました",
+			);
 			alert("ゲストトーナメント中は戻る操作はできません");
 		}
 		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowRight") {
 			keyboardEvent.preventDefault();
 			keyboardEvent.stopPropagation();
-			console.log("ゲストトーナメント画面でのキーボード進む操作を無効化しました");
+			console.log(
+				"ゲストトーナメント画面でのキーボード進む操作を無効化しました",
+			);
 		}
 		if (
 			keyboardEvent.key === "Backspace" &&
@@ -153,7 +157,9 @@ function createCleanupFunction(state: GuestTournamentPageState): () => void {
 	};
 }
 
-function createErrorCleanupFunction(state: GuestTournamentPageState): () => void {
+function createErrorCleanupFunction(
+	state: GuestTournamentPageState,
+): () => void {
 	return () => {
 		if (state.isDestroyed) {
 			return;
