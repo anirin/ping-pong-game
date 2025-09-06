@@ -69,6 +69,13 @@
 	object-fit: cover;
 }
 
+.friend-info {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+
 .friend-card .friend-info {
 	grid-column: 2;
 	display: grid;
@@ -124,13 +131,6 @@
 
 .submit-btn:hover {
 	background-color: #5a4abf;
-}
-
-.friend-info {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-	min-width: 0;
 }
 
 @media (max-width: 560px) {

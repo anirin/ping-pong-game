@@ -1,7 +1,9 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { Match } from "@domain/model/entity/match/Match.js";
+import type { MatchHistory } from "@domain/model/entity/match/MatchHistory.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 
 export class InMemoryMatchRepository implements MatchRepository {
 	private matches: Map<MatchId, Match> = new Map();
@@ -37,4 +39,10 @@ export class InMemoryMatchRepository implements MatchRepository {
 		}
 		return result;
 	}
+
+	//
+	async findFinishedByUser(userId: UserId): Promise<MatchHistory[] | null> {
+		return null;
+	}
+	//
 }

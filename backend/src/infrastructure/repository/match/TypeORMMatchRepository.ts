@@ -1,14 +1,16 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import { Match } from "@domain/model/entity/match/Match.js";
+import { MatchHistory } from "@domain/model/entity/match/MatchHistory.js";
 import type {
 	MatchId,
 	MatchStatus,
 } from "@domain/model/value-object/match/Match.js";
 import { MatchRule } from "@domain/model/value-object/match/Match.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
+import type { UserId } from "@domain/model/value-object/user/User.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
+import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import type { Repository } from "typeorm";
-
 export class TypeORMMatchRepository implements MatchRepository {
 	constructor(private readonly repository: Repository<MatchEntity>) {}
 
@@ -58,6 +60,32 @@ export class TypeORMMatchRepository implements MatchRepository {
 			score2: entity.score2,
 			winnerId: entity.winnerId,
 		});
+	}
+
+	async findFinishedByUser(userId: UserId): Promise<MatchHistory[] | null> {
+		const rows = await this.repository
+			.createQueryBuilder("m")
+			.leftJoin(UserEntity, "u1", "u1.id = m.player1")
+			.leftJoin(UserEntity, "u2", "u2.id = m.player2")
+			.where("m.player1 = :uid OR m.player2 = :uid", { uid: userId })
+			.andWhere("m.status = :status", { status: "finished" })
+			.select([
+				"m.id AS id",
+				"m.player1 AS player1Id",
+				"m.player2 AS player2Id",
+				"m.score1 AS score1",
+				"m.score2 AS score2",
+				"m.status AS status",
+				"m.winnerId AS winnerId",
+				`CASE WHEN m.player1 = :uid THEN u2.id ELSE u1.id END AS opponentId`,
+				`CASE WHEN m.player1 = :uid THEN u2.username ELSE u1.username END AS opponentName`,
+				`CASE WHEN m.player1 = :uid THEN u2.avatar_url ELSE u1.avatar_url END AS opponentAvatarUrl`,
+			])
+			.setParameter("uid", userId)
+			.orderBy("m.id", "DESC")
+			.getRawMany();
+
+		return rows.map((r: any) => MatchHistory.fromRaw(r, String(userId)));
 	}
 
 	/**

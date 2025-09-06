@@ -81,4 +81,5 @@ export async function registerUserRoutes(app: FastifyInstance) {
 			}
 		},
 	);
+	app.get;
 }
