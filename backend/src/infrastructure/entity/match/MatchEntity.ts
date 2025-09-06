@@ -1,7 +1,7 @@
 import type { Match } from "@domain/model/entity/match/Match.js";
 import {
 	Column,
-	// CreateDateColumn,
+	CreateDateColumn,
 	Entity,
 	PrimaryColumn,
 	// UpdateDateColumn,
@@ -35,4 +35,7 @@ export class MatchEntity {
 
 	@Column("uuid")
 	tournamentId!: string;
+
+	@CreateDateColumn()
+	created_at!: Date;
 }
