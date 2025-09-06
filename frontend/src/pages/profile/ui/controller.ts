@@ -29,14 +29,14 @@ export async function mountProfile(
 
 	if (res.ok === false) {
 		alert(res.error);
-		// 	navigate("/auth/login");
+			navigate("/auth/login");
 		return;
 	}
 	const decoded = decodeJwt(token);
 	const userId = decoded?.id || decoded?.sub;
 	if (!userId) {
 		alert("ユーザーIDを取得できません");
-		// 	navigate("/auth/login");
+			navigate("/auth/login");
 		return;
 	}
 

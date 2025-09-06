@@ -6,6 +6,7 @@ import html from "./ui/profile.html?raw";
 
 export function renderProfilePage() {
 	const app = document.getElementById("app")!;
+	app.innerHTML = html;
 
 	const headerHost = app?.querySelector("#header-widget") as HTMLElement;
 	HeaderWidget(headerHost);
