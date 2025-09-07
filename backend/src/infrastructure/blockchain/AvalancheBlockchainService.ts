@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
-// import TournamentScoreABI from "../abi/contracts/TournamentScore.sol/TournamentScore.json" with {
-// 	type: "json",
-// };
+import TournamentScoreABI from "../abi/contracts/TournamentScore.sol/TournamentScore.json" with {
+	type: "json",
+};
 
 export class AvalancheBlockchainService {
 	private static instance: AvalancheBlockchainService;
@@ -15,7 +15,6 @@ export class AvalancheBlockchainService {
 		const contractAddress = process.env.CONTRACT_ADDRESS;
 
 		if (!rpcUrl || !privateKey || !contractAddress) {
-			// ★★★ rpcUrlもチェック対象に ★★★
 			console.error(
 				"[Blockchain] Service not initialized: Missing environment variables.",
 			);
