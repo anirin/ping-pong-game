@@ -1,4 +1,6 @@
 import avatarHtml from "./change_avatar.html?raw";
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 
 // JWTトークンをデコードする関数
 function decodeJwt(token: string): any {
@@ -36,7 +38,7 @@ async function loadCurrentUserAvatar(previewImage: HTMLImageElement) {
 	}
 
 	try {
-		const res = await fetch(`https://localhost:8080/users/${userId}`, {
+		const res = await fetch(`${VITE_BASE_URL}/users/${userId}`, {
 			headers: { Authorization: `Bearer ${token}` },
 		});
 		if (res.ok) {
@@ -79,7 +81,7 @@ async function handleUpdateAvatarSubmit(event: SubmitEvent) {
 
 	try {
 		const response = await fetch(
-			`https://localhost:8080/users/${userId}/avatar`,
+			`${VITE_BASE_URL}/users/${userId}/avatar`,
 			{
 				method: "PATCH",
 				headers: {

@@ -1,4 +1,5 @@
 import loginHtml from "./login.html?raw";
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 	event.preventDefault();
@@ -17,7 +18,7 @@ async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 	};
 
 	try {
-		const response = await fetch("https://localhost:8080/auth/login", {
+		const response = await fetch(`${VITE_BASE_URL}/auth/login`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(loginData),
@@ -33,6 +34,8 @@ async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 			// QRコードを表示する2FAセットアップページにリダイレクト
 			window.location.href = "/auth/setup";
 		} else {
+			console.log(`${VITE_BASE_URL}`)
+			console.log(import.meta.env)
 			// ログイン失敗（Email or Passwordが違うなど）
 			const errorData = await response.json();
 			console.error("Login failed:", errorData);

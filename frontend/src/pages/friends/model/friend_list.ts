@@ -1,4 +1,5 @@
 import { http } from "../api/friend_list.ts";
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -17,7 +18,7 @@ export async function fetchFriends(): Promise<Result<Friend[]>> {
 			return { ok: false, error: "ログインしてください" };
 		}
 		const res: Friend[] = await http<Friend[]>(
-			"https://localhost:8080/friends",
+			`${VITE_BASE_URL}/friends`,
 			{
 				method: "GET",
 				headers: {

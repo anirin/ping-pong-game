@@ -7,6 +7,8 @@ import { renderChangeAvatarWidget } from "../change_avatar/index";
 import "./change_username.css";
 import usernameFormHtml from "./change_username.html?raw";
 import pageLayoutHtml from "./change_username_page.html?raw";
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 
 // import { HeaderWidget } from "../../widgets/header";
 // JWTトークンからペイロードをデコードするヘルパー関数 (変更なし)
@@ -57,7 +59,7 @@ async function handleUpdateUsernameSubmit(event: SubmitEvent) {
 
 	try {
 		const response = await fetch(
-			`https://localhost:8080/users/${userId}/username`,
+			`${VITE_BASE_URL}/users/${userId}/username`,
 			{
 				method: "PATCH",
 				headers: {
