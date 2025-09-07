@@ -37,8 +37,6 @@ services:
      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
      - xpack.security.transport.ssl.verification_mode=certificate
      - xpack.license.self_generated.type=${LICENSE}
-    networks:
-      - elasticsearch
     mem_limit: ${ES_MEM_LIMIT}
 
   logstash:
@@ -58,8 +56,6 @@ services:
      - ELASTIC_USER=elastic
      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
      - ELASTIC_HOSTS=https://elasticsearch:9200
-    networks:
-      - elasticsearch
 
   kibana:
     container_name: kibana
@@ -79,8 +75,6 @@ services:
     ports:
       - "5601:5601"
     depends_on:
-      - elasticsearch
-    networks:
       - elasticsearch
     mem_limit: ${KB_MEM_LIMIT}
 
@@ -103,8 +97,6 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
-      - elasticsearch
-    networks:
       - elasticsearch
 
   frontend:
@@ -143,8 +135,9 @@ volumes:
   filebeatdata:
 
 networks:
-  elasticsearch:
-    driver: bridge
+ default:
+   name: elastic
+   external: false
 
 secrets:
   server_certificate:
