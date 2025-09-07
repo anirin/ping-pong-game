@@ -1,9 +1,12 @@
 FROM node:20-alpine
+RUN npm install -g typescript
+
 WORKDIR /app
-ENV NODE_ENV=development
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+COPY ./entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 EXPOSE 8080
-CMD ["npm", "run", "start"]
+
+ENTRYPOINT [ "/app/entrypoint.sh" ]

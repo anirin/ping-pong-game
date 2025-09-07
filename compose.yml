@@ -114,6 +114,7 @@ services:
       - logstash
     volumes:
       - ./backend:/app
+      - ./backend/entrypoint.sh:/app/entrypoint.sh
       - backend_modules:/app/node_modules
     secrets:
       - server_certificate
