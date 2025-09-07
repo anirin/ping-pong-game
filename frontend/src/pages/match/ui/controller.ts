@@ -3,7 +3,7 @@ import { MatchAPI, type RealtimeMatchStateDto } from "../api/api";
 
 // 定数定義
 const CONSTANTS = {
-	PADDLE_SPEED: 8, // 速度を少し上げてよりレスポンシブに
+	PADDLE_SPEED: 5,
 	PADDLE_HEIGHT: 100,
 	PADDLE_WIDTH: 10,
 	PADDLE_MARGIN: 10,
