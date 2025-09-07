@@ -3,7 +3,7 @@ import { MatchAPI, type RealtimeMatchStateDto } from "../api/api";
 
 // 定数定義
 const CONSTANTS = {
-	PADDLE_SPEED: 7,
+	PADDLE_SPEED: 5,
 	PADDLE_HEIGHT: 100,
 	PADDLE_WIDTH: 10,
 	PADDLE_MARGIN: 10,
@@ -31,13 +31,15 @@ export class MatchController {
 	private movingUp: boolean = false;
 	private movingDown: boolean = false;
 	private hasResetReadyState: boolean = false;
+
+	// 位置修正のためのプロパティ
+	private correctionThreshold: number = 3; // 閾値を下げてより敏感に修正
+	private correctionCount: number = 0;
+	private lastCorrectionTime: number = 0;
+	private correctionCooldown: number = 50; // 50msのクールダウン
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private matchAPI = new MatchAPI();
-
-	// 位置修正のためのプロパティ
-	private correctionThreshold: number = 5; // 閾値を下げてより敏感に修正
-	private correctionCount: number = 0;
 
 	// フレームレート制御
 	private frameInterval: number = 1000 / 120; // 8.33ms
@@ -529,18 +531,37 @@ export class MatchController {
 	 * サーバー位置との整合性をチェックし、必要に応じて位置を修正する
 	 */
 	private checkAndCorrectPosition(serverState: RealtimeMatchStateDto): void {
+		const currentTime = Date.now();
 		const serverPaddleY = this.getMyServerPaddleY(serverState);
 		const error = Math.abs(this.myPredictedPaddleY - serverPaddleY);
 
+		// クールダウン期間中は修正をスキップ
+		if (currentTime - this.lastCorrectionTime < this.correctionCooldown) {
+			return;
+		}
+
 		if (error > this.correctionThreshold) {
 			this.correctionCount++;
+			this.lastCorrectionTime = currentTime;
+
 			console.log(
 				`[位置修正 #${this.correctionCount}] 予測=${this.myPredictedPaddleY.toFixed(1)}, サーバー=${serverPaddleY.toFixed(1)}, 誤差=${error.toFixed(1)}px`,
 			);
 
-			// 即座に位置を修正
-			this.myPredictedPaddleY = serverPaddleY;
+			// 滑らかな補間で位置を修正
+			this.smoothCorrectPosition(serverPaddleY);
 		}
+	}
+
+	/**
+	 * 滑らかな位置補正を実行
+	 */
+	private smoothCorrectPosition(targetY: number): void {
+		const error = targetY - this.myPredictedPaddleY;
+		const correctionSpeed = 0.3; // 補正速度（0-1の間）
+
+		// 段階的に位置を修正
+		this.myPredictedPaddleY += error * correctionSpeed;
 	}
 
 	/**
