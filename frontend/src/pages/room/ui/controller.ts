@@ -242,7 +242,23 @@ export class RoomController {
 		) as HTMLButtonElement;
 		if (startGameButton) {
 			const canStart = this.roomAPI.canStartGame();
-			startGameButton.hidden = !canStart;
+			const isOwner = state.isOwner;
+			const participantCount = state.participants.length;
+			
+			if (isOwner) {
+				startGameButton.hidden = false;
+				startGameButton.disabled = !canStart;
+				
+				if (canStart) {
+					startGameButton.textContent = "Start Game";
+					startGameButton.className = "btn btn-primary";
+				} else {
+					startGameButton.textContent = `Start Game (${participantCount}/4 players)`;
+					startGameButton.className = "btn btn-primary disabled";
+				}
+			} else {
+				startGameButton.hidden = true;
+			}
 		}
 
 		// 退出/削除ボタン
