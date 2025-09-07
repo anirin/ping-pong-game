@@ -5,14 +5,14 @@
 	"main": "dist/index.js",
 	"type": "module",
 	"scripts": {
-    "prebuild": "cd ../blockchain && npx hardhat compile",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
-    "start": "node dist/index.js",
-    "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "lint": "biome check .",
-    "fix": "biome check --write .",
-    "format": "biome format --write ."
-  },
+		"prebuild": "cd ../blockchain && npx hardhat compile",
+		"build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+		"start": "node dist/index.js",
+		"start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+		"lint": "biome check .",
+		"fix": "biome check --write .",
+		"format": "biome format --write ."
+	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
