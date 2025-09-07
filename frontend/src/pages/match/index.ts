@@ -39,7 +39,7 @@ export async function renderMatchPage(params?: { [key: string]: string }) {
 }
 
 function setupEventListeners(state: MatchPageState): void {
-	const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+	const handleBeforeUnload = (_event: BeforeUnloadEvent) => {
 		if (!state.isDestroyed && state.controller) {
 			state.controller.destroy();
 		}

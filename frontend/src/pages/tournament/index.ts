@@ -38,7 +38,7 @@ export function renderTournamentPage(params?: { [key: string]: string }) {
 }
 
 function setupEventListeners(state: TournamentPageState): void {
-	const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+	const handleBeforeUnload = (_event: BeforeUnloadEvent) => {
 		if (!state.isDestroyed && state.controller) {
 			state.controller.destroy();
 		}
