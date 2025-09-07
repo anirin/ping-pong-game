@@ -40,6 +40,9 @@ export class MatchAPI {
 	private controllerCallback: ((data: any, action?: string) => void) | null =
 		null;
 
+	// 重複実行を防ぐためのフラグ
+	private isStartingMatch: boolean = false;
+
 	constructor() {
 		console.log("[DEBUG] MatchAPI constructor called");
 		this.wsManager = WebSocketManager.getInstance();
@@ -152,6 +155,12 @@ export class MatchAPI {
 
 	// 送信 マッチの開始
 	public startMatchIfPlayer1(): void {
+		// 重複実行を防ぐ
+		if (this.isStartingMatch) {
+			console.log("Match is already starting, skipping duplicate request");
+			return;
+		}
+
 		if (!this.matchId || !this.userId) {
 			console.error("Match ID or User ID is not set");
 			return;
@@ -159,6 +168,7 @@ export class MatchAPI {
 
 		const playerRole = this.getPlayerRole();
 		if (playerRole === "player1") {
+			this.isStartingMatch = true;
 			this.startMatch();
 		}
 	}
@@ -170,6 +180,7 @@ export class MatchAPI {
 	private resetReadyState(): void {
 		this.readyPlayers.clear();
 		this.isReady = false;
+		this.isStartingMatch = false; // マッチ開始フラグもリセット
 	}
 
 	private handleMessage(message: WebSocketMessage): void {
@@ -213,6 +224,7 @@ export class MatchAPI {
 				}
 			} else if (message.data && message.data.type === "error") {
 				console.error("MatchAPI: Match error:", message.data.message);
+				this.isStartingMatch = false; // エラー時もマッチ開始フラグをリセット
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "error");
 				}
@@ -290,6 +302,12 @@ export class MatchAPI {
 			action: "start",
 			matchId: this.matchId,
 		});
+
+		// マッチ開始リクエスト送信後、適切なタイミングでフラグをリセット
+		// サーバーからの応答を待たずにリセット（重複送信を防ぐため）
+		setTimeout(() => {
+			this.isStartingMatch = false;
+		}, 1000); // 1秒後にリセット
 	}
 
 	private initializeUserId(): void {

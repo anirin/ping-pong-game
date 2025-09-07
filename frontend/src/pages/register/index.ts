@@ -1,5 +1,7 @@
 import registerHtml from "./register.html?raw";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 // handleRegisterSubmit関数をasyncにして、awaitを使えるようにする
 async function handleRegisterSubmit(event: SubmitEvent): Promise<void> {
 	event.preventDefault();
@@ -25,7 +27,7 @@ async function handleRegisterSubmit(event: SubmitEvent): Promise<void> {
 
 	try {
 		// fetch APIを使ってバックエンドにPOSTリクエストを送信
-		const response = await fetch("https://localhost:8080/auth/register", {
+		const response = await fetch(`${VITE_BASE_URL}/auth/register`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

@@ -1,5 +1,7 @@
 import { http } from "../api/friend_pending.ts";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export type Friend = {
@@ -17,7 +19,7 @@ export async function fetchFriends(): Promise<Result<Friend[]>> {
 			return { ok: false, error: "ログインしてください" };
 		}
 		const res: Friend[] = await http<Friend[]>(
-			"https://localhost:8080/friends/pending",
+			`${VITE_BASE_URL}/friends/pending`,
 			{
 				method: "GET",
 				headers: {

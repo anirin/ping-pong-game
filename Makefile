@@ -27,7 +27,7 @@ start:
 log:
 	$(COMPOSE) logs
 
-build-f:
-	docker compose -f ./compose.yml build --no-cache frontend
+build-backend:
+	docker-compose build --no-cache backend
 
 re: fclean all
