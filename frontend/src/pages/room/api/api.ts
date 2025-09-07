@@ -158,7 +158,7 @@ export class RoomAPI {
 	public canStartGame(): boolean {
 		return (
 			this.roomState.isOwner &&
-			this.roomState.participants.length >= 2 &&
+			this.roomState.participants.length >= 4 &&
 			this.roomState.isWsConnected
 		);
 	}

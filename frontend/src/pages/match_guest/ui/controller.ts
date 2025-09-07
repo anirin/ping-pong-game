@@ -405,8 +405,8 @@ export class GuestMatchController {
 			this.updateScoreboard();
 		}
 
-		// ゲーム終了判定（先に1点取った方が勝ち）
-		if (this.gameState.score1 >= 1 || this.gameState.score2 >= 1) {
+		// ゲーム終了判定（先に3点取った方が勝ち）
+		if (this.gameState.score1 >= 3 || this.gameState.score2 >= 3) {
 			this.endGame();
 		}
 	}

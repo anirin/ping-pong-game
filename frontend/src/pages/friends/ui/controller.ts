@@ -8,8 +8,11 @@ export async function mountFriendList(
 	root.innerHTML = "";
 
 	if (res.ok === false) {
-		alert(res.error);
-		navigate("/auth/login");
+		const messageEl = document.createElement("p");
+		messageEl.textContent = "ログインされていません。";
+		messageEl.style.color = "#888";
+		messageEl.style.textAlign = "center";
+		root.appendChild(messageEl);
 		return;
 	}
 
