@@ -1,3 +1,5 @@
+const VITE_URL = import.meta.env.VITE_URL;
+
 export type WebSocketMessage = {
 	status: string;
 	action?: string;
@@ -134,7 +136,7 @@ export class WebSocketManager {
 
 	// WebSocketエンドポイントの構築
 	private buildWebSocketEndpoint(roomId: string): string {
-		const baseUrl = "wss://localhost:8080";
+		const baseUrl = `wss://${VITE_URL}`;
 		return `${baseUrl}/socket?room=${roomId}`;
 	}
 
