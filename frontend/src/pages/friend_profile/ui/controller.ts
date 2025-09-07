@@ -14,11 +14,14 @@ export async function mountFriendProfile(
 	const res = await fetchFriendProfile(id);
 	root.innerHTML = "";
 
-	// if (res.ok === false) {
-	// 	alert(res.error);
-	// 	if (res.error === "ログインしてください") navigate("/auth/login");
-	// 	return;
-	// }
+	if (res.ok === false) {
+		const messageEl = document.createElement("p");
+		messageEl.textContent = "ログインされていません。";
+		messageEl.style.color = "#888";
+		messageEl.style.textAlign = "center";
+		root.appendChild(messageEl);
+		return;
+	}
 
 	const user = res.value;
 	const card = document.createElement("div");

@@ -3,7 +3,6 @@ import { fetchFriendById, sendFriendRequest } from "../model/friend_request";
 
 export async function mountFriendRequest(
 	root: HTMLElement,
-	navigate: (path: string) => void,
 ) {
 	const searchBtn = root.querySelector("#search-btn") as HTMLButtonElement;
 	const input = root.querySelector("#friend-id") as HTMLInputElement;
@@ -18,11 +17,14 @@ export async function mountFriendRequest(
 		const res = await fetchFriendById(friendId);
 		result.innerHTML = "";
 
-		// if (res.ok === false) {
-		// 	alert(res.error);
-		// 	if (res.error === "ログインしてください") navigate("/auth/login");
-		// 	return;
-		// }
+		if (res.ok === false) {
+			const messageEl = document.createElement("p");
+			messageEl.textContent = "ログインされていません。";
+			messageEl.style.color = "#888";
+			messageEl.style.textAlign = "center";
+			root.appendChild(messageEl);
+			return;
+		}
 
 		const user = res.value;
 		const card = document.createElement("div");
