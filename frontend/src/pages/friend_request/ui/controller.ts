@@ -1,7 +1,10 @@
 import { fetchFriendById, sendFriendRequest } from "../model/friend_request";
 // import avatar from "./a.jpg";
 
-export async function mountFriendRequest(root: HTMLElement) {
+export async function mountFriendRequest(
+	root: HTMLElement,
+	navigate: (path: string) => void,
+) {
 	const searchBtn = root.querySelector("#search-btn") as HTMLButtonElement;
 	const input = root.querySelector("#friend-id") as HTMLInputElement;
 	const result = root.querySelector("#search-result") as HTMLElement;
@@ -16,11 +19,8 @@ export async function mountFriendRequest(root: HTMLElement) {
 		result.innerHTML = "";
 
 		if (res.ok === false) {
-			const messageEl = document.createElement("p");
-			messageEl.textContent = "ログインされていません。";
-			messageEl.style.color = "#888";
-			messageEl.style.textAlign = "center";
-			root.appendChild(messageEl);
+			alert(res.error);
+			if (res.error === "ログインしてください") navigate("/auth/login");
 			return;
 		}
 
