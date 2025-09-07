@@ -159,15 +159,15 @@ export class TournamentService {
 			try {
 				console.log("saveAll matches");
 				await this.matchRepository.saveAll(tournament!.matches);
-				console.log(
-					"save tournament currentRound : ",
-					tournament!.currentRound,
-				);
+				// console.log(
+				// 	"save tournament currentRound : ",
+				// 	tournament!.currentRound,
+				// );
 				await this.tournamentRepository.save(tournament!); // ここで currentRound が更新される
 
 				// debug
 				await this.tournamentRepository.findById(tournamentId);
-				console.log("tournament currentRound : ", tournament!.currentRound);
+				// console.log("tournament currentRound : ", tournament!.currentRound);
 			} catch (error) {
 				throw new Error("Failed to save matches");
 			}
@@ -241,10 +241,10 @@ export class TournamentService {
 				throw new Error("Tournament not found for this room");
 			}
 
-			console.log(
-				"get status : tournament currentRound : ",
-				tournament.currentRound,
-			);
+			// console.log(
+			// 	"get status : tournament currentRound : ",
+			// 	tournament.currentRound,
+			// );
 
 			if (tournament.status === "finished") {
 				const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(

@@ -214,6 +214,7 @@ export class MatchService {
 
 		// tournament event を発火
 		const tournamentId: TournamentId = savedMatch.tournamentId;
+		console.log(`MatchService : match finished tournamentId: ${tournamentId}`);
 		globalEventEmitter.emit(
 			"match.finished",
 			tournamentId,
