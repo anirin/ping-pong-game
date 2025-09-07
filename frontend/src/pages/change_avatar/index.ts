@@ -1,6 +1,6 @@
 import avatarHtml from "./change_avatar.html?raw";
-const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // JWTトークンをデコードする関数
 function decodeJwt(token: string): any {
@@ -80,17 +80,14 @@ async function handleUpdateAvatarSubmit(event: SubmitEvent) {
 	}
 
 	try {
-		const response = await fetch(
-			`${VITE_BASE_URL}/users/${userId}/avatar`,
-			{
-				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
-				},
-				body: JSON.stringify({ avatar: selectedAvatarBase64 }),
+		const response = await fetch(`${VITE_BASE_URL}/users/${userId}/avatar`, {
+			method: "PATCH",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${token}`,
 			},
-		);
+			body: JSON.stringify({ avatar: selectedAvatarBase64 }),
+		});
 		const data = await response.json();
 		if (response.ok) {
 			if (messageElement) {

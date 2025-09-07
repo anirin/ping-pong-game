@@ -1,4 +1,5 @@
 import setupHtml from "./setup.html?raw";
+
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 function decodeJwt(token: string): any {

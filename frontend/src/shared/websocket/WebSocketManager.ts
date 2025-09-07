@@ -1,6 +1,5 @@
 const VITE_URL = import.meta.env.VITE_URL;
 
-
 export type WebSocketMessage = {
 	status: string;
 	action?: string;

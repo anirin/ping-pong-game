@@ -3,6 +3,7 @@ import "./lobby.css";
 import { HeaderWidget } from "@widgets/header";
 import { SidebarWidget } from "@widgets/sidebar";
 import { navigate } from "../../app/routing/index";
+
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 async function handleCreateRoom() {

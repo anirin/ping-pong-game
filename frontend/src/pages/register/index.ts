@@ -1,4 +1,5 @@
 import registerHtml from "./register.html?raw";
+
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 // handleRegisterSubmit関数をasyncにして、awaitを使えるようにする

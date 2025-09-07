@@ -1,4 +1,5 @@
 import loginHtml from "./login.html?raw";
+
 const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
 
 async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
@@ -34,8 +35,8 @@ async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 			// QRコードを表示する2FAセットアップページにリダイレクト
 			window.location.href = "/auth/setup";
 		} else {
-			console.log(`${VITE_BASE_URL}`)
-			console.log(import.meta.env)
+			console.log(`${VITE_BASE_URL}`);
+			console.log(import.meta.env);
 			// ログイン失敗（Email or Passwordが違うなど）
 			const errorData = await response.json();
 			console.error("Login failed:", errorData);
