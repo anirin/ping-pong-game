@@ -35,8 +35,6 @@ async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 			// QRコードを表示する2FAセットアップページにリダイレクト
 			window.location.href = "/auth/setup";
 		} else {
-			console.log(`${VITE_BASE_URL}`);
-			console.log(import.meta.env);
 			// ログイン失敗（Email or Passwordが違うなど）
 			const errorData = await response.json();
 			console.error("Login failed:", errorData);
