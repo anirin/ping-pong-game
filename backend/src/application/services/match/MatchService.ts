@@ -4,13 +4,13 @@ import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { TournamentId } from "@domain/model/value-object/tournament/Tournament.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
+import { AvalancheBlockchainService } from "@infrastructure/blockchain/AvalancheBlockchainService.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { globalEventEmitter } from "@presentation/event/globalEventEmitter.js"; // 逆転しているやばい実装だが致し方なし
 import type { RealtimeMatchStateDto } from "@presentation/websocket/match/match-msg.js";
 import { wsManager } from "@presentation/websocket/ws-manager.js";
-import { AvalancheBlockchainService } from "@infrastructure/blockchain/AvalancheBlockchainService.js";
 
 type Info = {
 	interval: NodeJS.Timeout;
@@ -213,9 +213,9 @@ export class MatchService {
 			try {
 				// DB保存後の最終的なMatchの状態を取得 (引数で受け取ったmatchオブジェクトをそのまま使う)
 				const finalMatchState = match;
-				
+
 				const blockchainService = AvalancheBlockchainService.getInstance();
-				
+
 				await blockchainService.recordMatchResult(
 					finalMatchState.id,
 					finalMatchState.tournamentId,
@@ -223,12 +223,17 @@ export class MatchService {
 					finalMatchState.player2Id,
 					finalMatchState.score1,
 					finalMatchState.score2,
-					finalMatchState.winnerId! // finishMatchが呼ばれる時点でwinnerIdは必ず存在する
+					finalMatchState.winnerId!, // finishMatchが呼ばれる時点でwinnerIdは必ず存在する
 				);
-				console.log(`[Service] Successfully recorded match ${matchId} to blockchain.`);
+				console.log(
+					`[Service] Successfully recorded match ${matchId} to blockchain.`,
+				);
 			} catch (err) {
 				// ブロックチェーンへの記録が失敗しても、ゲーム全体の進行には影響を与えない
-				console.error(`[Service] Failed to record match ${matchId} to blockchain.`, err);
+				console.error(
+					`[Service] Failed to record match ${matchId} to blockchain.`,
+					err,
+				);
 			}
 		})();
 
