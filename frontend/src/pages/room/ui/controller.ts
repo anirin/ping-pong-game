@@ -92,6 +92,13 @@ export class RoomController {
 			return;
 		}
 
+		if (action === "FORCE_LOBBY") {
+			// 強制的にlobbyに戻す処理
+			console.log("Force lobby");
+			this.handleForceLobby();
+			return;
+		}
+
 		console.log("RoomController: データ更新を受信", state);
 		this.updateUI(state);
 	}
@@ -109,6 +116,22 @@ export class RoomController {
 
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			navigate("/lobby");
+		}, 3000);
+	}
+
+	private handleForceLobby(): void {
+		// 強制的にlobbyに戻す処理
+		const message =
+			"A user has been disconnected for too long. Returning to lobby.";
+
+		console.log(`Force lobby - Message: ${message}`);
+
+		// ユーザーに通知を表示
+		this.showForceLobbyNotification(message);
 
 		// 3秒後にロビーページにナビゲート
 		setTimeout(() => {
@@ -152,6 +175,45 @@ export class RoomController {
 		if (leaveButton) {
 			leaveButton.disabled = true;
 			leaveButton.textContent = "Redirecting...";
+		}
+	}
+
+	private showForceLobbyNotification(message: string): void {
+		// 通知メッセージを表示
+		const messageArea = document.getElementById("message-area");
+		if (messageArea) {
+			messageArea.innerHTML = `
+				<div style="
+					background: #fff3cd;
+					color: #856404;
+					padding: 1rem;
+					border-radius: 5px;
+					border: 1px solid #ffeaa7;
+					text-align: center;
+					margin: 1rem 0;
+				">
+					<strong>🔌 ${message}</strong><br>
+					<span style="font-size: 0.9rem;">Redirecting to lobby in 3 seconds...</span>
+				</div>
+			`;
+		}
+
+		// ボタンを無効化
+		const startButton = document.getElementById(
+			"start-game-button",
+		) as HTMLButtonElement;
+		const leaveButton = document.getElementById(
+			"leave-delete-button",
+		) as HTMLButtonElement;
+
+		if (startButton) {
+			startButton.disabled = true;
+			startButton.textContent = "Disconnected";
+		}
+
+		if (leaveButton) {
+			leaveButton.disabled = true;
+			leaveButton.textContent = "Disconnected";
 		}
 	}
 

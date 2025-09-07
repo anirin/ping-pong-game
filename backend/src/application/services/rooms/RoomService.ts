@@ -99,7 +99,7 @@ export class RoomService {
 		const ownerid: UserId = room.ownerId;
 		console.log("room.started event emitted");
 		globalEventEmitter.emit("room.started", roomid, participants, ownerid);
-		return false;
+		return true;
 	}
 
 	async deleteRoom(roomid: string, userid: UserId): Promise<boolean> {

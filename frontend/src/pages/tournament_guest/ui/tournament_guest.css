@@ -18,7 +18,7 @@
 	overflow-y: auto;
 }
 
-/* --- トーナメントページ専用スタイル --- */
+/* --- ゲストトーナメントページ専用スタイル --- */
 .tournament-widget-container {
 	background-color: #ffffff;
 	padding: 25px 30px;
@@ -92,14 +92,6 @@
 	align-items: center;
 	flex: 1;
 	gap: 15px;
-}
-
-.player-avatar {
-	width: 45px;
-	height: 45px;
-	border-radius: 50%;
-	object-fit: cover;
-	border: 2px solid #ddd;
 }
 
 .player-details {

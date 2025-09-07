@@ -149,7 +149,7 @@ export class MatchService {
 					}
 					return;
 				}
-			}, 1000 / 60); // 60fps
+			}, 1000 / 120); // 120fps
 
 			this.intervals.set(matchId, { interval, match });
 		} finally {

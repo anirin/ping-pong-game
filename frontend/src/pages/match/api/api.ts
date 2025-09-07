@@ -174,6 +174,15 @@ export class MatchAPI {
 			return;
 		}
 
+		if (message.status === "Room" && message.data?.action === "FORCE_LOBBY") {
+			// 強制的にlobbyに戻す通知
+			console.log("MatchAPI: Force lobby", message.data);
+			if (this.controllerCallback) {
+				this.controllerCallback(message.data, "force_lobby");
+			}
+			return;
+		}
+
 		if (message.status !== "Match") {
 			console.error("MatchAPI: 不明なステータス", message.status);
 			return;

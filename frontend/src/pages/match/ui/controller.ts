@@ -35,6 +35,13 @@ export class MatchController {
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private matchAPI = new MatchAPI();
 
+	// 位置修正のためのプロパティ
+	private correctionThreshold: number = 5; // 閾値を下げてより敏感に修正
+	private correctionCount: number = 0;
+
+	// フレームレート制御
+	private frameInterval: number = 1000 / 120; // 8.33ms
+
 	constructor(params?: { [key: string]: string }) {
 		console.log("MatchController constructor", params);
 		if (params) {
@@ -127,6 +134,7 @@ export class MatchController {
 
 	private initializeMatchState(): void {
 		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
+		this.correctionCount = 0;
 		this.hasResetReadyState = false;
 		this.serverState = null;
 		this.myPlayerNumber = null;
@@ -195,6 +203,24 @@ export class MatchController {
 		}, 3000);
 	}
 
+	private handleForceLobby(data: any): void {
+		// 強制的にlobbyに戻す処理
+		const reason = data?.reason || "unknown";
+		const message =
+			data?.message ||
+			"A user has been disconnected for too long. Returning to lobby.";
+
+		console.log(`Match force lobby - Reason: ${reason}, Message: ${message}`);
+
+		// ユーザーに通知を表示
+		this.showForceLobbyNotification(message);
+
+		// 3秒後にロビーページにナビゲート
+		setTimeout(() => {
+			navigate("/lobby");
+		}, 3000);
+	}
+
 	private showRoomDeletedNotification(message: string): void {
 		try {
 			// キャンバス上に通知を表示
@@ -231,6 +257,53 @@ export class MatchController {
 			}
 		} catch (error) {
 			console.error("マッチ画面でのルーム削除通知の表示に失敗:", error);
+		}
+	}
+
+	private showForceLobbyNotification(message: string): void {
+		try {
+			const modal = this.createModal(
+				"force-lobby-modal",
+				`
+					<div class="force-lobby-content">
+						<h2>🔌 接続が切断されました</h2>
+						<p>${message}</p>
+						<p>3秒後にロビーに戻ります...</p>
+					</div>
+				`,
+				{
+					position: "fixed",
+					top: "0",
+					left: "0",
+					width: "100%",
+					height: "100%",
+					background: "rgba(0, 0, 0, 0.8)",
+					display: "flex",
+					justifyContent: "center",
+					alignItems: "center",
+					zIndex: "10000",
+				},
+			);
+
+			// スタイルを追加
+			const style = document.createElement("style");
+			style.textContent = `
+				.force-lobby-content {
+					background: #fff3cd;
+					color: #856404;
+					padding: 2rem;
+					border-radius: 10px;
+					text-align: center;
+					box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+					border: 1px solid #ffeaa7;
+				}
+			`;
+			document.head.appendChild(style);
+
+			document.body.appendChild(modal);
+			this.autoRemoveModal(modal, 3000);
+		} catch (error) {
+			console.error("マッチ画面での強制lobby通知の表示に失敗:", error);
 		}
 	}
 
@@ -294,6 +367,10 @@ export class MatchController {
 			// ルーム削除時の処理
 			console.log("Match room deleted:", data);
 			this.handleRoomDeleted(data);
+		} else if (action === "force_lobby") {
+			// 強制的にlobbyに戻す処理
+			console.log("Match force lobby:", data);
+			this.handleForceLobby(data);
 		}
 	}
 
@@ -390,11 +467,22 @@ export class MatchController {
 		this.updateReadyButton();
 		this.updateReadyCount();
 		this.draw();
-		this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
+
+		// 120fpsで実行
+		setTimeout(() => {
+			this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
+		}, this.frameInterval);
 	}
 
 	private updateMatchState(): void {
-		this.serverState = this.matchAPI.getMatchData();
+		const newServerState = this.matchAPI.getMatchData();
+
+		// サーバー位置との整合性チェック
+		if (newServerState && this.serverState && this.myPlayerNumber) {
+			this.checkAndCorrectPosition(newServerState);
+		}
+
+		this.serverState = newServerState;
 
 		if (this.serverState && this.myPlayerNumber === null) {
 			this.initializePlayerRole();
@@ -435,6 +523,33 @@ export class MatchController {
 				? `Status: ${status}`
 				: "Waiting for match to start...";
 		}
+	}
+
+	/**
+	 * サーバー位置との整合性をチェックし、必要に応じて位置を修正する
+	 */
+	private checkAndCorrectPosition(serverState: RealtimeMatchStateDto): void {
+		const serverPaddleY = this.getMyServerPaddleY(serverState);
+		const error = Math.abs(this.myPredictedPaddleY - serverPaddleY);
+
+		if (error > this.correctionThreshold) {
+			this.correctionCount++;
+			console.log(
+				`[位置修正 #${this.correctionCount}] 予測=${this.myPredictedPaddleY.toFixed(1)}, サーバー=${serverPaddleY.toFixed(1)}, 誤差=${error.toFixed(1)}px`,
+			);
+
+			// 即座に位置を修正
+			this.myPredictedPaddleY = serverPaddleY;
+		}
+	}
+
+	/**
+	 * 自分のパドルのサーバー位置を取得
+	 */
+	private getMyServerPaddleY(serverState: RealtimeMatchStateDto): number {
+		return this.myPlayerNumber === "player1"
+			? serverState.paddles.player1.y
+			: serverState.paddles.player2.y;
 	}
 
 	private handleReadyButtonClick(): void {
@@ -686,9 +801,30 @@ export class MatchController {
 		this.animationFrameId = null;
 		this.serverState = null;
 		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
+		this.correctionCount = 0;
 		this.myPlayerNumber = null;
 		this.movingUp = false;
 		this.movingDown = false;
 		this.hasResetReadyState = false;
+	}
+
+	private createModal(
+		className: string,
+		innerHTML: string,
+		styles: Record<string, string>,
+	): HTMLElement {
+		const modal = document.createElement("div");
+		modal.className = className;
+		modal.innerHTML = innerHTML;
+		Object.assign(modal.style, styles);
+		return modal;
+	}
+
+	private autoRemoveModal(modal: HTMLElement, delay: number): void {
+		setTimeout(() => {
+			if (modal.parentNode) {
+				modal.parentNode.removeChild(modal);
+			}
+		}, delay);
 	}
 }

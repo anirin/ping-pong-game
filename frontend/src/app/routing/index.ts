@@ -3,15 +3,18 @@ import { renderAuthPage } from "@pages/first_page/index";
 // import { renderGamePage } from "@pages/game/index";
 import { renderHomePage } from "@pages/home/index";
 import { renderLobbyPage } from "@pages/lobby";
-import { renderGuestTournamentPage } from "@pages/lobby_guest";
+import { renderGuestTournamentPage as renderLobbyGuestPage } from "@pages/lobby_guest";
 import { renderLoginPage } from "@pages/login/index";
+import { renderGuestMatchPage } from "@pages/match_guest";
 import { renderRegisterPage } from "@pages/register/index";
 import { renderRoomPage } from "@pages/room";
 import { renderSetupPage } from "@pages/setup/index";
 import { renderTournamentPage } from "@pages/tournament";
+import { renderGuestTournamentPage } from "@pages/tournament_guest";
 import { isLoggedIn } from "@/app/auth";
 import { renderFriendListPage } from "@/pages/friends";
 import { renderMatchPage } from "@/pages/match";
+import { renderProfilePage } from "@/pages/profile";
 import { WebSocketManager } from "@/shared/websocket/WebSocketManager";
 
 let currentCleanup: (() => void) | null = null;
@@ -82,6 +85,10 @@ const routes: Route[] = [
 		handler: renderFriendProfilePage,
 	},
 	{
+		path: "/profile",
+		handler: renderProfilePage,
+	},
+	{
 		path: "/rooms/:roomId",
 		handler: renderRoomPage,
 	},
@@ -91,13 +98,21 @@ const routes: Route[] = [
 			if (isLoggedIn()) {
 				return renderLobbyPage();
 			} else {
-				return renderGuestTournamentPage();
+				return renderLobbyGuestPage();
 			}
 		},
 	},
 	{
 		path: "/match/:roomId/:matchId",
 		handler: renderMatchPage,
+	},
+	{
+		path: "/tournament_guest",
+		handler: renderGuestTournamentPage,
+	},
+	{
+		path: "/match_guest",
+		handler: renderGuestMatchPage,
 	},
 ];
 

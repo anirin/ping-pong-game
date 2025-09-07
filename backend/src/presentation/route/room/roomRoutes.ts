@@ -56,6 +56,10 @@ export async function RoomWSHandler(
 			if (
 				await room_service.startRoom(context.joinedRoom, context.authedUser)
 			) {
+				// room開始時に切断監視を開始
+				const { wsManager } = await import("../../websocket/ws-manager.js");
+				wsManager.startDisconnectMonitoring(context.joinedRoom);
+
 				return {
 					// 本来不要　エラー時は注意
 					status: "Room",
@@ -74,6 +78,10 @@ export async function RoomWSHandler(
 			if (
 				await room_service.deleteRoom(context.joinedRoom, context.authedUser)
 			) {
+				// room削除時に切断監視を停止
+				const { wsManager } = await import("../../websocket/ws-manager.js");
+				wsManager.stopDisconnectMonitoring(context.joinedRoom);
+
 				return {
 					status: "Room",
 					data: {

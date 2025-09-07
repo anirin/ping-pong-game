@@ -1,5 +1,6 @@
 import type { MatchRepository } from "@domain/interface/repository/match/MatchRepository.js";
 import type { TournamentRepository } from "@domain/interface/repository/tournament/TournamentRepository.js";
+import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { Tournament } from "@domain/model/entity/tournament/Tournament.js";
 import type { MatchId } from "@domain/model/value-object/match/Match.js";
 import type { RoomId } from "@domain/model/value-object/room/Room.js";
@@ -10,6 +11,7 @@ import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TournamentEntity } from "@infrastructure/entity/tournament/TournamentEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
 import { TypeORMTournamentRepository } from "@infrastructure/repository/tournament/TypeORMTournamentRepository.js";
+import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
 import { wsManager } from "@presentation/websocket/ws-manager.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -17,6 +19,7 @@ import { v4 as uuidv4 } from "uuid";
 export class TournamentService {
 	private readonly tournamentRepository: TournamentRepository;
 	private readonly matchRepository: MatchRepository;
+	private readonly userRepository: UserRepository;
 	private readonly roomId: RoomId;
 
 	// シングルトンインスタンスを管理するMap
@@ -29,6 +32,9 @@ export class TournamentService {
 		);
 		this.matchRepository = new TypeORMMatchRepository(
 			AppDataSource.getRepository(MatchEntity),
+		);
+		this.userRepository = new TypeOrmUserRepository(
+			AppDataSource.getRepository("UserEntity"),
 		);
 	}
 
@@ -241,10 +247,13 @@ export class TournamentService {
 			);
 
 			if (tournament.status === "finished") {
+				const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(
+					tournament.matches,
+				);
 				return {
 					status: tournament.status,
 					next_match_id: "",
-					matches: tournament.matches,
+					matches: matchesWithPlayerInfo,
 					current_round: tournament.currentRound,
 					winner_id: tournament.winner_id,
 				};
@@ -264,16 +273,68 @@ export class TournamentService {
 			tournament.currentRound = currentRound;
 
 			const nextMatch = tournament.getNextMatch();
+			const matchesWithPlayerInfo = await this.enrichMatchesWithPlayerInfo(
+				tournament.matches,
+			);
 
 			return {
 				status: tournament.status,
 				next_match_id: nextMatch?.id || "",
-				matches: tournament.matches,
+				matches: matchesWithPlayerInfo,
 				current_round: tournament.currentRound,
 				winner_id: tournament.winner_id,
 			};
 		} catch (error) {
 			throw new Error("Failed to get tournament status");
 		}
+	}
+
+	private async enrichMatchesWithPlayerInfo(matches: any[]): Promise<any[]> {
+		const enrichedMatches = await Promise.all(
+			matches.map(async (match) => {
+				try {
+					const player1 = await this.userRepository.findById(match.player1Id);
+					const player2 = await this.userRepository.findById(match.player2Id);
+
+					// マッチオブジェクトを正しくシリアライズ
+					const serializedMatch = match.toJSON ? match.toJSON() : match;
+
+					return {
+						...serializedMatch,
+						player1Info: {
+							id: match.player1Id,
+							username: player1?.username?.value || "Unknown Player",
+							avatar: player1?.avatar?.value || null,
+						},
+						player2Info: {
+							id: match.player2Id,
+							username: player2?.username?.value || "Unknown Player",
+							avatar: player2?.avatar?.value || null,
+						},
+					};
+				} catch (error) {
+					console.error(
+						`Failed to enrich match ${match.id} with player info:`,
+						error,
+					);
+					const serializedMatch = match.toJSON ? match.toJSON() : match;
+					return {
+						...serializedMatch,
+						player1Info: {
+							id: match.player1Id,
+							username: "Unknown Player",
+							avatar: null,
+						},
+						player2Info: {
+							id: match.player2Id,
+							username: "Unknown Player",
+							avatar: null,
+						},
+					};
+				}
+			}),
+		);
+
+		return enrichedMatches;
 	}
 }
