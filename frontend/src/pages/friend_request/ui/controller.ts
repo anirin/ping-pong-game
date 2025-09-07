@@ -1,9 +1,7 @@
 import { fetchFriendById, sendFriendRequest } from "../model/friend_request";
 // import avatar from "./a.jpg";
 
-export async function mountFriendRequest(
-	root: HTMLElement,
-) {
+export async function mountFriendRequest(root: HTMLElement) {
 	const searchBtn = root.querySelector("#search-btn") as HTMLButtonElement;
 	const input = root.querySelector("#friend-id") as HTMLInputElement;
 	const result = root.querySelector("#search-result") as HTMLElement;
