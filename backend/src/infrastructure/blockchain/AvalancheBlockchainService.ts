@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
-import TournamentScoreABI from "../abi/contracts/TournamentScore.sol/TournamentScore.json" with {
-	type: "json",
-};
+// import TournamentScoreABI from "../abi/contracts/TournamentScore.sol/TournamentScore.json" with {
+// 	type: "json",
+// };
 
 export class AvalancheBlockchainService {
 	private static instance: AvalancheBlockchainService;
