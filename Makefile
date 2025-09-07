@@ -27,4 +27,7 @@ start:
 log:
 	$(COMPOSE) logs
 
+build-backend:
+	docker-compose build --no-cache backend
+
 re: fclean all
