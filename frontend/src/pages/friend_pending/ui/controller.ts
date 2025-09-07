@@ -7,11 +7,11 @@ export async function mountFriendPending(
 	const res = await fetchFriends();
 	root.innerHTML = "";
 
-	if (res.ok === false) {
-		alert(res.error);
-		if (res.error === "ログインしてください") navigate("/auth/login");
-		return;
-	}
+	// if (res.ok === false) {
+	// 	alert(res.error);
+	// 	if (res.error === "ログインしてください") navigate("/auth/login");
+	// 	return;
+	// }
 
 	const friends = res.value;
 

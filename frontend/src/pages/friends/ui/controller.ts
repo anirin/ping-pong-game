@@ -7,11 +7,11 @@ export async function mountFriendList(
 	const res = await fetchFriends();
 	root.innerHTML = "";
 
-	if (res.ok === false) {
-		alert(res.error);
-		navigate("/auth/login");
-		return;
-	}
+	// if (res.ok === false) {
+	// 	alert(res.error);
+	// 	navigate("/auth/login");
+	// 	return;
+	// }
 
 	const friends = res.value;
 

@@ -14,11 +14,11 @@ export async function mountFriendProfile(
 	const res = await fetchFriendProfile(id);
 	root.innerHTML = "";
 
-	if (res.ok === false) {
-		alert(res.error);
-		if (res.error === "ログインしてください") navigate("/auth/login");
-		return;
-	}
+	// if (res.ok === false) {
+	// 	alert(res.error);
+	// 	if (res.error === "ログインしてください") navigate("/auth/login");
+	// 	return;
+	// }
 
 	const user = res.value;
 	const card = document.createElement("div");
