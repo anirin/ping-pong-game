@@ -75,7 +75,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 			}
 
 			ws.on("message", async (raw: any) => {
-				console.log("message received: ", raw.toString());
+				// console.log("message received: ", raw.toString());
 				let data: WSIncomingMsg;
 				try {
 					data = JSON.parse(raw.toString());
@@ -91,7 +91,7 @@ export async function registerWSRoutes(app: FastifyInstance) {
 				try {
 					switch (data.status) {
 						case "Room": {
-							console.log("Room received: ", data);
+							// console.log("Room received: ", data);
 							const resultmsg = await RoomWSHandler(data.action, context);
 							if (resultmsg.status === "error")
 								ws.send(JSON.stringify(resultmsg));
@@ -99,13 +99,13 @@ export async function registerWSRoutes(app: FastifyInstance) {
 							break;
 						}
 						case "Tournament": {
-							console.log("Tournament received: ", data);
+							// console.log("Tournament received: ", data);
 							const resultmsg = await TournamentWSHandler(data, context);
 							wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
 						case "Match": {
-							console.log("Match received: ", data);
+							// console.log("Match received: ", data);
 							const resultmsg = await MatchWSHandler(data, context);
 							if (resultmsg.data.type === "error")
 								ws.send(JSON.stringify(resultmsg));

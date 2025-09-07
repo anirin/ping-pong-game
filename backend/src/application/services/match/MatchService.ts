@@ -24,6 +24,9 @@ export class MatchService {
 	// 重複実行を防ぐためのSet
 	private startingMatches: Set<MatchId> = new Set();
 
+	// 重複終了処理を防ぐためのSet
+	private finishingMatches: Set<MatchId> = new Set();
+
 	// ready状態を管理するMap (matchId -> Set<UserId>)
 	private readyPlayers: Map<MatchId, Set<UserId>> = new Map();
 
@@ -73,17 +76,20 @@ export class MatchService {
 			return;
 		}
 
+		// 既に実行中のマッチがある場合は処理をスキップ
+		if (this.intervals.has(matchId)) {
+			console.log(
+				`Match ${matchId} is already running, skipping duplicate request`,
+			);
+			return;
+		}
+
 		this.startingMatches.add(matchId);
 
 		try {
 			const match = await this.matchRepository.findById(matchId);
 			if (!match) {
 				throw new Error(`Match with id ${matchId} not found`);
-			}
-
-			// 既に実行中の場合は停止
-			if (this.intervals.has(matchId)) {
-				this.stopMatch(matchId);
 			}
 
 			// 既に開始済みまたは終了済みの場合は処理をスキップ
@@ -178,49 +184,68 @@ export class MatchService {
 				`Room ID mismatch: expected ${this.roomId}, got ${roomId}`,
 			);
 		}
-		const match = await this.matchRepository.findById(matchId);
-		if (!match) {
-			console.error(`[MatchService] Match not found for matchId: ${matchId}`);
-			throw new Error("Match not found");
-		}
 
-		// 試合が終了した時点で、現在のscoreを保存
-		if (match.status !== "finished") {
-			match.finish(winnerId);
-		}
-
-		// データベースに保存
-		let savedMatch: Match | null = null;
-		try {
-			await this.matchRepository.save(match);
-			savedMatch = await this.matchRepository.findById(matchId);
-			if (!savedMatch) {
-				// 保存が失敗した場合
-				console.error(
-					`[MatchService] Failed to verify saved match for matchId: ${matchId}`,
-				);
-				throw new Error("Failed to verify saved match");
-			}
-		} catch (error) {
-			console.error(
-				`[MatchService] Database operation failed for matchId: ${matchId}:`,
-				error,
+		// 重複終了処理を防ぐ
+		if (this.finishingMatches.has(matchId)) {
+			console.log(
+				`Match ${matchId} is already finishing, skipping duplicate request`,
 			);
-			throw new Error("Failed to save match");
+			return;
 		}
 
-		// ready状態をクリア
-		this.clearReadyState(matchId);
+		this.finishingMatches.add(matchId);
 
-		// tournament event を発火
-		const tournamentId: TournamentId = savedMatch.tournamentId;
-		globalEventEmitter.emit(
-			"match.finished",
-			tournamentId,
-			this.roomId,
-			winnerId,
-			matchId,
-		);
+		try {
+			const match = await this.matchRepository.findById(matchId);
+			if (!match) {
+				console.error(`[MatchService] Match not found for matchId: ${matchId}`);
+				throw new Error("Match not found");
+			}
+
+			// 試合が終了した時点で、現在のscoreを保存
+			if (match.status !== "finished") {
+				match.finish(winnerId);
+			}
+
+			// データベースに保存
+			let savedMatch: Match | null = null;
+			try {
+				await this.matchRepository.save(match);
+				savedMatch = await this.matchRepository.findById(matchId);
+				if (!savedMatch) {
+					// 保存が失敗した場合
+					console.error(
+						`[MatchService] Failed to verify saved match for matchId: ${matchId}`,
+					);
+					throw new Error("Failed to verify saved match");
+				}
+			} catch (error) {
+				console.error(
+					`[MatchService] Database operation failed for matchId: ${matchId}:`,
+					error,
+				);
+				throw new Error("Failed to save match");
+			}
+
+			// ready状態をクリア
+			this.clearReadyState(matchId);
+
+			// tournament event を発火
+			const tournamentId: TournamentId = savedMatch.tournamentId;
+			console.log(
+				`MatchService : match finished tournamentId: ${tournamentId}`,
+			);
+			globalEventEmitter.emit(
+				"match.finished",
+				tournamentId,
+				this.roomId,
+				winnerId,
+				matchId,
+			);
+		} finally {
+			// 処理完了後にSetから削除
+			this.finishingMatches.delete(matchId);
+		}
 	}
 
 	async handlePlayerInput(
