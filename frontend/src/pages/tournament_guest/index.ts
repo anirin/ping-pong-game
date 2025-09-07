@@ -42,10 +42,7 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 		if (!state.isDestroyed && state.controller) {
 			state.controller.destroy();
 		}
-		// ページ離脱を防ぐ
-		event.preventDefault();
-		event.returnValue = "ゲストトーナメント中です。本当にページを離れますか？";
-		return "ゲストトーナメント中です。本当にページを離れますか？";
+		// ゲストページではページ離脱を許可
 	};
 
 	const handleVisibilityChange = () => {
@@ -62,50 +59,7 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 		}
 	};
 
-	// ブラウザの戻るボタンを無効にする
-	const handlePopState = (event: Event) => {
-		const popStateEvent = event as PopStateEvent;
-		popStateEvent.preventDefault();
-		popStateEvent.stopImmediatePropagation();
-
-		window.history.pushState(null, "", window.location.href);
-		console.log("ゲストトーナメント画面での戻る操作を無効化しました");
-
-		alert("ゲストトーナメント中は戻る操作はできません");
-	};
-
-	// キーボードショートカットを無効にする
-	const handleKeyDown = (event: Event) => {
-		const keyboardEvent = event as KeyboardEvent;
-		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowLeft") {
-			keyboardEvent.preventDefault();
-			keyboardEvent.stopPropagation();
-			console.log(
-				"ゲストトーナメント画面でのキーボード戻る操作を無効化しました",
-			);
-			alert("ゲストトーナメント中は戻る操作はできません");
-		}
-		if (keyboardEvent.altKey && keyboardEvent.key === "ArrowRight") {
-			keyboardEvent.preventDefault();
-			keyboardEvent.stopPropagation();
-			console.log(
-				"ゲストトーナメント画面でのキーボード進む操作を無効化しました",
-			);
-		}
-		if (
-			keyboardEvent.key === "Backspace" &&
-			!keyboardEvent.ctrlKey &&
-			!keyboardEvent.metaKey
-		) {
-			const target = keyboardEvent.target as HTMLElement;
-			if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
-				keyboardEvent.preventDefault();
-				keyboardEvent.stopPropagation();
-				console.log("ゲストトーナメント画面でのBackspaceキーを無効化しました");
-			}
-		}
-	};
-
+	// ゲストページでは戻るボタンを許可
 	const events = [
 		{ element: window, event: "beforeunload", handler: handleBeforeUnload },
 		{
@@ -114,21 +68,12 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 			handler: handleVisibilityChange,
 		},
 		{ element: window, event: "pagehide", handler: handlePageHide },
-		{ element: window, event: "popstate", handler: handlePopState },
-		{ element: document, event: "keydown", handler: handleKeyDown },
 	];
 
 	events.forEach(({ element, event, handler }) => {
 		element.addEventListener(event, handler, true);
 		state.eventListeners.push({ element, event, handler });
 	});
-
-	// 初期状態をプッシュして戻る操作を無効化
-	window.history.pushState(null, "", window.location.href);
-
-	setTimeout(() => {
-		window.history.pushState(null, "", window.location.href);
-	}, 100);
 }
 
 function createCleanupFunction(state: GuestTournamentPageState): () => void {
@@ -149,6 +94,8 @@ function createCleanupFunction(state: GuestTournamentPageState): () => void {
 				state.controller.destroy();
 				state.controller = null;
 			}
+
+			// ゲストページでは履歴修正は不要
 
 			console.log("ゲストトーナメントページのクリーンアップが完了しました");
 		} catch (error) {
