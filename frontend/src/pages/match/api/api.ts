@@ -41,13 +41,21 @@ export class MatchAPI {
 		null;
 
 	constructor() {
-		console.log("MatchAPI constructor");
+		console.log("[DEBUG] MatchAPI constructor called");
 		this.wsManager = WebSocketManager.getInstance();
-		console.log("WebSocket接続状態:", this.wsManager.getConnectionState());
+		console.log(
+			"[DEBUG] WebSocket接続状態:",
+			this.wsManager.getConnectionState(),
+		);
 		this.messageHandler = this.handleMessage.bind(this);
+
+		// 既存のコールバックを削除してから新しいコールバックを設定
+		this.wsManager.removeCallback();
 		this.wsManager.setCallback(this.messageHandler);
+
 		this.resetReadyState();
 		this.initializeUserId();
+		console.log("[DEBUG] MatchAPI constructor completed");
 	}
 
 	// getter
@@ -94,8 +102,10 @@ export class MatchAPI {
 
 	// destroy
 	public destroy(): void {
+		console.log("[DEBUG] MatchAPI.destroy() called");
 		this.wsManager.removeCallback();
 		this.resetAllValues();
+		console.log("[DEBUG] MatchAPI.destroy() completed");
 	}
 
 	// 送信 マッチ情報の取得
@@ -163,11 +173,8 @@ export class MatchAPI {
 	}
 
 	private handleMessage(message: WebSocketMessage): void {
-		console.log("MatchAPI received message:", message);
-
 		if (message.status === "Room" && message.data?.action === "DELETE") {
 			// ルーム削除の通知
-			console.log("MatchAPI: Room deleted", message.data);
 			if (this.controllerCallback) {
 				this.controllerCallback(message.data, "room_deleted");
 			}
@@ -176,7 +183,6 @@ export class MatchAPI {
 
 		if (message.status === "Room" && message.data?.action === "FORCE_LOBBY") {
 			// 強制的にlobbyに戻す通知
-			console.log("MatchAPI: Force lobby", message.data);
 			if (this.controllerCallback) {
 				this.controllerCallback(message.data, "force_lobby");
 			}
@@ -184,7 +190,6 @@ export class MatchAPI {
 		}
 
 		if (message.status !== "Match") {
-			console.error("MatchAPI: 不明なステータス", message.status);
 			return;
 		}
 
@@ -195,31 +200,23 @@ export class MatchAPI {
 				message.data.state
 			) {
 				this.matchData = message.data.state as RealtimeMatchStateDto;
-				console.log(
-					"MatchAPI: match statusを受信しました:",
-					this.matchData.status,
-				);
 				if (this.controllerCallback) {
 					this.controllerCallback(this.matchData, "match_state");
 				}
 			} else if (message.data && message.data.type === "match_started") {
-				console.log("MatchAPI: match_started received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "match_started");
 				}
 			} else if (message.data && message.data.type === "match_finished") {
-				console.log("MatchAPI: match_finished received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "match_finished");
 				}
-				// roomIdを含めてtournamentページに遷移（MatchControllerで処理）
 			} else if (message.data && message.data.type === "error") {
 				console.error("MatchAPI: Match error:", message.data.message);
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "error");
 				}
 			} else if (message.data && message.data.type === "ready_state") {
-				console.log("MatchAPI: ready_state received");
 				this.updateReadyStateFromServer(
 					message.data.readyPlayers,
 					message.data.readyCount,
@@ -228,7 +225,10 @@ export class MatchAPI {
 					this.controllerCallback(message.data, "ready_state");
 				}
 			} else if (message.action === "get_initial_state") {
-				console.log("MatchAPI: get_initial_state received");
+				// 初期状態のデータが含まれている場合はmatchDataを更新
+				if (message.data && message.data.state) {
+					this.matchData = message.data.state as RealtimeMatchStateDto;
+				}
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "get_initial_state");
 				}
@@ -308,10 +308,17 @@ export class MatchAPI {
 	}
 
 	private resetAllValues(): void {
+		console.log(
+			"[DEBUG] MatchAPI.resetAllValues() called - matchData will be reset to null",
+		);
 		this.matchId = null;
 		this.userId = null;
 		this.matchData = null;
 		this.controllerCallback = null;
 		this.resetReadyState();
+		console.log(
+			"[DEBUG] MatchAPI.resetAllValues() completed - matchData is now:",
+			this.matchData,
+		);
 	}
 }
