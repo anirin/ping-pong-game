@@ -6,6 +6,8 @@ services:
       - .env
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
+      - kibana_certs:/usr/share/elasticsearch/config/kibana_certs
+      - logstash_certs:/usr/share/elasticsearch/config/logstash_certs
       - ./elk/setup.sh:/usr/local/bin/setup.sh:ro
     user: "0"
     command: ["bash", "/usr/local/bin/setup.sh"]
@@ -44,7 +46,8 @@ services:
     image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
     user: root
     volumes:
-      - elk_certs:/usr/share/logstash/certs
+      - elk_certs:/usr/share/logstash/config/certs
+      - logstash_certs:/usr/share/logstash/config/logstash_certs
       - logstashdata:/usr/share/logstash/data
       - ./elk/logstash/logstash_ingest_data/:/usr/share/logstash/ingest_data/
       - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
@@ -74,6 +77,7 @@ services:
       - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
     volumes:
       - elk_certs:/usr/share/kibana/config/certs
+      - kibana_certs:/usr/share/kibana/config/kibana_certs
       - kibanadata:/usr/share/kibana/data
       - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
@@ -127,14 +131,15 @@ services:
       - ./backend:/app
       - ./backend/entrypoint.sh:/app/entrypoint.sh
       - backend_modules:/app/node_modules
-    secrets:
-      - server_certificate
-      - server_key
+      - server_certs:/app/secrets
 
 volumes:
   frontend_modules:
   backend_modules:
   elk_certs:
+  server_certs:
+  kibana_certs:
+  logstash_certs:
   esdata:
   logstashdata:
   kibanadata:
@@ -144,17 +149,3 @@ networks:
  default:
    name: elastic
    external: false
-
-secrets:
-  server_certificate:
-    file: ./backend/secrets/server.crt
-  server_key:
-    file: ./backend/secrets/server.key
-  kibana_certificate:
-    file: ./elk/secrets/kibana/kibana.crt
-  kibana_key:
-    file: ./elk/secrets/kibana/kibana.key
-  logstash_certificate:
-    file: ./elk/secrets/logstash/logstash.crt
-  logstash_key:
-    file: ./elk/secrets/logstash/logstash.key

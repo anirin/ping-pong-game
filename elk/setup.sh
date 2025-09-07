@@ -32,6 +32,21 @@ if [ ! -f config/certs/certs.zip ]; then
   bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
   unzip config/certs/certs.zip -d config/certs;
 fi;
+
+if [ ! -f config/kibana_certs/kibana.crt || ! -f config/kibana_certs/kibana.key ]; then
+  openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout config/kibana_certs/kibana.key \
+    -out config/kibana_certs/kibana.crt \
+    -days 365 -subj "/CN=trascen.com";
+fi;
+
+if [ ! -f config/logstash_certs/logstash.crt || ! -f config/logstash_certs/logstash.key ]; then
+  openssl req -x509 -newkey rsa:2048 -nodes \
+    -keyout config/logstash_certs/logstash.key \
+    -out config/logstash_certs/logstash.crt \
+    -days 365 -subj "/CN=trascen.com";
+fi;
+
 echo "Setting file permissions"
 chown -R root:root config/certs;
 find . -type d -exec chmod 750 \{\} \;;
