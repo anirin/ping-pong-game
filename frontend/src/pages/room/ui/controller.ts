@@ -244,11 +244,11 @@ export class RoomController {
 			const canStart = this.roomAPI.canStartGame();
 			const isOwner = state.isOwner;
 			const participantCount = state.participants.length;
-			
+
 			if (isOwner) {
 				startGameButton.hidden = false;
 				startGameButton.disabled = !canStart;
-				
+
 				if (canStart) {
 					startGameButton.textContent = "Start Game";
 					startGameButton.className = "btn btn-primary";

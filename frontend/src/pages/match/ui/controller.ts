@@ -41,7 +41,6 @@ export class MatchController {
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private matchAPI = new MatchAPI();
 
-
 	// フレームレート制御
 	private frameInterval: number = 1000 / 120; // 8.33ms
 
@@ -544,7 +543,7 @@ export class MatchController {
 		if (error > this.correctionThreshold) {
 			this.correctionCount++;
 			this.lastCorrectionTime = currentTime;
-			
+
 			console.log(
 				`[位置修正 #${this.correctionCount}] 予測=${this.myPredictedPaddleY.toFixed(1)}, サーバー=${serverPaddleY.toFixed(1)}, 誤差=${error.toFixed(1)}px`,
 			);
@@ -560,7 +559,7 @@ export class MatchController {
 	private smoothCorrectPosition(targetY: number): void {
 		const error = targetY - this.myPredictedPaddleY;
 		const correctionSpeed = 0.3; // 補正速度（0-1の間）
-		
+
 		// 段階的に位置を修正
 		this.myPredictedPaddleY += error * correctionSpeed;
 	}
