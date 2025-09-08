@@ -133,6 +133,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 			// friendがいない時に404を返すより、何も表示しないことにしました。
 			return reply.status(200).send(friend);
 		} catch (error: any) {
+			console.log(error)
 			return reply.status(500).send({ error: error.message });
 		}
 	});
@@ -157,6 +158,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 			// friendがいない時に404を返すより、何も表示しないことにしました。
 			return reply.status(200).send(friend);
 		} catch (error: any) {
+			console.log(error)
 			return reply.status(500).send({ error: error.message });
 		}
 	});
@@ -184,6 +186,8 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 					.status(201)
 					.send({ message: "フレンド申請を作成しました" });
 			} catch (e: any) {
+			console.log(e)
+
 				if (
 					e.message === "すでに申請済みです" ||
 					e.message === "自分自身にフレンド申請は送れません。"
