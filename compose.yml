@@ -59,9 +59,6 @@ services:
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ELASTIC_HOSTS=https://elasticsearch:9200
-    secrets:
-      - logstash_certificate
-      - logstash_key
 
   kibana:
     container_name: kibana
@@ -84,9 +81,6 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
-    secrets:
-      - kibana_certificate
-      - kibana_key
     mem_limit: ${KB_MEM_LIMIT}
 
   filebeat:
@@ -98,7 +92,7 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ELASTIC_HOSTS=https://elasticsearch:9200
       - KIBANA_HOSTS=https://kibana:5601
-      - LOGSTASH_HOSTS=https://logstash:9600
+      - LOGSTASH_HOSTS=http://logstash:9600
     volumes:
       - elk_certs:/usr/share/filebeat/config/certs
       - filebeatdata:/usr/share/filebeat/data

@@ -33,14 +33,14 @@ if [ ! -f config/certs/certs.zip ]; then
   unzip config/certs/certs.zip -d config/certs;
 fi;
 
-if [ ! -f config/kibana_certs/kibana.crt || ! -f config/kibana_certs/kibana.key ]; then
+if [ ! -f config/kibana_certs/kibana.crt ]; then
   openssl req -x509 -newkey rsa:2048 -nodes \
     -keyout config/kibana_certs/kibana.key \
     -out config/kibana_certs/kibana.crt \
     -days 365 -subj "/CN=trascen.com";
 fi;
 
-if [ ! -f config/logstash_certs/logstash.crt || ! -f config/logstash_certs/logstash.key ]; then
+if [ ! -f config/logstash_certs/logstash.crt ]; then
   openssl req -x509 -newkey rsa:2048 -nodes \
     -keyout config/logstash_certs/logstash.key \
     -out config/logstash_certs/logstash.crt \
