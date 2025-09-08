@@ -53,7 +53,7 @@ export class WebSocketManager {
 
 	broadcast(roomId: RoomId, payload: WSOutgoingMsg) {
 		// console.log("broadcast to room: ", roomId);
-		console.log("payload: ", payload);
+		// console.log("payload: ", payload);
 		const set = this.rooms.get(roomId);
 		if (!set?.size) return;
 		const msg = JSON.stringify(payload);
@@ -185,6 +185,7 @@ export class WebSocketManager {
 				clearTimeout(timer);
 				monitor.disconnectTimers.delete(userId);
 			}
+			console.log(`再接続したuser: ${userId} (room: ${roomId})`);
 			console.log(
 				`User ${userId} reconnected to room ${roomId}, monitoring cancelled`,
 			);

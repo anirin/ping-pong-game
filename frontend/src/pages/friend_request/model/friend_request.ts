@@ -1,5 +1,7 @@
 import { http } from "../api/friend_request.ts";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export type Friend = {
@@ -23,7 +25,7 @@ export async function fetchFriendById(id: string): Promise<Result<User>> {
 		if (!token) {
 			return { ok: false, error: "ログインしてください" };
 		}
-		const res = await http<User>(`https://localhost:8080/users/${id}`, {
+		const res = await http<User>(`${VITE_BASE_URL}/users/${id}`, {
 			method: "GET",
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -43,7 +45,7 @@ export async function sendFriendRequest(
 		if (!token) {
 			return { ok: false, error: "ログインしてください" };
 		}
-		await http<void>(`https://localhost:8080/friends`, {
+		await http<void>(`${VITE_BASE_URL}/friends`, {
 			method: "POST",
 			headers: {
 				Authorization: `Bearer ${token}`,

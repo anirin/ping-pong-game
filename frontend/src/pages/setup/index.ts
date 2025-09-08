@@ -1,5 +1,7 @@
 import setupHtml from "./setup.html?raw";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 function decodeJwt(token: string): any {
 	try {
 		const base64Url = token.split(".")[1];
@@ -37,7 +39,7 @@ async function handleVerifyAndLogin(event: SubmitEvent) {
 	try {
 		// バックエンドの2FA検証エンドポイントを呼び出す
 		// このエンドポイントが verify2FA メソッドを呼び出すように設定してください
-		const response = await fetch("https://localhost:8080/auth/2fa/verify", {
+		const response = await fetch(`${VITE_BASE_URL}/auth/2fa/verify`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			// バックエンドは `token` という名前でコードを受け取るので、それに合わせる
@@ -58,7 +60,7 @@ async function handleVerifyAndLogin(event: SubmitEvent) {
 				}
 
 				const userProfileResponse = await fetch(
-					`https://localhost:8080/users/${userId}`,
+					`${VITE_BASE_URL}/users/${userId}`,
 					{
 						headers: {
 							Authorization: `Bearer ${accessToken}`,
@@ -114,7 +116,7 @@ export async function renderSetupPage(): Promise<void> {
 			);
 		}
 
-		const response = await fetch("https://localhost:8080/auth/2fa/setup", {
+		const response = await fetch(`${VITE_BASE_URL}/auth/2fa/setup`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ email }),

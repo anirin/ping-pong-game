@@ -1,5 +1,7 @@
 import { http } from "../api/friend_profile.ts";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export type Friend = {
@@ -16,15 +18,12 @@ export async function fetchFriendProfile(id: string): Promise<Result<Friend>> {
 		if (!token) {
 			return { ok: false, error: "ログインしてください" };
 		}
-		const res: Friend = await http<Friend>(
-			`https://localhost:8080/friend/${id}`,
-			{
-				method: "GET",
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
+		const res: Friend = await http<Friend>(`${VITE_BASE_URL}/friend/${id}`, {
+			method: "GET",
+			headers: {
+				Authorization: `Bearer ${token}`,
 			},
-		);
+		});
 		return { ok: true, value: res };
 	} catch (e) {
 		return { ok: false, error: "フレンド取得に失敗" };
@@ -37,7 +36,7 @@ export async function acceptFriend(id: string): Promise<Result<void>> {
 		if (!token) {
 			return { ok: false, error: "ログインしてください" };
 		}
-		await http<Friend>(`https://localhost:8080/friend/${id}`, {
+		await http<Friend>(`${VITE_BASE_URL}/friend/${id}`, {
 			method: "PATCH",
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -56,7 +55,7 @@ export async function deleteFriend(id: string): Promise<Result<void>> {
 		if (!token) {
 			return { ok: false, error: "ログインしてください" };
 		}
-		await http<Friend>(`https://localhost:8080/friend/${id}`, {
+		await http<Friend>(`${VITE_BASE_URL}/friend/${id}`, {
 			method: "DELETE",
 			headers: {
 				Authorization: `Bearer ${token}`,

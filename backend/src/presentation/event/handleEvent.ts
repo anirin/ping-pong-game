@@ -26,7 +26,7 @@ globalEventEmitter.on(
 globalEventEmitter.on(
 	"match.finished",
 	async (tournamentId: TournamentId, matchId: MatchId, winnerId: UserId) => {
-		console.log("match event finished");
+		console.log("Tournament event received : match event finished");
 
 		try {
 			// tournamentIdからroomIdを取得するために、まずtournamentを取得

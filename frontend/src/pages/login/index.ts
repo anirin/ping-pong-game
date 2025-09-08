@@ -1,5 +1,7 @@
 import loginHtml from "./login.html?raw";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 	event.preventDefault();
 
@@ -17,7 +19,7 @@ async function handleLoginSubmit(event: SubmitEvent): Promise<void> {
 	};
 
 	try {
-		const response = await fetch("https://localhost:8080/auth/login", {
+		const response = await fetch(`${VITE_BASE_URL}/auth/login`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(loginData),

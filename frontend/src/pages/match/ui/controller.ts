@@ -30,7 +30,6 @@ export class MatchController {
 	private myPlayerNumber: "player1" | "player2" | null = null;
 	private movingUp: boolean = false;
 	private movingDown: boolean = false;
-	private hasResetReadyState: boolean = false;
 
 	// 位置修正のためのプロパティ
 	private correctionThreshold: number = 3; // 閾値を下げてより敏感に修正
@@ -41,11 +40,8 @@ export class MatchController {
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private matchAPI = new MatchAPI();
 
-	// フレームレート制御
-	private frameInterval: number = 1000 / 120; // 8.33ms
-
 	constructor(params?: { [key: string]: string }) {
-		console.log("MatchController constructor", params);
+		console.log("[DEBUG] MatchController constructor called", params);
 		if (params) {
 			this.matchId = params.matchId || null;
 			this.roomId = params.roomId || null;
@@ -53,6 +49,7 @@ export class MatchController {
 		this.userId = this.getUserId();
 		this.handleKeyDownRef = this.handleKeyDown.bind(this);
 		this.handleKeyUpRef = this.handleKeyUp.bind(this);
+		console.log("[DEBUG] MatchController constructor completed");
 	}
 
 	public async render(): Promise<void> {
@@ -65,6 +62,9 @@ export class MatchController {
 				this.handleError("Match ID is missing. Cannot start match.", "/");
 				return;
 			}
+
+			// DOM要素の準備完了を待機
+			await this.waitForDOMElements();
 
 			// WebSocket接続を確保
 			await this.ensureWebSocketConnection();
@@ -80,6 +80,45 @@ export class MatchController {
 			this.handleError("Failed to start match", "/");
 			console.error("Match initialization error:", error);
 		}
+	}
+
+	// DOM要素の準備完了を待機
+	private async waitForDOMElements(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			let retryCount = 0;
+			const maxRetries = 50; // 5秒間待機
+			const retryDelay = 100;
+
+			const checkElements = () => {
+				const canvas = document.getElementById(
+					"matchCanvas",
+				) as HTMLCanvasElement;
+				const readyButton = document.getElementById("ready-button");
+				const scoreboard = document.getElementById("scoreboard");
+
+				if (canvas && readyButton && scoreboard) {
+					// Canvas context の取得も確認
+					const ctx = canvas.getContext("2d");
+					if (ctx) {
+						console.log("All DOM elements are ready");
+						resolve();
+						return;
+					}
+				}
+
+				if (retryCount >= maxRetries) {
+					console.error("DOM elements timeout - retry count:", retryCount);
+					reject(new Error("必要なDOM要素の準備に失敗しました。"));
+				} else {
+					retryCount++;
+					console.log(
+						`Waiting for DOM elements... (${retryCount}/${maxRetries})`,
+					);
+					setTimeout(checkElements, retryDelay);
+				}
+			};
+			checkElements();
+		});
 	}
 
 	// WebSocket接続を確保する（必要に応じて再接続）
@@ -137,7 +176,6 @@ export class MatchController {
 	private initializeMatchState(): void {
 		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
 		this.correctionCount = 0;
-		this.hasResetReadyState = false;
 		this.serverState = null;
 		this.myPlayerNumber = null;
 	}
@@ -162,6 +200,7 @@ export class MatchController {
 
 	private cleanup(): void {
 		try {
+			console.log("[DEBUG] MatchController.cleanup() called");
 			// WebSocket接続とコールバックをクリーンアップ
 			this.matchAPI.removeCallback();
 			this.matchAPI.destroy();
@@ -174,6 +213,7 @@ export class MatchController {
 
 			// イベントリスナーを削除
 			this.removeEventListeners();
+			console.log("[DEBUG] MatchController.cleanup() completed");
 		} catch (error) {
 			console.error("Cleanup error:", error);
 		}
@@ -323,13 +363,15 @@ export class MatchController {
 				return;
 			}
 
-			console.log("Sending match start request...");
+			console.log("[DEBUG] connectToMatch - Sending match start request...");
 			this.matchAPI.sendMatchStart();
 
 			// マッチデータの受信を待機
+			console.log("[DEBUG] connectToMatch - Waiting for match data...");
 			await this.waitForMatchData();
+			console.log("[DEBUG] connectToMatch - Match data received successfully");
 		} catch (error) {
-			console.error("WebSocket接続エラー:", error);
+			console.error("[DEBUG] connectToMatch - WebSocket接続エラー:", error);
 			this.handleError("WebSocket接続に失敗しました。");
 		}
 	}
@@ -343,16 +385,35 @@ export class MatchController {
 
 			const checkData = () => {
 				const matchData = this.matchAPI.getMatchData();
+				console.log(
+					`[DEBUG] waitForMatchData - Attempt ${dataRetryCount + 1}: matchData =`,
+					matchData,
+				);
+				console.log(
+					`[DEBUG] waitForMatchData - WebSocket connected:`,
+					this.matchAPI["wsManager"]?.isConnected(),
+				);
+				console.log(
+					`[DEBUG] waitForMatchData - Match status:`,
+					this.matchAPI.getMatchStatus(),
+				);
+
 				if (matchData) {
-					console.log("Match data received:", matchData);
+					console.log(
+						"[DEBUG] waitForMatchData - Match data received:",
+						matchData,
+					);
 					resolve();
 				} else if (dataRetryCount >= maxDataRetries) {
-					console.error("Match data timeout - retry count:", dataRetryCount);
+					console.error(
+						"[DEBUG] waitForMatchData - Match data timeout - retry count:",
+						dataRetryCount,
+					);
 					reject(new Error("マッチデータの取得に失敗しました。"));
 				} else {
 					dataRetryCount++;
 					console.log(
-						`Waiting for match data... (${dataRetryCount}/${maxDataRetries})`,
+						`[DEBUG] waitForMatchData - Waiting for match data... (${dataRetryCount}/${maxDataRetries})`,
 					);
 					setTimeout(checkData, dataRetryDelay);
 				}
@@ -431,7 +492,7 @@ export class MatchController {
 				this.handleReadyButtonClick(),
 			);
 		} else {
-			console.warn("Ready button not found in DOM");
+			console.warn("Ready button not found in DOM during setup");
 		}
 	}
 
@@ -464,50 +525,61 @@ export class MatchController {
 	}
 
 	private matchLoop(): void {
+		const canvas = document.getElementById("matchCanvas");
+		if (!canvas) {
+			console.warn("Canvas element missing, skipping match loop iteration");
+			setTimeout(() => {
+				this.animationFrameId = requestAnimationFrame(
+					this.matchLoop.bind(this),
+				);
+			}, 100);
+			return;
+		}
+
 		this.updateMyPaddle();
 		this.updateMatchState();
-		this.updateReadyButton();
-		this.updateReadyCount();
 		this.draw();
 
-		// 120fpsで実行
-		setTimeout(() => {
-			this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
-		}, this.frameInterval);
+		// 60fpsで実行（パフォーマンス向上）
+		this.animationFrameId = requestAnimationFrame(this.matchLoop.bind(this));
 	}
 
 	private updateMatchState(): void {
 		const newServerState = this.matchAPI.getMatchData();
 
-		// サーバー位置との整合性チェック
-		if (newServerState && this.serverState && this.myPlayerNumber) {
-			this.checkAndCorrectPosition(newServerState);
+		// 新しい状態が有効な場合のみ更新
+		if (newServerState) {
+			// サーバー位置との整合性チェック
+			if (this.serverState && this.myPlayerNumber) {
+				this.checkAndCorrectPosition(newServerState);
+			}
+
+			// 状態を更新
+			this.serverState = newServerState;
+
+			// プレイヤーロールの初期化
+			if (this.myPlayerNumber === null) {
+				this.initializePlayerRole();
+			}
 		}
 
-		this.serverState = newServerState;
-
-		if (this.serverState && this.myPlayerNumber === null) {
-			this.initializePlayerRole();
-		}
-
-		if (
-			this.serverState &&
-			this.serverState.status === "finished" &&
-			!this.hasResetReadyState
-		) {
-			this.hasResetReadyState = true;
-		}
-
-		this.updateMatchStatus();
+		// Ready buttonとUIの更新（必要に応じて）
+		this.updateUI();
 	}
 
 	private initializePlayerRole(): void {
 		const role = this.matchAPI.getPlayerRole();
 		if (role === "player1" || role === "player2") {
 			this.myPlayerNumber = role;
-			this.updatePlayerInfo();
 		}
+	}
+
+	private updateUI(): void {
+		// Ready buttonの更新（必要に応じて）
 		this.updateReadyButton();
+		this.updateReadyCount();
+		this.updateMatchStatus();
+		this.updatePlayerInfo();
 	}
 
 	private updatePlayerInfo(): void {
@@ -543,10 +615,6 @@ export class MatchController {
 		if (error > this.correctionThreshold) {
 			this.correctionCount++;
 			this.lastCorrectionTime = currentTime;
-
-			console.log(
-				`[位置修正 #${this.correctionCount}] 予測=${this.myPredictedPaddleY.toFixed(1)}, サーバー=${serverPaddleY.toFixed(1)}, 誤差=${error.toFixed(1)}px`,
-			);
 
 			// 滑らかな補間で位置を修正
 			this.smoothCorrectPosition(serverPaddleY);
@@ -679,7 +747,12 @@ export class MatchController {
 
 	private draw(): void {
 		const canvas = document.getElementById("matchCanvas") as HTMLCanvasElement;
-		const ctx = canvas?.getContext("2d");
+		if (!canvas) {
+			console.warn("Canvas element not found in DOM");
+			return;
+		}
+
+		const ctx = canvas.getContext("2d");
 		if (!ctx) {
 			console.warn("Canvas context not available");
 			return;
@@ -687,6 +760,7 @@ export class MatchController {
 
 		this.clearCanvas(ctx, canvas);
 
+		// serverStateがnullの場合は接続メッセージを表示
 		if (!this.serverState) {
 			this.drawConnectionMessage(ctx, canvas);
 			return;
@@ -795,6 +869,7 @@ export class MatchController {
 	}
 
 	public destroy(): void {
+		console.log("[DEBUG] MatchController.destroy() called");
 		// アニメーションフレームを停止
 		if (this.animationFrameId !== null) {
 			cancelAnimationFrame(this.animationFrameId);
@@ -813,7 +888,7 @@ export class MatchController {
 		// 全ての値を初期化
 		this.resetAllValues();
 
-		console.log("MatchController destroyed");
+		console.log("[DEBUG] MatchController destroyed");
 	}
 
 	// 全ての値を初期化
@@ -826,7 +901,6 @@ export class MatchController {
 		this.myPlayerNumber = null;
 		this.movingUp = false;
 		this.movingDown = false;
-		this.hasResetReadyState = false;
 	}
 
 	private createModal(

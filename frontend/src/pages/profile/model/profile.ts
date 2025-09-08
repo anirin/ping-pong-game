@@ -1,5 +1,7 @@
 import { http } from "../api/profile.ts";
 
+const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export type MatchResult = {
@@ -23,7 +25,7 @@ export type User = {
 
 export async function fetchUsers(token: string): Promise<Result<User[]>> {
 	try {
-		const res: User[] = await http<User[]>("https://localhost:8080/match", {
+		const res: User[] = await http<User[]>(`${VITE_BASE_URL}/match`, {
 			method: "GET",
 			headers: {
 				Authorization: `Bearer ${token}`,
