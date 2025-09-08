@@ -1,0 +1,27 @@
+{
+	"name": "blockchain",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"lint": "biome check .",
+		"fix": "biome check --write .",
+		"format": "biome format --write ."
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.3",
+		"@nomicfoundation/hardhat-toolbox": "^6.1.0",
+		"@openzeppelin/contracts": "^5.4.0",
+		"@types/bs58": "^4.0.4",
+		"bs58": "^6.0.0",
+		"ethers": "^6.15.0",
+		"hardhat": "^2.26.3"
+	},
+	"directories": {
+		"test": "test"
+	},
+	"description": ""
+}

@@ -165,7 +165,6 @@ export function navigate(to?: string) {
 	if (!isWebSocketPage) {
 		const wsManager = WebSocketManager.getInstance();
 		wsManager.clearWsManager();
-		console.log("WebSocket接続をクリーンアップしました");
 	}
 
 	const match = matchRoute(path);
