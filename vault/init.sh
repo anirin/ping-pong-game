@@ -1,8 +1,11 @@
 #!/bin/sh
 
-# Vaultの起動を待機（開発モードでは数秒で起動する）
+# Vaultの起動を待機
 echo "Vaultの起動を待機中..."
-sleep 5
+until vault status >/dev/null 2>&1; do
+    echo "Vaultの起動を待機中..."
+    sleep 1
+done
 echo "Vaultが起動しました"
 
 echo "監査ログを有効化中..."
