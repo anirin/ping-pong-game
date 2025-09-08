@@ -46,8 +46,8 @@ services:
     image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
     user: root
     volumes:
-      - elk_certs:/usr/share/logstash/config/certs
-      - logstash_certs:/usr/share/logstash/config/logstash_certs
+      - elk_certs:/usr/share/logstash/config/certs:ro
+      - logstash_certs:/usr/share/logstash/config/logstash_certs:ro
       - logstashdata:/usr/share/logstash/data
       - ./elk/logstash/logstash_ingest_data/:/usr/share/logstash/ingest_data/
       - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
@@ -73,8 +73,8 @@ services:
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
       - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
     volumes:
-      - elk_certs:/usr/share/kibana/config/certs
-      - kibana_certs:/usr/share/kibana/config/kibana_certs
+      - elk_certs:/usr/share/kibana/config/certs:ro
+      - kibana_certs:/usr/share/kibana/config/kibana_certs:ro
       - kibanadata:/usr/share/kibana/data
       - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
@@ -92,16 +92,17 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - ELASTIC_HOSTS=https://elasticsearch:9200
       - KIBANA_HOSTS=https://kibana:5601
-      - LOGSTASH_HOSTS=http://logstash:9600
+      - LOGSTASH_HOSTS=https://logstash:5044
     volumes:
-      - elk_certs:/usr/share/filebeat/config/certs
+      - elk_certs:/usr/share/filebeat/certs:ro
       - filebeatdata:/usr/share/filebeat/data
       - ./elk/filebeat/filebeat_ingest_data/:/usr/share/filebeat/ingest_data/
       - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_started
 
   frontend:
     container_name: frontend
@@ -130,14 +131,36 @@ services:
 volumes:
   frontend_modules:
   backend_modules:
-  elk_certs:
-  server_certs:
-  kibana_certs:
-  logstash_certs:
   esdata:
   logstashdata:
   kibanadata:
   filebeatdata:
+
+  elk_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_ROOT}/certs/elk
+  server_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_ROOT}/certs/server
+  kibana_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_ROOT}/certs/kibana
+  logstash_certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_ROOT}/certs/logstash
+
 
 networks:
  default:
