@@ -6,6 +6,8 @@ services:
       - .env
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
+      - kibana_certs:/usr/share/elasticsearch/config/kibana_certs
+      - logstash_certs:/usr/share/elasticsearch/config/logstash_certs
       - ./elk/setup.sh:/usr/local/bin/setup.sh:ro
     user: "0"
     command: ["bash", "/usr/local/bin/setup.sh"]
@@ -21,22 +23,22 @@ services:
     ports:
       - "9200:9200"
     environment:
-     - node.name=elasticsearch
-     - cluster.name=${CLUSTER_NAME}
-     - discovery.type=single-node
-     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-     - bootstrap.memory_lock=true
-     - xpack.security.enabled=true
-     - xpack.security.http.ssl.enabled=true
-     - xpack.security.http.ssl.key=certs/elasticsearch/elasticsearch.key
-     - xpack.security.http.ssl.certificate=certs/elasticsearch/elasticsearch.crt
-     - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
-     - xpack.security.transport.ssl.enabled=true
-     - xpack.security.transport.ssl.key=certs/elasticsearch/elasticsearch.key
-     - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
-     - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
-     - xpack.security.transport.ssl.verification_mode=certificate
-     - xpack.license.self_generated.type=${LICENSE}
+      - node.name=elasticsearch
+      - cluster.name=${CLUSTER_NAME}
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.http.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.license.self_generated.type=${LICENSE}
     mem_limit: ${ES_MEM_LIMIT}
 
   logstash:
@@ -44,7 +46,8 @@ services:
     image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
     user: root
     volumes:
-      - elk_certs:/usr/share/logstash/certs
+      - elk_certs:/usr/share/logstash/config/certs
+      - logstash_certs:/usr/share/logstash/config/logstash_certs
       - logstashdata:/usr/share/logstash/data
       - ./elk/logstash/logstash_ingest_data/:/usr/share/logstash/ingest_data/
       - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
@@ -52,26 +55,28 @@ services:
       - elasticsearch
       - kibana
     environment:
-     - xpack.monitoring.enabled=false
-     - ELASTIC_USER=elastic
-     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-     - ELASTIC_HOSTS=https://elasticsearch:9200
+      - xpack.monitoring.enabled=false
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTIC_HOSTS=https://elasticsearch:9200
 
   kibana:
     container_name: kibana
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
     environment:
-     - SERVERNAME=kibana
-     - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
-     - ELASTICSEARCH_USERNAME=kibana_system
-     - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
-     - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
-     - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-     - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-     - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
     volumes:
       - elk_certs:/usr/share/kibana/config/certs
+      - kibana_certs:/usr/share/kibana/config/kibana_certs
       - kibanadata:/usr/share/kibana/data
+      - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
     ports:
       - "5601:5601"
     depends_on:
@@ -83,14 +88,13 @@ services:
     image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
     user: root
     environment:
-     - ELASTIC_USER=elastic
-     - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-     - ELASTIC_HOSTS=https://elasticsearch:9200
-     - KIBANA_HOSTS=http://kibana:5601
-     - LOGSTASH_HOSTS=http://logstash:9600
-
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTIC_HOSTS=https://elasticsearch:9200
+      - KIBANA_HOSTS=https://kibana:5601
+      - LOGSTASH_HOSTS=http://logstash:9600
     volumes:
-      - elk_certs:/usr/share/filebeat/certs
+      - elk_certs:/usr/share/filebeat/config/certs
       - filebeatdata:/usr/share/filebeat/data
       - ./elk/filebeat/filebeat_ingest_data/:/usr/share/filebeat/ingest_data/
       - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
@@ -121,14 +125,15 @@ services:
       - ./backend:/app
       - ./backend/entrypoint.sh:/app/entrypoint.sh
       - backend_modules:/app/node_modules
-    secrets:
-      - server_certificate
-      - server_key
+      - server_certs:/app/secrets
 
 volumes:
   frontend_modules:
   backend_modules:
   elk_certs:
+  server_certs:
+  kibana_certs:
+  logstash_certs:
   esdata:
   logstashdata:
   kibanadata:
@@ -138,9 +143,3 @@ networks:
  default:
    name: elastic
    external: false
-
-secrets:
-  server_certificate:
-    file: ./backend/secrets/server.crt
-  server_key:
-    file: ./backend/secrets/server.key
