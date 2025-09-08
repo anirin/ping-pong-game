@@ -111,6 +111,34 @@ export class MatchAPI {
 		console.log("[DEBUG] MatchAPI.destroy() completed");
 	}
 
+	// WebSocket接続を確保
+	public async ensureConnection(roomId: string): Promise<void> {
+		if (!roomId) {
+			throw new Error("Room ID is required for match");
+		}
+
+		if (!this.userId) {
+			throw new Error("User ID is required for match");
+		}
+
+		// 既に同じルームに接続済みの場合は何もしない
+		if (
+			this.wsManager.isConnected() &&
+			this.wsManager.getCurrentRoomId() === roomId
+		) {
+			console.log(`Already connected to room ${roomId} for match`);
+			return;
+		}
+
+		try {
+			await this.wsManager.connect(roomId);
+			console.log("WebSocket connection established for match");
+		} catch (error) {
+			console.error("Failed to connect to WebSocket for match:", error);
+			throw error;
+		}
+	}
+
 	// 送信 マッチ情報の取得
 	public sendMatchStart(): void {
 		// WebSocket接続状態を確認し、接続されていない場合は警告を出す

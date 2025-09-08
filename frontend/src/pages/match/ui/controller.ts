@@ -23,7 +23,6 @@ const KEY_BINDINGS = {
 export class MatchController {
 	private matchId: string | null = null;
 	private roomId: string | null = null;
-	private userId: string | null = null;
 	private animationFrameId: number | null = null;
 	private serverState: RealtimeMatchStateDto | null = null;
 	private myPredictedPaddleY: number = CONSTANTS.INITIAL_PADDLE_Y;
@@ -41,15 +40,12 @@ export class MatchController {
 	private matchAPI = new MatchAPI();
 
 	constructor(params?: { [key: string]: string }) {
-		console.log("[DEBUG] MatchController constructor called", params);
 		if (params) {
 			this.matchId = params.matchId || null;
 			this.roomId = params.roomId || null;
 		}
-		this.userId = this.getUserId();
 		this.handleKeyDownRef = this.handleKeyDown.bind(this);
 		this.handleKeyUpRef = this.handleKeyUp.bind(this);
-		console.log("[DEBUG] MatchController constructor completed");
 	}
 
 	public async render(): Promise<void> {
@@ -63,9 +59,8 @@ export class MatchController {
 				return;
 			}
 
-			await this.ensureWebSocketConnection();
+			await this.matchAPI.ensureConnection(this.roomId!);
 
-			// 少し待ってからマッチデータを取得
 			await new Promise((resolve) => setTimeout(resolve, 500));
 
 			this.initializeMatchState();
@@ -79,57 +74,7 @@ export class MatchController {
 	}
 
 
-	// WebSocket接続を確保する（必要に応じて再接続）
-	private async ensureWebSocketConnection(): Promise<void> {
-		const wsManager = this.matchAPI["wsManager"];
 
-		// roomIdが取得できない場合はエラー
-		if (!this.roomId) {
-			throw new Error("Room ID is required for match page");
-		}
-
-		// userIdが取得できない場合はエラー
-		if (!this.userId) {
-			throw new Error("User ID is required for match page");
-		}
-
-		// 既に同じルームに接続済みの場合は何もしない
-		if (
-			wsManager.isConnected() &&
-			wsManager.getCurrentRoomId() === this.roomId
-		) {
-			console.log(`Already connected to room ${this.roomId} for match`);
-			return;
-		}
-
-		console.log(`Connecting to room ${this.roomId} for match`);
-
-		try {
-			await wsManager.connect(this.roomId);
-			console.log("WebSocket connection established for match");
-		} catch (error) {
-			console.error("Failed to connect to WebSocket for match:", error);
-			throw error;
-		}
-	}
-
-	// ユーザーIDを取得
-	private getUserId(): string | null {
-		try {
-			const token = localStorage.getItem("accessToken");
-			if (!token) {
-				console.error("アクセストークンが見つかりません");
-				return null;
-			}
-
-			// JWTトークンをデコードしてユーザーIDを取得
-			const payload = JSON.parse(atob(token.split(".")[1]));
-			return payload.id || null;
-		} catch (error) {
-			console.error("ユーザーIDの取得に失敗しました:", error);
-			return null;
-		}
-	}
 
 	private initializeMatchState(): void {
 		this.myPredictedPaddleY = CONSTANTS.INITIAL_PADDLE_Y;
