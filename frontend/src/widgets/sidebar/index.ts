@@ -10,7 +10,7 @@ function handleLogout(): void {
 	console.log("Logging out...");
 	localStorage.removeItem("accessToken");
 	localStorage.removeItem("refreshToken");
-	window.location.href = "/auth";
+	window.location.href = "/home";
 }
 
 export function SidebarWidget(host: HTMLElement): void {
