@@ -1,11 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 
-
-echo "Vault初期化を開始..."
+# Vaultの起動を待機（開発モードでは数秒で起動する）
+echo "Vaultの起動を待機中..."
 sleep 5
+echo "Vaultが起動しました"
 
+echo "Vaultのシークレットエンジンを設定中..."
 vault secrets enable -path=secret kv-v2
 vault kv put secret/jwt secret="your-super-secret-jwt-key-here"
-vault kv put secret/app port="8080"
+vault kv put secret/server port="8080"
 
 echo "Vault初期化完了"
