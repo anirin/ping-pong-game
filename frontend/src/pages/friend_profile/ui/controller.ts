@@ -3,7 +3,6 @@ import {
 	deleteFriend,
 	fetchFriendProfile,
 } from "../model/friend_profile";
-// import avatara from "./a.jpg";
 
 export async function mountFriendProfile(
 	root: HTMLElement,
@@ -29,7 +28,7 @@ export async function mountFriendProfile(
 
 	const img = document.createElement("img");
 	img.src = user.avatar_url;
-	img.alt = "null";
+	img.alt = "User Avatar";
 	img.className = "avatar";
 
 	const info = document.createElement("div");
