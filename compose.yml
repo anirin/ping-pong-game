@@ -110,6 +110,19 @@ services:
     depends_on:
       - backend
 
+  vault:
+    container_name: vault
+    build: ./vault
+    ports:
+      - "8201:8201"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=myroot
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8201
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/data
+
   backend:
     container_name: backend
     build: ./backend
@@ -117,6 +130,7 @@ services:
       - "8080:8080"
     depends_on:
       - logstash
+      - vault
     volumes:
       - ./backend:/app
       - ./backend/entrypoint.sh:/app/entrypoint.sh
@@ -124,6 +138,9 @@ services:
     secrets:
       - server_certificate
       - server_key
+    environment:
+      - VAULT_ADDR=http://vault:8201
+      - VAULT_TOKEN=myroot
 
 volumes:
   frontend_modules:
@@ -133,6 +150,7 @@ volumes:
   logstashdata:
   kibanadata:
   filebeatdata:
+  vault_data:
 
 networks:
  default:

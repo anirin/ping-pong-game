@@ -7,18 +7,21 @@ import type {
 import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { User } from "@domain/model/entity/user/User.js";
 import { Username } from "@domain/model/value-object/user/User.js";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 import { randomUUID } from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
-
 export class AuthService {
+	private vaultService: VaultService;
+
 	constructor(
 		private readonly userRepo: UserRepository,
 		private readonly hasher: PasswordHasher,
 		private readonly tokenService: TokenService,
 		private readonly twoFAService: TwoFactorAuthService,
 		private readonly qrCodeService: QrCodeGenerator,
-	) {}
+	) {
+		this.vaultService = new VaultService();
+	}
 
 	async register(
 		email: string,
@@ -67,7 +70,8 @@ export class AuthService {
 
 		if (user.isTwoFAEnabled()) {
 			const tempPayload = { id: user.id, type: "2fa-pending" };
-			const tempToken = this.tokenService.sign(tempPayload, JWT_SECRET, {
+			const jwtSecret = await this.vaultService.getJwtSecret();
+			const tempToken = this.tokenService.sign(tempPayload, jwtSecret, {
 				expiresIn: "5m",
 			});
 			return { twoFARequired: true, tempToken };
@@ -79,7 +83,8 @@ export class AuthService {
 			email: user.email,
 			username: user.username.value,
 		};
-		const token = this.tokenService.sign(payload, JWT_SECRET, {
+		const jwtSecret = await this.vaultService.getJwtSecret();
+		const token = this.tokenService.sign(payload, jwtSecret, {
 			expiresIn: "24h",
 		});
 		return { twoFARequired: false, token };
@@ -122,7 +127,8 @@ export class AuthService {
 			email: user.email,
 			username: user.username.value,
 		};
-		const jwtToken = this.tokenService.sign(payload, JWT_SECRET, {
+		const jwtSecret = await this.vaultService.getJwtSecret();
+		const jwtToken = this.tokenService.sign(payload, jwtSecret, {
 			expiresIn: "24h",
 		});
 		return { token: jwtToken };

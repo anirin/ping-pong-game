@@ -30,4 +30,7 @@ log:
 build-backend:
 	docker-compose build --no-cache backend
 
+build-vault:
+	docker-compose build --no-cache vault
+
 re: fclean all

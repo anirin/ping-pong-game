@@ -6,6 +6,7 @@ import fastifyWebSocket from "@fastify/websocket";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 import authRoutes from "./route/auth/authRoutes.js";
 import { registerFriendRoutes } from "./route/friends/friendRoutes.js";
 import { registerMatchRoutes } from "./route/match/matchRoutes.js";
@@ -14,8 +15,12 @@ import { registerUserChange } from "./route/user/usernameChange.js";
 import { registerWSRoutes } from "./websocket/ws.js";
 
 export async function buildServer() {
+	const vaultService = new VaultService();
+	
+	// VaultからJWTシークレットを取得
+	const jwtSecret = await vaultService.getJwtSecret();
+	
 	if (
-		!process.env.JWT_SECRET ||
 		!process.env.HTTPS_KEY ||
 		!process.env.HTTPS_CERT
 	) {
@@ -40,7 +45,7 @@ export async function buildServer() {
 
 	// jwtの設定
 	await app.register(fastifyJwt, {
-		secret: process.env.JWT_SECRET as string,
+		secret: jwtSecret,
 	});
 
 	// jwtのデコレーター
