@@ -5,6 +5,9 @@ echo "Vaultの起動を待機中..."
 sleep 5
 echo "Vaultが起動しました"
 
+echo "監査ログを有効化中..."
+vault audit enable file file_path=/vault/logs/audit.log
+
 echo "Vaultのシークレットエンジンを設定中..."
 vault secrets enable -path=secret kv-v2
 vault kv put secret/jwt secret="secret"

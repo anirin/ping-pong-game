@@ -122,6 +122,7 @@ services:
       - IPC_LOCK
     volumes:
       - vault_data:/vault/data
+      - vault_logs:/vault/logs
     healthcheck:
       test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8201"]
       interval: 10s
@@ -159,6 +160,7 @@ volumes:
   kibanadata:
   filebeatdata:
   vault_data:
+  vault_logs:
 
 networks:
  default:
