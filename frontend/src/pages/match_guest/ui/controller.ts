@@ -8,19 +8,10 @@ const CONSTANTS = {
 	PADDLE_MARGIN: 10,
 	BALL_RADIUS: 10,
 	INITIAL_PADDLE_Y: 300,
-	PADDLE_MIN_Y: 50,
-	PADDLE_MAX_Y: 550,
+	PADDLE_MIN_Y: 0,
+	PADDLE_MAX_Y: 500,
 	FONT_SIZE_LARGE: "50px Arial",
 	FONT_SIZE_MEDIUM: "24px Arial",
-} as const;
-
-const KEY_BINDINGS = {
-	// プレイヤー1（左側）の操作
-	PLAYER1_UP: ["ArrowUp", "w"] as const,
-	PLAYER1_DOWN: ["ArrowDown", "s"] as const,
-	// プレイヤー2（右側）の操作
-	PLAYER2_UP: ["ArrowLeft", "a"] as const,
-	PLAYER2_DOWN: ["ArrowRight", "d"] as const,
 } as const;
 
 interface GuestMatchState {
@@ -209,47 +200,35 @@ export class GuestMatchController {
 	}
 
 	private handleKeyDown(event: KeyboardEvent): void {
-		// プレイヤー1の操作
-		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key as "ArrowUp" | "w")) {
-			event.preventDefault();
+		event.preventDefault(); // 先に呼ぶとコードがすっきりします
+
+		// プレイヤー1の操作 (w, s)
+		if (event.key === "w" || event.key === "W") {
 			this.player1MovingUp = true;
-		} else if (
-			KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")
-		) {
-			event.preventDefault();
+		} else if (event.key === "s" || event.key === "S") {
 			this.player1MovingDown = true;
 		}
-		// プレイヤー2の操作
-		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key as "ArrowLeft" | "a")) {
-			event.preventDefault();
+		// プレイヤー2の操作 (↑, ↓)
+		else if (event.key === "ArrowUp") {
 			this.player2MovingUp = true;
-		} else if (
-			KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")
-		) {
-			event.preventDefault();
+		} else if (event.key === "ArrowDown") {
 			this.player2MovingDown = true;
 		}
 	}
 
 	private handleKeyUp(event: KeyboardEvent): void {
-		// プレイヤー1の操作
-		if (KEY_BINDINGS.PLAYER1_UP.includes(event.key as "ArrowUp" | "w")) {
-			event.preventDefault();
+		event.preventDefault(); // 先に呼ぶ
+
+		// プレイヤー1の操作 (w, s)
+		if (event.key === "w" || event.key === "W") {
 			this.player1MovingUp = false;
-		} else if (
-			KEY_BINDINGS.PLAYER1_DOWN.includes(event.key as "ArrowDown" | "s")
-		) {
-			event.preventDefault();
+		} else if (event.key === "s" || event.key === "S") {
 			this.player1MovingDown = false;
 		}
-		// プレイヤー2の操作
-		else if (KEY_BINDINGS.PLAYER2_UP.includes(event.key as "ArrowLeft" | "a")) {
-			event.preventDefault();
+		// プレイヤー2の操作 (↑, ↓)
+		else if (event.key === "ArrowUp") {
 			this.player2MovingUp = false;
-		} else if (
-			KEY_BINDINGS.PLAYER2_DOWN.includes(event.key as "ArrowRight" | "d")
-		) {
-			event.preventDefault();
+		} else if (event.key === "ArrowDown") {
 			this.player2MovingDown = false;
 		}
 	}
