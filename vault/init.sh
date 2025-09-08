@@ -7,7 +7,7 @@ echo "Vaultが起動しました"
 
 echo "Vaultのシークレットエンジンを設定中..."
 vault secrets enable -path=secret kv-v2
-vault kv put secret/jwt secret="your-super-secret-jwt-key-here"
+vault kv put secret/jwt secret="secret"
 vault kv put secret/server port="8080"
 
 echo "Vault初期化完了"

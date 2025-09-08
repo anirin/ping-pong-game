@@ -14,6 +14,7 @@ export class VaultService {
 	async getJwtSecret(): Promise<string> {
 		try {
 			const result = await this.client.read("secret/data/jwt");
+			console.log("vault result", result);
 			return result.data.data.secret;
 		} catch (error) {
 			console.error("Failed to get JWT secret from Vault:", error);
@@ -25,6 +26,7 @@ export class VaultService {
 	async getPort(): Promise<string> {
 		try {
 			const result = await this.client.read("secret/data/app");
+			console.log("vault result", result);
 			return result.data.data.port;
 		} catch (error) {
 			console.error("Failed to get port from Vault:", error);
