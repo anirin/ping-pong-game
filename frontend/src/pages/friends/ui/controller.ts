@@ -27,7 +27,7 @@ export async function mountFriendList(
 
 		img.src = friend.avatar_url;
 		// 設定していない時のavatorの表示
-		img.alt = "null";
+		img.alt = "User Avatar";
 		img.className = "avatar_url";
 
 		const info = document.createElement("div");

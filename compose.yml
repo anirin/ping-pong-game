@@ -9,6 +9,7 @@ services:
       - kibana_certs:/usr/share/elasticsearch/config/kibana_certs
       - logstash_certs:/usr/share/elasticsearch/config/logstash_certs
       - ./elk/setup.sh:/usr/local/bin/setup.sh:ro
+      - ./elk/filebeat/filebeat.yml:/usr/share/elasticsearch/config/filebeat.yml
     user: "0"
     command: ["bash", "/usr/local/bin/setup.sh"]
 
