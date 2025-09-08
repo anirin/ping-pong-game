@@ -6,10 +6,41 @@ function isLoggedIn(): boolean {
 	return token !== null && token !== "";
 }
 
-function handleLogout(): void {
+async function handleLogout(): Promise<void> {
 	console.log("Logging out...");
+
+	const token = localStorage.getItem("accessToken");
+	if (token) {
+		try {
+			const VITE_BASE_URL = import.meta.env.VITE_BASE_URL;
+			if (!VITE_BASE_URL) {
+				console.error("VITE_BASE_URL is not configured.");
+			} else {
+				const response = await fetch(`${VITE_BASE_URL}/auth/logout`, {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+
+				if (!response.ok) {
+					console.error(
+						"Failed to notify backend of logout. Status:",
+						response.status,
+					);
+				} else {
+					console.log(
+						"Successfully notified backend to set user status to offline.",
+					);
+				}
+			}
+		} catch (error) {
+			console.error("Error while sending logout request to backend:", error);
+		}
+	}
 	localStorage.removeItem("accessToken");
 	localStorage.removeItem("refreshToken");
+
 	window.location.href = "/home";
 }
 
