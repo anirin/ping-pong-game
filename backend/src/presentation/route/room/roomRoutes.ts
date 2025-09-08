@@ -10,7 +10,7 @@ import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMU
 import type { FastifyInstance } from "fastify";
 import type { WebSocketContext } from "../../websocket/ws-manager.js";
 import type { WSOutgoingMsg } from "../../websocket/ws-msg.js";
-import { decodeJWT } from "../auth/authRoutes.js";
+import { decodeJWT } from "../auth/authUtils.js";
 
 export async function registerRoomRoutes(app: FastifyInstance) {
 	// 各サービスは自身でリポジトリを初期化するスタイルに変更

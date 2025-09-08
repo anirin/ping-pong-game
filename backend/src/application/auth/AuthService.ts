@@ -127,4 +127,12 @@ export class AuthService {
 		});
 		return { token: jwtToken };
 	}
+	async logout(userId: string): Promise<void> {
+		const user = await this.userRepo.findById(userId);
+		if (!user || user.status === "offline") {
+			return;
+		}
+		user.setStatus("offline");
+		await this.userRepo.update(user);
+	}
 }

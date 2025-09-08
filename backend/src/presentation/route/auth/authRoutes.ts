@@ -8,24 +8,24 @@ import {
 } from "@infrastructure/entity/jwt_2fa/logic.js";
 import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
-import fastify, {
-	type FastifyInstance,
-	type FastifyPluginAsync,
-} from "fastify";
+import type { FastifyPluginAsync } from "fastify";
 import validator from "validator";
 
-// Repository
+declare module "fastify" {
+	interface FastifyRequest {
+		authedUser: {
+			id: string;
+		};
+	}
+}
+
 const userRepo = new TypeOrmUserRepository(
 	AppDataSource.getRepository(UserEntity),
 );
-
-// Infrastructure implementations
 const hasher = new BcryptPasswordHasher();
 const tokenService = new JwtTokenService();
 const twoFAService = new OtplibTwoFactorAuthService();
 const qrCodeService = new QrCodeService();
-
-// AuthService with dependencies
 const authService = new AuthService(
 	userRepo,
 	hasher,
@@ -39,37 +39,40 @@ interface RegisterBody {
 	username?: string;
 	password?: string;
 }
-
 interface LoginBody {
 	email?: string;
 	password?: string;
 }
-
 interface TwoFABody {
 	email?: string;
 	token?: string;
 }
 
-export function decodeJWT(
-	fastify: FastifyInstance,
-	token: string,
-): string | null {
-	try {
-		const decoded = fastify.jwt.decode(token) as { id: string };
-		if (!decoded || !decoded.id) {
-			return null;
-		}
-		return decoded.id;
-	} catch (err) {
-		console.error("Error decoding JWT:", err);
-		return null;
-	}
-}
-
 const authRoutes: FastifyPluginAsync = async (fastify) => {
+	fastify.addHook("onRequest", async (request, reply) => {
+		if (request.url !== "/auth/logout") {
+			return;
+		}
+
+		try {
+			const authHeader = request.headers.authorization;
+			if (!authHeader || !authHeader.startsWith("Bearer ")) {
+				return reply
+					.code(401)
+					.send({ message: "Authentication token is missing or invalid." });
+			}
+			const token = authHeader.substring(7);
+
+			const decoded = fastify.jwt.verify(token) as { id: string };
+
+			request.authedUser = { id: decoded.id };
+		} catch (err) {
+			return reply.code(401).send({ message: "Authentication failed." });
+		}
+	});
+
 	fastify.post<{ Body: RegisterBody }>("/register", async (request, reply) => {
 		const { email, username, password } = request.body;
-
 		if (!email || !validator.isEmail(email)) {
 			return reply.code(400).send({ message: "Invalid email" });
 		}
@@ -79,7 +82,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 		if (!password || password.length < 6) {
 			return reply.code(400).send({ message: "Invalid password" });
 		}
-
 		try {
 			const result = await authService.register(email, username, password);
 			return result;
@@ -88,14 +90,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 		}
 	});
 
-	// ログイン
 	fastify.post<{ Body: LoginBody }>("/login", async (request, reply) => {
 		const { email, password } = request.body;
-
 		if (!email || !password) {
 			return reply.code(400).send({ message: "Email and password required" });
 		}
-
 		try {
 			const result = await authService.login(email, password);
 			return result;
@@ -104,7 +103,6 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 		}
 	});
 
-	// 2FA セットアップ
 	fastify.post<{ Body: { email?: string } }>(
 		"/2fa/setup",
 		async (request, reply) => {
@@ -120,17 +118,29 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 		},
 	);
 
-	// 2FA 検証
 	fastify.post<{ Body: TwoFABody }>("/2fa/verify", async (request, reply) => {
 		const { email, token } = request.body;
 		if (!email || !token)
 			return reply.code(400).send({ message: "Email and token required" });
-
 		try {
 			const result = await authService.verify2FA(email, token);
 			return result;
 		} catch (err: any) {
 			return reply.code(400).send({ message: err.message });
+		}
+	});
+
+	fastify.post("/logout", async (request, reply) => {
+		try {
+			const userId = request.authedUser?.id;
+			if (!userId) {
+				return reply.code(401).send({ message: "Unauthorized" });
+			}
+			await authService.logout(userId);
+			return reply.code(204).send();
+		} catch (error: any) {
+			console.error("Logout error:", error);
+			return reply.code(500).send({ message: "Internal server error" });
 		}
 	});
 };
