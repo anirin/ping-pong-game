@@ -63,10 +63,6 @@ export class MatchController {
 				return;
 			}
 
-			// DOM要素の準備完了を待機
-			await this.waitForDOMElements();
-
-			// WebSocket接続を確保
 			await this.ensureWebSocketConnection();
 
 			// 少し待ってからマッチデータを取得
@@ -82,44 +78,6 @@ export class MatchController {
 		}
 	}
 
-	// DOM要素の準備完了を待機
-	private async waitForDOMElements(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			let retryCount = 0;
-			const maxRetries = 50; // 5秒間待機
-			const retryDelay = 100;
-
-			const checkElements = () => {
-				const canvas = document.getElementById(
-					"matchCanvas",
-				) as HTMLCanvasElement;
-				const readyButton = document.getElementById("ready-button");
-				const scoreboard = document.getElementById("scoreboard");
-
-				if (canvas && readyButton && scoreboard) {
-					// Canvas context の取得も確認
-					const ctx = canvas.getContext("2d");
-					if (ctx) {
-						console.log("All DOM elements are ready");
-						resolve();
-						return;
-					}
-				}
-
-				if (retryCount >= maxRetries) {
-					console.error("DOM elements timeout - retry count:", retryCount);
-					reject(new Error("必要なDOM要素の準備に失敗しました。"));
-				} else {
-					retryCount++;
-					console.log(
-						`Waiting for DOM elements... (${retryCount}/${maxRetries})`,
-					);
-					setTimeout(checkElements, retryDelay);
-				}
-			};
-			checkElements();
-		});
-	}
 
 	// WebSocket接続を確保する（必要に応じて再接続）
 	private async ensureWebSocketConnection(): Promise<void> {
