@@ -1,6 +1,5 @@
 import { fetchFriendById, sendFriendRequest } from "../model/friend_request";
 
-// import avatar from "./a.jpg";
 function decodeJwt(token: string): any {
 	try {
 		const base64Url = token.split(".")[1];
@@ -68,7 +67,7 @@ export async function mountFriendRequest(
 
 		const img = document.createElement("img");
 		img.src = user.avatar;
-		img.alt = "null";
+		img.alt = "User Avatar";
 		img.className = "avatar";
 
 		const info = document.createElement("div");
