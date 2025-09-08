@@ -124,12 +124,6 @@ services:
     volumes:
       - vault_data:/vault/data
       - vault_logs:/vault/logs
-    healthcheck:
-      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8201"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
 
   backend:
     container_name: backend
@@ -138,7 +132,7 @@ services:
       - "8080:8080"
     depends_on:
       vault:
-        condition: service_healthy
+        condition: service_started
       logstash:
         condition: service_started
     volumes:
