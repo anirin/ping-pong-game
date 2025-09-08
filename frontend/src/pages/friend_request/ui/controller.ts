@@ -1,10 +1,48 @@
 import { fetchFriendById, sendFriendRequest } from "../model/friend_request";
+
 // import avatar from "./a.jpg";
+function decodeJwt(token: string): any {
+	try {
+		const base64Url = token.split(".")[1];
+		const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+		const jsonPayload = decodeURIComponent(
+			atob(base64)
+				.split("")
+				.map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+				.join(""),
+		);
+		return JSON.parse(jsonPayload);
+	} catch (e) {
+		return null;
+	}
+}
 
 export async function mountFriendRequest(
 	root: HTMLElement,
 	navigate: (path: string) => void,
 ) {
+	const myIdBox = root.querySelector("#my-id-box") as HTMLElement;
+	const token = localStorage.getItem("accessToken");
+	if (token) {
+		const decoded = decodeJwt(token);
+		const userId = decoded?.id || decoded?.sub;
+		if (!userId) {
+			alert("ユーザーIDを取得できません");
+			navigate("/auth/login");
+			return;
+		}
+		if (userId) {
+			myIdBox.innerHTML = `
+			<span class="my-id-label">あなたのID:</span>
+			<span class="my-id-value" title=${userId}">${userId}</span>
+			`;
+		} else {
+			myIdBox.textContent = "ユーザーIDを取得できません";
+		}
+	} else {
+		myIdBox.textContent = "ログインしてください";
+	}
+
 	const searchBtn = root.querySelector("#search-btn") as HTMLButtonElement;
 	const input = root.querySelector("#friend-id") as HTMLInputElement;
 	const result = root.querySelector("#search-result") as HTMLElement;
