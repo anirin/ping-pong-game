@@ -8,7 +8,7 @@ import {
 } from "@infrastructure/entity/jwt_2fa/logic.js";
 import { UserEntity } from "@infrastructure/entity/users/UserEntity.js";
 import { TypeOrmUserRepository } from "@infrastructure/repository/users/TypeORMUserRepository.js";
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import validator from "validator";
 
 declare module "fastify" {
@@ -16,6 +16,22 @@ declare module "fastify" {
 		authedUser: {
 			id: string;
 		};
+	}
+}
+
+export function decodeJWT(
+	fastify: FastifyInstance,
+	token: string,
+): string | null {
+	try {
+		const decoded = fastify.jwt.decode(token) as { id: string };
+		if (!decoded || !decoded.id) {
+			return null;
+		}
+		return decoded.id;
+	} catch (err) {
+		console.error("Error decoding JWT:", err);
+		return null;
 	}
 }
 

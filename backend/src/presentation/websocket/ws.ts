@@ -1,7 +1,7 @@
 import { RoomService } from "@application/services/rooms/RoomService.js";
 import type WebSocket from "@fastify/websocket";
 import type { FastifyInstance } from "fastify";
-import { decodeJWT } from "../route/auth/authUtils.js";
+import { decodeJWT } from "../route/auth/authRoutes.js";
 import { MatchWSHandler } from "../route/match/matchRoutes.js";
 import {
 	JoinRoomWS,

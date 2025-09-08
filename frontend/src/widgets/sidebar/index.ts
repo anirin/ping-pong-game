@@ -19,14 +19,19 @@ async function handleLogout(): Promise<void> {
 				const response = await fetch(`${VITE_BASE_URL}/auth/logout`, {
 					method: "POST",
 					headers: {
-						"Authorization": `Bearer ${token}`,
+						Authorization: `Bearer ${token}`,
 					},
 				});
-	
+
 				if (!response.ok) {
-					console.error("Failed to notify backend of logout. Status:", response.status);
+					console.error(
+						"Failed to notify backend of logout. Status:",
+						response.status,
+					);
 				} else {
-					console.log("Successfully notified backend to set user status to offline.");
+					console.log(
+						"Successfully notified backend to set user status to offline.",
+					);
 				}
 			}
 		} catch (error) {

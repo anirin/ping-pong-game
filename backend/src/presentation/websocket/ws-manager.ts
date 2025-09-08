@@ -2,7 +2,7 @@ import type { RoomId } from "@domain/model/value-object/room/Room.js";
 import type { UserId } from "@domain/model/value-object/user/User.js";
 import type WebSocket from "@fastify/websocket";
 import type { FastifyInstance } from "fastify";
-import { decodeJWT } from "../route/auth/authUtils.js";
+import { decodeJWT } from "../route/auth/authRoutes.js";
 import type { WSOutgoingMsg } from "./ws-msg.js";
 
 export class WebSocketManager {
