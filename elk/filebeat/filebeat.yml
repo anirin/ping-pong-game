@@ -26,4 +26,4 @@ output.elasticsearch:
   username: ${ELASTIC_USER}
   password: ${ELASTIC_PASSWORD}
   ssl.enabled: true
-  ssl.certificate_authorities: "certs/ca/ca.crt"
+  ssl.certificate_authorities: "config/certs/ca/ca.crt"
