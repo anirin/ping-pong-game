@@ -10,6 +10,7 @@ fi;
 cd blockchain
 npm ci
 npx hardhat compile
+cp -r ./abi /app/src/infrastructure/
 npx hardhat run scripts/deploy.ts --network blockchain
 cd ..
 
