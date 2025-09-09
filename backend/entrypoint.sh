@@ -9,6 +9,7 @@ fi;
 
 cd blockchain
 npm ci
+npx hardhat compile
 npx hardhat run scripts/deploy.ts --network blockchain
 cd ..
 
