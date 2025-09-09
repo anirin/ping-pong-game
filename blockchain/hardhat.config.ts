@@ -7,7 +7,7 @@ dotenv.config();
 const config: HardhatUserConfig = {
 	solidity: "0.8.24",
 	paths: {
-		artifacts: "./abi",
+		artifacts: "../backend/src/infrastructure/abi",
 	},
 	networks: {
 		blockchain: {
