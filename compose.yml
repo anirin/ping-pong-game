@@ -88,7 +88,7 @@ services:
     image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
     user: root
     entrypoint: >
-      sh -c "chown root:root /usr/share/filebeat/filebeat.yml && exec filebeat -e"
+      sh -c "chown root:root /usr/share/filebeat/filebeat.yml && chmod go-w /usr/share/filebeat/filebeat.yml && exec filebeat -e"
     environment:
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
@@ -123,11 +123,13 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - logstash
+      - blockchain
     volumes:
       - ./backend:/app
       - ./backend/entrypoint.sh:/app/entrypoint.sh
+      - ./blockchain:/app/blockchain
       - backend_modules:/app/node_modules
+      - abi:/app/src/infrastructure/abi
     networks:
       - appnet
     secrets:
@@ -149,13 +151,29 @@ services:
       - server_key
     networks: [appnet]
     
+  blockchain:
+    container_name: blockchain
+    build: ./blockchain
+    volumes:
+      - ./blockchain:/app
+      - abi:/app/abi
+      - blockchain_modules:/app/node_modules
+
 volumes:
   frontend_modules:
   backend_modules:
+  blockchain_modules:
   esdata:
   logstashdata:
   kibanadata:
   filebeatdata:
+  
+  abi:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_ROOT}/files/abi
 
   elk_certs:
     driver: local

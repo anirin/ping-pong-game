@@ -13,6 +13,8 @@ jobs:
   build_blockchain:
     name: Build Blockchain
     runs-on: ubuntu-latest
+    env:
+      BLOCKCHAIN_RPC_URL: http://localhost:8080
     steps:
       - name: Checkout
         uses: actions/checkout@v4

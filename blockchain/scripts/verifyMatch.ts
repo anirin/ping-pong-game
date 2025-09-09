@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import TournamentScoreABI from "../../backend/src/infrastructure/abi/contracts/TournamentScore.sol/TournamentScore.json";
+import TournamentScoreABI from "/app/src/infrastructure/abi/contracts/TournamentScore.sol/TournamentScore.json";
 
 async function main() {
 	const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";

@@ -1,7 +1,7 @@
 NAME=ping-pong-game
 COMPOSE_FILE=./compose.yml
 COMPOSE=docker compose -f $(COMPOSE_FILE)
-APP_IMAGE=$(NAME)-frontend $(NAME)-backend
+APP_IMAGE=$(NAME)-frontend $(NAME)-backend $(NAME)-blockchain
 APP_VOLUME=frontend_modules backend_modules
 
 all: $(NAME)
