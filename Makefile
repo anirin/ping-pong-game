@@ -22,19 +22,10 @@ fclean-local:
 	$(COMPOSE) down --volumes
 	docker image rm $(APP_IMAGE)
 
-stop:
-	$(COMPOSE) stop
-
-start:
-	$(COMPOSE) start
-
-log:
-	$(COMPOSE) logs
-
-build-backend:
-	docker-compose build --no-cache backend
-
-build-frontend:
-	docker-compose build --no-cache frontend
+fclean-host:
+	docker container stop $(docker container ls -aq)
+	docker container rm $(docker container ls -aq)
+	docker image rm $(docker images -aq)
+	docker volume rm $(docker volume ls -q)
 
 re: fclean all

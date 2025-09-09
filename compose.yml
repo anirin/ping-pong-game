@@ -16,6 +16,7 @@ services:
   elasticsearch:
     container_name: elasticsearch
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    restart: always
     volumes:
       - elk_certs:/usr/share/elasticsearch/config/certs
       - esdata:/usr/share/elasticsearch/data
@@ -45,6 +46,7 @@ services:
   logstash:
     container_name: logstash
     image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
+    restart: always
     user: root
     volumes:
       - elk_certs:/usr/share/logstash/config/certs:ro
@@ -64,6 +66,7 @@ services:
   kibana:
     container_name: kibana
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
+    restart: always
     environment:
       - SERVERNAME=kibana
       - ELASTICSEARCH_HOSTS=https://elasticsearch:9200
@@ -87,6 +90,7 @@ services:
   filebeat:
     container_name: filebeat
     image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
+    restart: always
     user: root
     entrypoint: >
       sh -c "chown root:root /usr/share/filebeat/filebeat.yml && chmod go-w /usr/share/filebeat/filebeat.yml && exec filebeat -e"
@@ -110,6 +114,7 @@ services:
   frontend:
     container_name: frontend
     build: ./frontend
+    restart: always
     ports:
       - 5173:5173
     volumes:
@@ -121,6 +126,7 @@ services:
   backend:
     container_name: backend
     build: ./backend
+    restart: always
     ports:
       - "8080:8080"
     depends_on:
@@ -128,13 +134,14 @@ services:
     volumes:
       - ./backend:/backend
       - ./backend/entrypoint.sh:/backend/entrypoint.sh
-      - ./blockchain:/backend/blockchain
+      - ./blockchain:/blockchain
       - backend_modules:/backend/node_modules
       - abi:/backend/src/infrastructure/abi
 
   blockchain:
     container_name: blockchain
     build: ./blockchain
+    restart: always
     volumes:
       - ./blockchain:/app
       - abi:/app/abi
