@@ -11,7 +11,7 @@ const config: HardhatUserConfig = {
 	},
 	networks: {
 		blockchain: {
-    		url: process.env.BLOCKCHAIN_RPC_URL!,
+			url: process.env.BLOCKCHAIN_RPC_URL!,
 		},
 	},
 };
