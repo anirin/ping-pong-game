@@ -50,6 +50,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Download ABI Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: abi-artifact
+          path: backend/src/infrastructure/abi/
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
