@@ -43,7 +43,7 @@ export class MatchController {
 	private correctionCount: number = 0;
 	private lastCorrectionTime: number = 0;
 	private correctionCooldown: number = 50; // 50msのクールダウン
-	
+
 	// エラーハンドリング用のプロパティ
 	private canvasErrorCount: number = 0;
 	private maxCanvasErrors: number = 10; // 最大エラー回数
@@ -74,7 +74,7 @@ export class MatchController {
 			this.serverState = this.matchAPI.getMatchData();
 			this.PlayerRole = this.matchAPI.getPlayerRole();
 			if (!this.PlayerRole) {
-				throw ("error"); // こいつが犯人
+				throw "error"; // こいつが犯人
 			}
 			await this.setupElement();
 			this.setupEventListeners();
@@ -93,35 +93,33 @@ export class MatchController {
 	private async waitForMatchData(): Promise<void> {
 		const maxRetries = 100;
 		const retryInterval = 100;
-		
+
 		for (let i = 0; i < maxRetries; i++) {
 			const matchData = this.matchAPI.getMatchData();
 			if (matchData !== null) {
 				console.log(`Match data received after ${i * retryInterval}ms`);
 				return;
 			}
-			
-			await new Promise(resolve => setTimeout(resolve, retryInterval));
+
+			await new Promise((resolve) => setTimeout(resolve, retryInterval));
 		}
-		
+
 		throw new Error("Match data not received within 10 seconds");
 	}
 
 	// 初期化周り
 	private async setupMatchAPI(): Promise<void> {
-		if (this.roomId)
-		{
+		if (this.roomId) {
 			await this.matchAPI.ensureConnection(this.roomId);
 		} else {
 			//todo 変更
-			throw ("no match id");
+			throw "no match id";
 		}
 
 		if (this.matchId) {
 			this.matchAPI.setMatchId(this.matchId);
 		}
 		this.matchAPI.setCallback(this.handleMatchEvent.bind(this));
-
 	}
 
 	private getMatchStatus(): void {
@@ -145,7 +143,9 @@ export class MatchController {
 			}
 
 			// オプション要素の取得
-			this.readyButton = document.getElementById("ready-button") as HTMLButtonElement;
+			this.readyButton = document.getElementById(
+				"ready-button",
+			) as HTMLButtonElement;
 			this.playerRoleEl = document.getElementById("player-role");
 			this.matchStatusEl = document.getElementById("match-status");
 			this.player1ScoreEl = document.getElementById("player1-score");
@@ -160,13 +160,11 @@ export class MatchController {
 				player1ScoreEl: !!this.player1ScoreEl,
 				player2ScoreEl: !!this.player2ScoreEl,
 			});
-
 		} catch (error) {
 			console.error("Failed to setup DOM elements:", error);
 			throw error; // 上位にエラーを伝播
 		}
 	}
-
 
 	// クリーンアップ
 	private cleanup(): void {
@@ -191,7 +189,7 @@ export class MatchController {
 	private prepareMatch(): void {
 		// ready button の処理を行う
 		// 2名がbuttonを押したら開始、buttonの取り消し操作はできない
-		
+
 		if (!this.serverState || !this.readyButton) {
 			return;
 		}
@@ -202,7 +200,6 @@ export class MatchController {
 			this.readyButton.style.display = "none";
 			return;
 		}
-
 
 		// UIの更新はincoming messageでのみ行うため、ここでは初期表示のみ
 		this.setInitialReadyButtonState();
@@ -309,14 +306,13 @@ export class MatchController {
 		}
 	}
 
-
 	private startMatchLoop(): void {
 		// 既にマッチループが動いている場合は何もしない
 		if (this.animationFrameId !== null) {
 			console.log("Match loop is already running");
 			return;
 		}
-		
+
 		console.log("Starting match loop");
 		this.matchLoop();
 	}
@@ -332,15 +328,17 @@ export class MatchController {
 	private matchLoop(): void {
 		if (!this.canvas) {
 			this.canvasErrorCount++;
-			console.warn(`Canvas element missing, error count: ${this.canvasErrorCount}`);
-			
+			console.warn(
+				`Canvas element missing, error count: ${this.canvasErrorCount}`,
+			);
+
 			// 最大エラー回数に達した場合はmatch loopを停止
 			if (this.canvasErrorCount >= this.maxCanvasErrors) {
 				console.error("Too many canvas errors, stopping match loop");
 				this.stopMatchLoop();
 				return;
 			}
-			
+
 			// 短い遅延後に再試行
 			setTimeout(() => {
 				this.animationFrameId = requestAnimationFrame(
@@ -388,7 +386,6 @@ export class MatchController {
 		}
 	}
 
-
 	private updateMatchState(): void {
 		const newServerState = this.matchAPI.getMatchData();
 
@@ -403,9 +400,10 @@ export class MatchController {
 
 	private checkAndCorrectPosition(serverState: RealtimeMatchStateDto): void {
 		const currentTime = Date.now();
-		const serverPaddleY = this.PlayerRole === "player1"
-			? serverState.paddles.player1.y
-			: serverState.paddles.player2.y;
+		const serverPaddleY =
+			this.PlayerRole === "player1"
+				? serverState.paddles.player1.y
+				: serverState.paddles.player2.y;
 		const error = Math.abs(this.myPredictedPaddleY - serverPaddleY);
 
 		// クールダウン時間を短縮（より敏感に補正）
@@ -422,8 +420,10 @@ export class MatchController {
 			// エラーが大きいほど補正速度を上げる
 			const correctionSpeed = Math.min(0.5, error / 10);
 			this.myPredictedPaddleY += correctionError * correctionSpeed;
-			
-			console.log(`Position correction: error=${error.toFixed(2)}, speed=${correctionSpeed.toFixed(2)}`);
+
+			console.log(
+				`Position correction: error=${error.toFixed(2)}, speed=${correctionSpeed.toFixed(2)}`,
+			);
 		}
 	}
 
@@ -478,7 +478,6 @@ export class MatchController {
 		this.drawGameElements(ctx, this.canvas);
 	}
 
-
 	public destroy(): void {
 		console.log("[DEBUG] MatchController.destroy() called");
 		// マッチループを停止
@@ -526,7 +525,6 @@ export class MatchController {
 		if (KEY_BINDINGS.DOWN.includes(key as any)) this.movingDown = false;
 	}
 
-
 	private setupReadyButton(): void {
 		if (this.readyButton) {
 			this.readyButton.addEventListener("click", () =>
@@ -541,7 +539,6 @@ export class MatchController {
 		window.addEventListener("keydown", this.handleKeyDownRef);
 		window.addEventListener("keyup", this.handleKeyUpRef);
 	}
-
 
 	// draw 各種関数
 	private clearCanvas(
@@ -570,9 +567,11 @@ export class MatchController {
 		if (!this.serverState) return;
 
 		if (this.player1ScoreEl)
-			this.player1ScoreEl.textContent = this.serverState.scores.player1.toString();
+			this.player1ScoreEl.textContent =
+				this.serverState.scores.player1.toString();
 		if (this.player2ScoreEl)
-			this.player2ScoreEl.textContent = this.serverState.scores.player2.toString();
+			this.player2ScoreEl.textContent =
+				this.serverState.scores.player2.toString();
 	}
 
 	private drawGameElements(
@@ -657,9 +656,11 @@ export class MatchController {
 		} else if (action === "match_state") {
 			// マッチ状態の変更を処理
 			this.updateReadyButtonState();
-			
 			// リロード時にマッチが進行中の場合はマッチループを開始
-			if (this.serverState?.status === "playing" && this.animationFrameId === null) {
+			if (
+				this.serverState?.status === "playing" &&
+				this.animationFrameId === null
+			) {
 				console.log("Match is playing - starting game loop on reload");
 				this.startMatchLoop();
 			}
@@ -724,7 +725,11 @@ export class MatchController {
 					ctx.textAlign = "center";
 					ctx.fillText("ルームが削除されました", this.canvas.width / 2, 250);
 					ctx.fillText(message, this.canvas.width / 2, 280);
-					ctx.fillText("3秒後にロビーに戻ります...", this.canvas.width / 2, 320);
+					ctx.fillText(
+						"3秒後にロビーに戻ります...",
+						this.canvas.width / 2,
+						320,
+					);
 				}
 			}
 

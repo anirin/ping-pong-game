@@ -40,7 +40,6 @@ export class MatchAPI {
 	private controllerCallback: ((data: any, action?: string) => void) | null =
 		null;
 
-
 	constructor() {
 		this.wsManager = WebSocketManager.getInstance();
 		console.log(
@@ -151,7 +150,6 @@ export class MatchAPI {
 		});
 	}
 
-
 	// 送信 パドルの移動
 	public sendPaddleMove(position: { y: number }): void {
 		this.wsManager.sendMessage({
@@ -177,8 +175,6 @@ export class MatchAPI {
 		this.isReady = true;
 		this.sendReadyToServer(this.isReady);
 	}
-
-
 
 	// ------------------------------------------------------------
 	// private methods
@@ -226,9 +222,7 @@ export class MatchAPI {
 				console.error("MatchAPI: Match error:", message.data.message);
 				this.controllerCallback(message.data, "error");
 			} else if (message.data.type === "ready_state") {
-				this.updateReadyStateFromServer(
-					message.data.readyPlayers,
-				);
+				this.updateReadyStateFromServer(message.data.readyPlayers);
 				this.controllerCallback(message.data, "ready_state");
 			} else if (message.action === "get_initial_state") {
 				// 初期状態のデータが含まれている場合はmatchDataを更新
@@ -242,9 +236,7 @@ export class MatchAPI {
 		}
 	}
 
-	private updateReadyStateFromServer(
-		readyPlayers: string[],
-	): void {
+	private updateReadyStateFromServer(readyPlayers: string[]): void {
 		this.readyPlayers.clear();
 		for (const playerId of readyPlayers) {
 			this.readyPlayers.add(playerId);
@@ -253,7 +245,6 @@ export class MatchAPI {
 		if (this.userId) {
 			this.isReady = this.readyPlayers.has(this.userId);
 		}
-
 	}
 
 	private sendReadyToServer(isReady: boolean): void {
@@ -282,7 +273,6 @@ export class MatchAPI {
 			data: { isReady },
 		});
 	}
-
 
 	private initializeUserId(): void {
 		try {
