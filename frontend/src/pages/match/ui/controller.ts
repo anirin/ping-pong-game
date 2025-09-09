@@ -77,6 +77,7 @@ export class MatchController {
 			}
 			await this.setupElement();
 			this.setupEventListeners();
+			this.updatePlayerInfo(); // プレイヤー情報を更新
 			this.prepareMatch();
 		} catch (error) {
 			// alert("Failed to start match");
@@ -288,6 +289,22 @@ export class MatchController {
 			this.matchStatusEl.textContent = "Match in progress";
 		} else if (this.serverState?.status === "finished") {
 			this.matchStatusEl.textContent = "Match finished";
+		}
+	}
+
+	private updatePlayerInfo(): void {
+		if (!this.playerRoleEl) {
+			return;
+		}
+
+		if (this.PlayerRole === "player1") {
+			this.playerRoleEl.textContent = "Player 1";
+		} else if (this.PlayerRole === "player2") {
+			this.playerRoleEl.textContent = "Player 2";
+		} else if (this.PlayerRole === "spectator") {
+			this.playerRoleEl.textContent = "Spectator";
+		} else {
+			this.playerRoleEl.textContent = "Unknown";
 		}
 	}
 
