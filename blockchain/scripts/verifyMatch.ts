@@ -2,7 +2,6 @@ import { ethers } from "hardhat";
 import TournamentScoreABI from "../../backend/src/infrastructure/abi/contracts/TournamentScore.sol/TournamentScore.json";
 
 async function main() {
-
 	const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 	const matchIdToVerify = "bf80693e-9977-4dde-8e64-d3ab692df823";

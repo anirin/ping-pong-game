@@ -169,7 +169,6 @@ export class MatchService {
 				return;
 			}
 
-
 			if (match.status !== "finished") {
 				match.finish(winnerId);
 			}
