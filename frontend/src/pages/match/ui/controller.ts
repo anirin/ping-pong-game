@@ -657,6 +657,12 @@ export class MatchController {
 		} else if (action === "match_state") {
 			// マッチ状態の変更を処理
 			this.updateReadyButtonState();
+			
+			// リロード時にマッチが進行中の場合はマッチループを開始
+			if (this.serverState?.status === "playing" && this.animationFrameId === null) {
+				console.log("Match is playing - starting game loop on reload");
+				this.startMatchLoop();
+			}
 		} else if (action === "match_started") {
 			// マッチ開始時の処理
 			console.log("Match started - starting game loop");
