@@ -174,11 +174,13 @@ export class WebSocketManager {
 		};
 
 		this.ws.onclose = (_event) => {
+			console.log("websocket manager : onclose called");
+			// todo : error handlingがまだ甘い
 			this.ws = null;
 		};
 
 		this.ws.onerror = (error) => {
-			console.error("WebSocketエラー:", error);
+			console.log("websocket manager : onerror called", error);
 			reject(new Error("WebSocket接続エラー"));
 		};
 	}

@@ -88,6 +88,19 @@ export class MatchService {
 			} catch (error) {
 				throw new Error("Failed to save match");
 			}
+
+			// マッチ開始をブロードキャスト
+			if (wsManager.hasRoom(this.roomId)) {
+				wsManager.broadcast(this.roomId, {
+					status: "Match",
+					data: {
+						type: "match_started",
+						matchId: matchId,
+					},
+				});
+			}
+
+			// 60fpsでゲームループを開始
 			let lastScore1 = match.score1;
 			let lastScore2 = match.score2;
 			const interval = setInterval(async () => {
@@ -122,7 +135,8 @@ export class MatchService {
 					}
 					return;
 				}
-			}, 1000 / 120);
+			}, 1000 / 60); // 60fps
+
 			this.intervals.set(matchId, { interval, match });
 		} finally {
 			this.startingMatches.delete(matchId);
@@ -291,8 +305,19 @@ export class MatchService {
 				},
 			});
 		}
+
+		// 2名揃った場合は自動的にマッチを開始
+		if (readyCount >= 2) {
+			console.log(
+				`All players ready for match ${matchId}, starting match automatically`,
+			);
+			this.startMatch(matchId, this.roomId).catch((error) => {
+				console.error(`Failed to start match ${matchId}:`, error);
+			});
+		}
 	}
 
+	// マッチ終了時にready状態をクリア
 	public clearReadyState(matchId: MatchId): void {
 		this.readyPlayers.delete(matchId);
 		console.log(`Cleared ready state for match ${matchId}`);
