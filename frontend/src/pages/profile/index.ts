@@ -16,8 +16,5 @@ export function renderProfilePage() {
 
 	const root = app?.querySelector("#profile-list-body") as HTMLElement;
 
-	mountProfile(root, (path) => {
-		history.pushState(null, "", path);
-		dispatchEvent(new PopStateEvent("popstate"));
-	});
+	mountProfile(root);
 }
