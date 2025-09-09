@@ -98,14 +98,16 @@ export async function registerWSRoutes(app: FastifyInstance) {
 							else wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
+
 						case "Tournament": {
 							// console.log("Tournament received: ", data);
 							const resultmsg = await TournamentWSHandler(data, context);
 							wsManager.broadcast(context.joinedRoom, resultmsg);
 							break;
 						}
+
 						case "Match": {
-							// console.log("Match received: ", data);
+							console.log("Match received: ", data);
 							const resultmsg = await MatchWSHandler(data, context);
 							if (resultmsg.data.type === "error")
 								ws.send(JSON.stringify(resultmsg));

@@ -34,4 +34,7 @@ log:
 build-backend:
 	docker-compose build --no-cache backend
 
+build-frontend:
+	docker-compose build --no-cache frontend
+
 re: fclean all
