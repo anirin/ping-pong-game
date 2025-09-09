@@ -40,23 +40,16 @@ export class MatchAPI {
 	private controllerCallback: ((data: any, action?: string) => void) | null =
 		null;
 
-	// 重複実行を防ぐためのフラグ
-	private isStartingMatch: boolean = false;
-
 	constructor() {
-		console.log("[DEBUG] MatchAPI constructor called");
 		this.wsManager = WebSocketManager.getInstance();
 		console.log(
 			"[DEBUG] WebSocket接続状態:",
 			this.wsManager.getConnectionState(),
 		);
 		this.messageHandler = this.handleMessage.bind(this);
-
-		// 既存のコールバックを削除してから新しいコールバックを設定
-		this.wsManager.removeCallback();
 		this.wsManager.setCallback(this.messageHandler);
-
-		this.resetReadyState();
+		this.readyPlayers.clear();
+		this.isReady = false;
 		this.initializeUserId();
 		console.log("[DEBUG] MatchAPI constructor completed");
 	}
@@ -90,6 +83,10 @@ export class MatchAPI {
 		return this.isReady;
 	}
 
+	public isConnected(): boolean {
+		return this.wsManager.isConnected();
+	}
+
 	// setter
 	public setCallback(callback: (data: any, action?: string) => void): void {
 		this.controllerCallback = callback;
@@ -109,6 +106,30 @@ export class MatchAPI {
 		this.wsManager.removeCallback();
 		this.resetAllValues();
 		console.log("[DEBUG] MatchAPI.destroy() completed");
+	}
+
+	// WebSocket接続を確保
+	public async ensureConnection(roomId: string): Promise<void> {
+		if (!roomId) {
+			throw new Error("Room ID is required for match");
+		}
+
+		if (!this.userId) {
+			throw new Error("User ID is required for match");
+		}
+
+		if (this.wsManager.isConnected()) {
+			console.log(`Already connected to room ${roomId} for match`);
+			return;
+		}
+
+		try {
+			await this.wsManager.connect(roomId);
+			console.log("WebSocket connection established for match");
+		} catch (error) {
+			console.error("Failed to connect to WebSocket for match:", error);
+			throw error;
+		}
 	}
 
 	// 送信 マッチ情報の取得
@@ -139,49 +160,25 @@ export class MatchAPI {
 		});
 	}
 
-	// 送信 準備完了
+	// 送信 ready
 	public sendReady(): void {
 		if (!this.userId) {
-			console.error("Cannot send ready: userId is not set");
 			return;
 		}
 
-		console.log("Sending ready state, current isReady:", this.isReady);
-		this.isReady = !this.isReady;
-		console.log("New isReady state:", this.isReady);
+		// 既にready状態の場合は何もしない
+		if (this.isReady) {
+			console.log("Already ready, skipping send");
+			return;
+		}
 
+		this.isReady = true;
 		this.sendReadyToServer(this.isReady);
-	}
-
-	// 送信 マッチの開始
-	public startMatchIfPlayer1(): void {
-		// 重複実行を防ぐ
-		if (this.isStartingMatch) {
-			console.log("Match is already starting, skipping duplicate request");
-			return;
-		}
-
-		if (!this.matchId || !this.userId) {
-			console.error("Match ID or User ID is not set");
-			return;
-		}
-
-		const playerRole = this.getPlayerRole();
-		if (playerRole === "player1") {
-			this.isStartingMatch = true;
-			this.startMatch();
-		}
 	}
 
 	// ------------------------------------------------------------
 	// private methods
 	// ------------------------------------------------------------
-
-	private resetReadyState(): void {
-		this.readyPlayers.clear();
-		this.isReady = false;
-		this.isStartingMatch = false; // マッチ開始フラグもリセット
-	}
 
 	private handleMessage(message: WebSocketMessage): void {
 		if (message.status === "Room" && message.data?.action === "DELETE") {
@@ -205,55 +202,41 @@ export class MatchAPI {
 		}
 
 		try {
-			if (
-				message.data &&
-				message.data.type === "match_state" &&
-				message.data.state
-			) {
+			if (!message.data) {
+				// todo : 適切なerrorを投げる
+				return;
+			}
+			if (!this.controllerCallback) {
+				// todo : 適切なerrorを投げる
+				return;
+			}
+
+			if (message.data.type === "match_state" && message.data.state) {
 				this.matchData = message.data.state as RealtimeMatchStateDto;
-				if (this.controllerCallback) {
-					this.controllerCallback(this.matchData, "match_state");
-				}
-			} else if (message.data && message.data.type === "match_started") {
-				if (this.controllerCallback) {
-					this.controllerCallback(message.data, "match_started");
-				}
-			} else if (message.data && message.data.type === "match_finished") {
-				if (this.controllerCallback) {
-					this.controllerCallback(message.data, "match_finished");
-				}
-			} else if (message.data && message.data.type === "error") {
+				this.controllerCallback(this.matchData, "match_state");
+			} else if (message.data.type === "match_started") {
+				this.controllerCallback(message.data, "match_started");
+			} else if (message.data.type === "match_finished") {
+				this.controllerCallback(message.data, "match_finished");
+			} else if (message.data.type === "error") {
 				console.error("MatchAPI: Match error:", message.data.message);
-				this.isStartingMatch = false; // エラー時もマッチ開始フラグをリセット
-				if (this.controllerCallback) {
-					this.controllerCallback(message.data, "error");
-				}
-			} else if (message.data && message.data.type === "ready_state") {
-				this.updateReadyStateFromServer(
-					message.data.readyPlayers,
-					message.data.readyCount,
-				);
-				if (this.controllerCallback) {
-					this.controllerCallback(message.data, "ready_state");
-				}
+				this.controllerCallback(message.data, "error");
+			} else if (message.data.type === "ready_state") {
+				this.updateReadyStateFromServer(message.data.readyPlayers);
+				this.controllerCallback(message.data, "ready_state");
 			} else if (message.action === "get_initial_state") {
 				// 初期状態のデータが含まれている場合はmatchDataを更新
-				if (message.data && message.data.state) {
+				if (message.data.state) {
 					this.matchData = message.data.state as RealtimeMatchStateDto;
 				}
-				if (this.controllerCallback) {
-					this.controllerCallback(message.data, "get_initial_state");
-				}
+				this.controllerCallback(message.data, "get_initial_state");
 			}
 		} catch (error) {
 			console.error("Failed to handle match message:", error);
 		}
 	}
 
-	private updateReadyStateFromServer(
-		readyPlayers: string[],
-		readyCount: number,
-	): void {
+	private updateReadyStateFromServer(readyPlayers: string[]): void {
 		this.readyPlayers.clear();
 		for (const playerId of readyPlayers) {
 			this.readyPlayers.add(playerId);
@@ -261,10 +244,6 @@ export class MatchAPI {
 
 		if (this.userId) {
 			this.isReady = this.readyPlayers.has(this.userId);
-		}
-
-		if (readyCount >= 2) {
-			this.startMatchIfPlayer1();
 		}
 	}
 
@@ -295,21 +274,6 @@ export class MatchAPI {
 		});
 	}
 
-	// 送信 マッチの開始
-	private startMatch(): void {
-		this.wsManager.sendMessage({
-			status: "Match",
-			action: "start",
-			matchId: this.matchId,
-		});
-
-		// マッチ開始リクエスト送信後、適切なタイミングでフラグをリセット
-		// サーバーからの応答を待たずにリセット（重複送信を防ぐため）
-		setTimeout(() => {
-			this.isStartingMatch = false;
-		}, 1000); // 1秒後にリセット
-	}
-
 	private initializeUserId(): void {
 		try {
 			const token = localStorage.getItem("accessToken");
@@ -333,7 +297,8 @@ export class MatchAPI {
 		this.userId = null;
 		this.matchData = null;
 		this.controllerCallback = null;
-		this.resetReadyState();
+		this.readyPlayers.clear();
+		this.isReady = false;
 		console.log(
 			"[DEBUG] MatchAPI.resetAllValues() completed - matchData is now:",
 			this.matchData,
