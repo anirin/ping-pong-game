@@ -7,6 +7,11 @@ if [ ! -f /app/secrets/server.crt ]; then
         -days 365 -subj "/CN=trascen.com";
 fi;
 
+cd blockchain
+npm ci
+npx hardhat run scripts/deploy.ts --network blockchain
+cd ..
+
 npm ci
 npm run build
 npm run start
