@@ -1,0 +1,6 @@
+server.ssl.enabled: true
+server.ssl.certificate: config/kibana_certs/kibana.crt
+server.ssl.key: config/kibana_certs/kibana.key
+server.ssl.certificateAuthorities: [ "config/kibana_certs/kibana.crt" ]
+server.port: 5601
+server.host: "0.0.0.0"

@@ -81,7 +81,7 @@ export async function mountProfile(
 
 		const img = document.createElement("img");
 		img.src = match.opponentAvatarUrl;
-		img.alt = "null";
+		img.alt = "User Avatar";
 		img.className = "avatar_url";
 
 		const youAreP1 = match.player1Id === userId;

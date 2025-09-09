@@ -1,7 +1,7 @@
-NAME=trascen
+NAME=ping-pong-game
 COMPOSE_FILE=./compose.yml
 COMPOSE=docker compose -f $(COMPOSE_FILE)
-APP_IMAGE=frontend backend
+APP_IMAGE=$(NAME)-frontend $(NAME)-backend
 APP_VOLUME=frontend_modules backend_modules
 
 all: $(NAME)
@@ -17,6 +17,10 @@ clean-volumes:
 
 fclean:
 	$(COMPOSE) down --volumes --rmi all
+
+fclean-local:
+	$(COMPOSE) down --volumes
+	docker image rm $(APP_IMAGE)
 
 stop:
 	$(COMPOSE) stop

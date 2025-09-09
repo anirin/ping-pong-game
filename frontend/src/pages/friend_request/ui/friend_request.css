@@ -16,10 +16,38 @@
 #friend-request-body {
 	flex: 1;
 	display: flex;
+	flex-direction: column;
 	justify-content: center;
+	gap: 1rem;
 	align-items: center;
 	background-color: #f0f0f0;
 	width: 100%;
+}
+
+#my-id-box {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.5rem;
+	background: white;
+	padding: 0.75rem 1rem;
+	border-radius: 8px;
+	max-width: min(1100px, 100%);
+	width: calc(100% -2rem);
+	font-size: 0.95rem;
+	text-align: center;
+}
+
+.my-id-label {
+	font-weight: 600;
+	color: #555;
+}
+
+.my-id-value {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 60ch;
 }
 
 .friend-request-container {
