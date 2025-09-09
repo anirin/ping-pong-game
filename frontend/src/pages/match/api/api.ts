@@ -48,12 +48,9 @@ export class MatchAPI {
 			this.wsManager.getConnectionState(),
 		);
 		this.messageHandler = this.handleMessage.bind(this);
-
-		// 既存のコールバックを削除してから新しいコールバックを設定
-		this.wsManager.removeCallback();
 		this.wsManager.setCallback(this.messageHandler);
-
-		this.resetReadyState();
+		this.readyPlayers.clear();
+		this.isReady = false;
 		this.initializeUserId();
 		console.log("[DEBUG] MatchAPI constructor completed");
 	}
@@ -122,11 +119,7 @@ export class MatchAPI {
 			throw new Error("User ID is required for match");
 		}
 
-		// 既に同じルームに接続済みの場合は何もしない
-		if (
-			this.wsManager.isConnected() &&
-			this.wsManager.getCurrentRoomId() === roomId
-		) {
+		if (this.wsManager.isConnected()) {
 			console.log(`Already connected to room ${roomId} for match`);
 			return;
 		}
@@ -190,11 +183,6 @@ export class MatchAPI {
 	// ------------------------------------------------------------
 	// private methods
 	// ------------------------------------------------------------
-
-	private resetReadyState(): void {
-		this.readyPlayers.clear();
-		this.isReady = false;
-	}
 
 	private handleMessage(message: WebSocketMessage): void {
 		if (message.status === "Room" && message.data?.action === "DELETE") {
@@ -319,7 +307,8 @@ export class MatchAPI {
 		this.userId = null;
 		this.matchData = null;
 		this.controllerCallback = null;
-		this.resetReadyState();
+		this.readyPlayers.clear();
+		this.isReady = false;
 		console.log(
 			"[DEBUG] MatchAPI.resetAllValues() completed - matchData is now:",
 			this.matchData,

@@ -69,22 +69,40 @@ export class MatchController {
 		try {
 			await this.setupMatchAPI();
 			this.getMatchStatus();
+			await this.waitForMatchData();
 			this.serverState = this.matchAPI.getMatchData();
 			this.PlayerRole = this.matchAPI.getPlayerRole();
 			if (!this.PlayerRole) {
-				// todo : 適切なerrorを投げる
-				throw ("error");
+				throw ("error"); // こいつが犯人
 			}
-			this.setupEventListeners();
 			await this.setupElement();
+			this.setupEventListeners();
 			this.prepareMatch();
 		} catch (error) {
-			alert("Failed to start match");
+			// alert("Failed to start match");
 
-			// todo ここは navigate
-			window.location.pathname = "/" ;
-			console.error("Match initialization error:", error);
+			// // todo ここは navigate
+			// window.location.pathname = "/" ;
+			console.log("Match initialization error:", error);
 		}
+	}
+
+	// matchDataが取得できるまで待機する関数
+	private async waitForMatchData(): Promise<void> {
+		const maxRetries = 100;
+		const retryInterval = 100;
+		
+		for (let i = 0; i < maxRetries; i++) {
+			const matchData = this.matchAPI.getMatchData();
+			if (matchData !== null) {
+				console.log(`Match data received after ${i * retryInterval}ms`);
+				return;
+			}
+			
+			await new Promise(resolve => setTimeout(resolve, retryInterval));
+		}
+		
+		throw new Error("Match data not received within 10 seconds");
 	}
 
 	// 初期化周り
