@@ -308,8 +308,10 @@ export class MatchService {
 
 		// 2名揃った場合は自動的にマッチを開始
 		if (readyCount >= 2) {
-			console.log(`All players ready for match ${matchId}, starting match automatically`);
-			this.startMatch(matchId, this.roomId).catch(error => {
+			console.log(
+				`All players ready for match ${matchId}, starting match automatically`,
+			);
+			this.startMatch(matchId, this.roomId).catch((error) => {
 				console.error(`Failed to start match ${matchId}:`, error);
 			});
 		}
@@ -348,7 +350,6 @@ export class MatchService {
 			});
 		}
 	}
-
 
 	private createMatchStateDto(match: Match): RealtimeMatchStateDto {
 		return {

@@ -54,8 +54,7 @@ export type MatchIncomingMsg =
 			status: "Match";
 			action: "get_initial_state";
 			matchId: MatchId;
-	  }
-	;
+	  };
 
 // Outgoing messages to client
 export type MatchOutgoingMsg =
