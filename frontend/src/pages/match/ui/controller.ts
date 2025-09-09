@@ -68,6 +68,7 @@ export class MatchController {
 	private async runMatch(): Promise<void> {
 		try {
 			await this.setupMatchAPI();
+			await new Promise((resolve) => setTimeout(resolve, 500));
 			this.getMatchStatus();
 			await this.waitForMatchData();
 			this.serverState = this.matchAPI.getMatchData();
