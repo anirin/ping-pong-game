@@ -2,10 +2,10 @@ FROM node:20-alpine
 RUN npm install -g typescript
 RUN apk add --no-cache openssl
 
-WORKDIR /app
+WORKDIR /backend
 COPY package*.json ./
-COPY ./entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+COPY ./entrypoint.sh /backend/entrypoint.sh
+RUN chmod +x /backend/entrypoint.sh
 EXPOSE 8080
 
-ENTRYPOINT [ "/app/entrypoint.sh" ]
+ENTRYPOINT [ "/backend/entrypoint.sh" ]

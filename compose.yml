@@ -126,12 +126,12 @@ services:
     depends_on:
       - blockchain
     volumes:
-      - ./backend:/app
-      - ./backend/entrypoint.sh:/app/entrypoint.sh
-      - ./blockchain:/app/blockchain
-      - backend_modules:/app/node_modules
-      - abi:/app/src/infrastructure/abi
-      - server_certs:/app/secrets
+      - ./backend:/backend
+      - ./backend/entrypoint.sh:/backend/entrypoint.sh
+      - ./blockchain:/blockchain
+      - backend_modules:/backend/node_modules
+      - abi:/backend/src/infrastructure/abi
+      - server_certs:/backend/secrets
 
   blockchain:
     container_name: blockchain
