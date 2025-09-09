@@ -26,17 +26,17 @@ export async function buildServer() {
 		logger: {
 			level: "info",
 		},
-		https: {
-			key: fs.readFileSync(process.env.HTTPS_KEY),
-			cert: fs.readFileSync(process.env.HTTPS_CERT),
-		},
+		// https: {
+		// 	key: fs.readFileSync(process.env.HTTPS_KEY),
+		// 	cert: fs.readFileSync(process.env.HTTPS_CERT),
+		// },
 	});
 	// corsの設定
-	await app.register(cors, {
-		origin: true,
-		methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-		allowedHeaders: ["Content-Type", "Authorization"],
-	});
+	// await app.register(cors, {
+	// 	origin: true,
+	// 	methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+	// 	allowedHeaders: ["Content-Type", "Authorization"],
+	// });
 
 	// jwtの設定
 	await app.register(fastifyJwt, {
