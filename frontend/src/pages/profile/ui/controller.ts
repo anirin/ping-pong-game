@@ -17,26 +17,36 @@ function decodeJwt(token: string): any {
 	}
 }
 
-export async function mountProfile(
-	root: HTMLElement,
-	navigate: (path: string) => void,
-) {
+export async function mountProfile(root: HTMLElement) {
 	const token = localStorage.getItem("accessToken");
 	if (!token) {
-		return { ok: false, error: "ログインしてください" };
+		const messageEl = document.createElement("p");
+		messageEl.textContent = "ログインされていません。";
+		messageEl.style.color = "#888";
+		messageEl.style.textAlign = "center";
+		root.appendChild(messageEl);
+		return;
 	}
 	const res = await fetchUsers(token);
 
 	if (res.ok === false) {
-		alert(res.error);
-		navigate("/auth/login");
+		const messageEl = document.createElement("p");
+		messageEl.textContent = "ログインされていません。";
+		messageEl.style.color = "#888";
+		messageEl.style.textAlign = "center";
+		root.appendChild(messageEl);
 		return;
 	}
+
 	const decoded = decodeJwt(token);
 	const userId = decoded?.id || decoded?.sub;
 	if (!userId) {
-		alert("ユーザーIDを取得できません");
-		navigate("/auth/login");
+		const messageEl = document.createElement("p");
+		messageEl.textContent =
+			"ユーザー情報の読み取りに失敗しました。再度ログインしてください。";
+		messageEl.style.color = "#888";
+		messageEl.style.textAlign = "center";
+		root.appendChild(messageEl);
 		return;
 	}
 
