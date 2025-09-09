@@ -120,10 +120,6 @@ export class MatchController {
 		}
 		this.matchAPI.setCallback(this.handleMatchEvent.bind(this));
 
-		// todo こいつは別物やろ
-		window.addEventListener("popstate", this.cleanup.bind(this), {
-			once: true,
-		});
 	}
 
 	private getMatchStatus(): void {
@@ -133,6 +129,9 @@ export class MatchController {
 	private setupEventListeners(): void {
 		this.setupReadyButton();
 		this.setupKeyboardListeners();
+		window.addEventListener("popstate", this.cleanup.bind(this), {
+			once: true,
+		});
 	}
 
 	private setupElement(): void {
