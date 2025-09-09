@@ -23,7 +23,7 @@ export interface RealtimeMatchStateDto {
 
 export interface MatchMessage extends WebSocketMessage {
 	status: "Match";
-	action: "start" | "move" | "ready" | "get_initial_state" | "get_ready_state";
+	action: "start" | "move" | "ready" | "get_initial_state";
 	matchId?: string;
 	data?: { y: number } | { isReady: boolean };
 }
@@ -40,8 +40,6 @@ export class MatchAPI {
 	private controllerCallback: ((data: any, action?: string) => void) | null =
 		null;
 
-	// 重複実行を防ぐためのフラグ
-	private isStartingMatch: boolean = false;
 
 	constructor() {
 		this.wsManager = WebSocketManager.getInstance();
@@ -87,6 +85,10 @@ export class MatchAPI {
 
 	public isCurrentUserReady(): boolean {
 		return this.isReady;
+	}
+
+	public isConnected(): boolean {
+		return this.wsManager.isConnected();
 	}
 
 	// setter
@@ -156,23 +158,6 @@ export class MatchAPI {
 		});
 	}
 
-	// 送信 ready状態の取得
-	public getReadyState(): void {
-		if (!this.wsManager.isConnected()) {
-			console.warn(
-				"WebSocket is not connected. Cannot get ready state.",
-			);
-			return;
-		}
-
-		console.log("Ready状態の取得を送信しました");
-
-		this.wsManager.sendMessage({
-			status: "Match",
-			action: "get_ready_state",
-			matchId: this.matchId,
-		});
-	}
 
 	// 送信 パドルの移動
 	public sendPaddleMove(position: { y: number }): void {
@@ -200,55 +185,7 @@ export class MatchAPI {
 		this.sendReadyToServer(this.isReady);
 	}
 
-	// 送信可能時にreadyを送信（自動送信）
-	public sendReadyIfPossible(): void {
-		if (!this.userId) {
-			console.log("User ID not available, cannot send ready");
-			return;
-		}
 
-		const playerRole = this.getPlayerRole();
-		if (playerRole === "spectator") {
-			console.log("Spectator cannot send ready");
-			return;
-		}
-
-		// 既にready状態の場合は何もしない
-		if (this.isReady) {
-			console.log("Already ready, skipping auto send");
-			return;
-		}
-
-		// WebSocket接続状態を確認
-		if (!this.wsManager.isConnected()) {
-			console.log("WebSocket not connected, cannot send ready");
-			return;
-		}
-
-		console.log("Auto sending ready state");
-		this.isReady = true;
-		this.sendReadyToServer(this.isReady);
-	}
-
-	// 送信 マッチの開始
-	public startMatchIfPlayer1(): void {
-		// 重複実行を防ぐ
-		if (this.isStartingMatch) {
-			console.log("Match is already starting, skipping duplicate request");
-			return;
-		}
-
-		if (!this.matchId || !this.userId) {
-			console.error("Match ID or User ID is not set");
-			return;
-		}
-
-		const playerRole = this.getPlayerRole();
-		if (playerRole === "player1") {
-			this.isStartingMatch = true;
-			this.startMatch();
-		}
-	}
 
 	// ------------------------------------------------------------
 	// private methods
@@ -257,7 +194,6 @@ export class MatchAPI {
 	private resetReadyState(): void {
 		this.readyPlayers.clear();
 		this.isReady = false;
-		this.isStartingMatch = false; // マッチ開始フラグもリセット
 	}
 
 	private handleMessage(message: WebSocketMessage): void {
@@ -300,12 +236,10 @@ export class MatchAPI {
 				this.controllerCallback(message.data, "match_finished");
 			} else if (message.data.type === "error") {
 				console.error("MatchAPI: Match error:", message.data.message);
-				this.isStartingMatch = false; // エラー時もマッチ開始フラグをリセット
 				this.controllerCallback(message.data, "error");
 			} else if (message.data.type === "ready_state") {
 				this.updateReadyStateFromServer(
 					message.data.readyPlayers,
-					message.data.readyCount,
 				);
 				this.controllerCallback(message.data, "ready_state");
 			} else if (message.action === "get_initial_state") {
@@ -314,15 +248,6 @@ export class MatchAPI {
 					this.matchData = message.data.state as RealtimeMatchStateDto;
 				}
 				this.controllerCallback(message.data, "get_initial_state");
-			} else if (message.action === "get_ready_state") {
-				// ready状態の取得応答を処理
-				if (message.data.readyPlayers && message.data.readyCount !== undefined) {
-					this.updateReadyStateFromServer(
-						message.data.readyPlayers,
-						message.data.readyCount,
-					);
-				}
-				this.controllerCallback(message.data, "get_ready_state");
 			}
 		} catch (error) {
 			console.error("Failed to handle match message:", error);
@@ -331,7 +256,6 @@ export class MatchAPI {
 
 	private updateReadyStateFromServer(
 		readyPlayers: string[],
-		readyCount: number,
 	): void {
 		this.readyPlayers.clear();
 		for (const playerId of readyPlayers) {
@@ -342,9 +266,6 @@ export class MatchAPI {
 			this.isReady = this.readyPlayers.has(this.userId);
 		}
 
-		if (readyCount >= 2) {
-			this.startMatchIfPlayer1();
-		}
 	}
 
 	private sendReadyToServer(isReady: boolean): void {
@@ -374,20 +295,6 @@ export class MatchAPI {
 		});
 	}
 
-	// 送信 マッチの開始
-	private startMatch(): void {
-		this.wsManager.sendMessage({
-			status: "Match",
-			action: "start",
-			matchId: this.matchId,
-		});
-
-		// マッチ開始リクエスト送信後、適切なタイミングでフラグをリセット
-		// サーバーからの応答を待たずにリセット（重複送信を防ぐため）
-		setTimeout(() => {
-			this.isStartingMatch = false;
-		}, 1000); // 1秒後にリセット
-	}
 
 	private initializeUserId(): void {
 		try {

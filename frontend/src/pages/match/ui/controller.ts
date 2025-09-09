@@ -43,6 +43,10 @@ export class MatchController {
 	private correctionCount: number = 0;
 	private lastCorrectionTime: number = 0;
 	private correctionCooldown: number = 50; // 50msのクールダウン
+	
+	// エラーハンドリング用のプロパティ
+	private canvasErrorCount: number = 0;
+	private maxCanvasErrors: number = 10; // 最大エラー回数
 	private handleKeyDownRef: (e: KeyboardEvent) => void;
 	private handleKeyUpRef: (e: KeyboardEvent) => void;
 	private matchAPI = new MatchAPI();
@@ -74,7 +78,6 @@ export class MatchController {
 			this.setupEventListeners();
 			await this.setupElement();
 			this.prepareMatch();
-			this.matchLoop();
 		} catch (error) {
 			alert("Failed to start match");
 
@@ -154,11 +157,8 @@ export class MatchController {
 			this.matchAPI.removeCallback();
 			this.matchAPI.destroy();
 
-			// アニメーションフレームをキャンセル
-			if (this.animationFrameId) {
-				cancelAnimationFrame(this.animationFrameId);
-				this.animationFrameId = null;
-			}
+			// マッチループを停止
+			this.stopMatchLoop();
 
 			// イベントリスナーを削除
 			window.removeEventListener("keydown", this.handleKeyDownRef);
@@ -187,11 +187,6 @@ export class MatchController {
 		// プレイヤーの場合はreadyボタンを表示
 		this.readyButton.style.display = "block";
 
-		// readyの最新状態を取得
-		this.matchAPI.getReadyState();
-
-		// 送信可能時にreadyを送信
-		this.matchAPI.sendReadyIfPossible();
 
 		// UIの更新はincoming messageでのみ行うため、ここでは初期表示のみ
 		this.setInitialReadyButtonState();
@@ -282,28 +277,49 @@ export class MatchController {
 		}
 	}
 
-	private checkAndStartMatchLoop(): void {
-		const readyCount = this.matchAPI.getReadyPlayerCount();
+
+	private startMatchLoop(): void {
+		// 既にマッチループが動いている場合は何もしない
+		if (this.animationFrameId !== null) {
+			console.log("Match loop is already running");
+			return;
+		}
 		
-		// 2名がreadyになった場合、match loopに進む
-		if (readyCount >= 2 && this.serverState?.status === "scheduled") {
-			console.log("2名がreadyになりました。match loopに進みます。");
-			// match loopは既にrunMatch()で開始されているため、特別な処理は不要
-			// サーバー側でマッチ開始の処理が行われる
+		console.log("Starting match loop");
+		this.matchLoop();
+	}
+
+	private stopMatchLoop(): void {
+		if (this.animationFrameId !== null) {
+			console.log("Stopping match loop");
+			cancelAnimationFrame(this.animationFrameId);
+			this.animationFrameId = null;
 		}
 	}
 
 	private matchLoop(): void {
 		if (!this.canvas) {
-			// todo : このエラーハンドリング正しいのか？
-			console.warn("Canvas element missing, skipping match loop iteration");
+			this.canvasErrorCount++;
+			console.warn(`Canvas element missing, error count: ${this.canvasErrorCount}`);
+			
+			// 最大エラー回数に達した場合はmatch loopを停止
+			if (this.canvasErrorCount >= this.maxCanvasErrors) {
+				console.error("Too many canvas errors, stopping match loop");
+				this.stopMatchLoop();
+				return;
+			}
+			
+			// 短い遅延後に再試行
 			setTimeout(() => {
 				this.animationFrameId = requestAnimationFrame(
 					this.matchLoop.bind(this),
 				);
-			}, 100);
+			}, 16); // 約60fps
 			return;
 		}
+
+		// Canvas要素が正常に取得できた場合はエラーカウントをリセット
+		this.canvasErrorCount = 0;
 
 		this.updateMyPaddle(); // send
 		this.updateMatchState(); // receive
@@ -313,6 +329,12 @@ export class MatchController {
 	}
 
 	private updateMyPaddle(): void {
+		// WebSocket接続状態を確認
+		if (!this.matchAPI.isConnected()) {
+			console.warn("WebSocket not connected, skipping paddle update");
+			return;
+		}
+
 		let hasMoved = false;
 
 		if (this.movingUp) {
@@ -354,18 +376,22 @@ export class MatchController {
 			: serverState.paddles.player2.y;
 		const error = Math.abs(this.myPredictedPaddleY - serverPaddleY);
 
+		// クールダウン時間を短縮（より敏感に補正）
 		if (currentTime - this.lastCorrectionTime < this.correctionCooldown) {
 			return;
 		}
 
-		// todo : ここのlogicは検討
+		// 閾値を下げてより敏感に補正
 		if (error > this.correctionThreshold) {
 			this.correctionCount++;
 			this.lastCorrectionTime = currentTime;
 
 			const correctionError = serverPaddleY - this.myPredictedPaddleY;
-			const correctionSpeed = 0.3; // 補正速度（0-1の間）
+			// エラーが大きいほど補正速度を上げる
+			const correctionSpeed = Math.min(0.5, error / 10);
 			this.myPredictedPaddleY += correctionError * correctionSpeed;
+			
+			console.log(`Position correction: error=${error.toFixed(2)}, speed=${correctionSpeed.toFixed(2)}`);
 		}
 	}
 
@@ -423,11 +449,8 @@ export class MatchController {
 
 	public destroy(): void {
 		console.log("[DEBUG] MatchController.destroy() called");
-		// アニメーションフレームを停止
-		if (this.animationFrameId !== null) {
-			cancelAnimationFrame(this.animationFrameId);
-			this.animationFrameId = null;
-		}
+		// マッチループを停止
+		this.stopMatchLoop();
 
 		// キーボードイベントリスナーを削除
 		document.removeEventListener("keydown", this.handleKeyDownRef);
@@ -454,6 +477,7 @@ export class MatchController {
 		this.PlayerRole = null;
 		this.movingUp = false;
 		this.movingDown = false;
+		this.canvasErrorCount = 0; // エラーカウントもリセット
 	}
 
 	// todo : private から呼び出される関数
@@ -587,27 +611,25 @@ export class MatchController {
 	// handler (delete room など)
 	private handleMatchEvent(data: any, action?: string): void {
 		if (action === "match_finished") {
+			this.stopMatchLoop();
 			navigate(`/tournament/${this.roomId}`);
 		} else if (action === "room_deleted") {
+			this.stopMatchLoop();
 			this.handleRoomDeleted(data);
 		} else if (action === "force_lobby") {
+			this.stopMatchLoop();
 			this.handleForceLobby(data);
 		} else if (action === "ready_state") {
 			// ready状態の変更を処理
 			this.updateReadyButtonState();
-			// 2名になった時にmatch loopに進む
-			this.checkAndStartMatchLoop();
-		} else if (action === "get_ready_state") {
-			// ready状態の取得応答を処理
-			this.updateReadyButtonState();
-			// 2名になった時にmatch loopに進む
-			this.checkAndStartMatchLoop();
 		} else if (action === "match_state") {
 			// マッチ状態の変更を処理
 			this.updateReadyButtonState();
 		} else if (action === "match_started") {
 			// マッチ開始時の処理
+			console.log("Match started - starting game loop");
 			this.updateReadyButtonState();
+			this.startMatchLoop();
 		}
 	}
 
