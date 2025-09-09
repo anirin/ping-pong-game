@@ -201,9 +201,6 @@ export class MatchController {
 			return;
 		}
 
-		// プレイヤーの場合はreadyボタンを表示
-		this.readyButton.style.display = "block";
-
 
 		// UIの更新はincoming messageでのみ行うため、ここでは初期表示のみ
 		this.setInitialReadyButtonState();
