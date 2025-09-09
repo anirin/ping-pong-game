@@ -1,4 +1,4 @@
-NAME=trascen
+NAME=ping-pong-game
 COMPOSE_FILE=./compose.yml
 COMPOSE=docker compose -f $(COMPOSE_FILE)
 APP_IMAGE=$(NAME)-frontend $(NAME)-backend

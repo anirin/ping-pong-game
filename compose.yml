@@ -88,6 +88,8 @@ services:
     container_name: filebeat
     image: docker.elastic.co/beats/filebeat:${STACK_VERSION}
     user: root
+    entrypoint: >
+      sh -c "chown root:root /usr/share/filebeat/filebeat.yml && exec filebeat -e"
     environment:
       - ELASTIC_USER=elastic
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
@@ -98,7 +100,7 @@ services:
       - elk_certs:/usr/share/filebeat/certs:ro
       - filebeatdata:/usr/share/filebeat/data
       - ./elk/filebeat/filebeat_ingest_data/:/usr/share/filebeat/ingest_data/
-      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
