@@ -12,13 +12,12 @@ import { registerMatchRoutes } from "./route/match/matchRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
 import { registerWSRoutes } from "./websocket/ws.js";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 
 export async function buildServer() {
-	if (
-		!process.env.JWT_SECRET ||
-		!process.env.HTTPS_KEY ||
-		!process.env.HTTPS_CERT
-	) {
+	const vaultService = new VaultService();
+	const jwtSecret = await vaultService.getJwtSecret();
+	if (!process.env.HTTPS_KEY || !process.env.HTTPS_CERT) {
 		throw new Error("some SECRET is not set in environment variables");
 	}
 
@@ -40,7 +39,7 @@ export async function buildServer() {
 
 	// jwtの設定
 	await app.register(fastifyJwt, {
-		secret: process.env.JWT_SECRET as string,
+		secret: jwtSecret as string,
 	});
 
 	// jwtのデコレーター

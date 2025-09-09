@@ -13,11 +13,11 @@ import type { FastifyInstance } from "fastify";
 import jwt from "jsonwebtoken";
 import type { Repository } from "typeorm";
 import type { WebSocketContext } from "../../websocket/ws-manager.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 
 // 重複リクエストを防ぐためのMap
 const pendingStartRequests = new Set<string>();
+const vaultService = new VaultService();
 
 export async function MatchWSHandler(
 	msg: MatchIncomingMsg,
@@ -155,7 +155,8 @@ export async function registerMatchRoutes(app: FastifyInstance) {
 
 		const token = authHeader.split(" ")[1]!;
 		let userId: string;
-		const payload = jwt.verify(token, JWT_SECRET) as { id: string };
+		const jwtSecret = await vaultService.getJwtSecret();
+		const payload = jwt.verify(token, jwtSecret) as { id: string };
 		userId = payload.id || "";
 		if (!userId) {
 			return reply.status(403).send({ error: "Invalid Token" });
