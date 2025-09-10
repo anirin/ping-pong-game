@@ -27,18 +27,14 @@ class GuestTournamentController {
 
 		// 状態管理マネージャーを初期化
 		this.stateManager = TournamentStateManager.getInstance();
+		const urlParams = new URLSearchParams(window.location.search);
+		const isNewTournament = urlParams.has("player1");
 
-		// 新しいトーナメントの場合のプレイヤー設定
-		if (params) {
-			this.players = [
-				params.player1 || "Player 1",
-				params.player2 || "Player 2",
-				params.player3 || "Player 3",
-				params.player4 || "Player 4",
-			];
-		} else {
-			// クエリパラメータから取得（新しいトーナメントの場合のみ）
-			const urlParams = new URLSearchParams(window.location.search);
+		if (isNewTournament) {
+			console.log(
+				"新規トーナメントとして開始します。既存の状態をクリアします。",
+			);
+			this.stateManager.clearState();
 			this.players = [
 				urlParams.get("player1") || "Player 1",
 				urlParams.get("player2") || "Player 2",
@@ -47,10 +43,8 @@ class GuestTournamentController {
 			];
 		}
 
-		// まず初期化を実行
 		this.initialize();
 
-		// グローバル状態から保留中のマッチ結果をチェック
 		const pendingResult = this.stateManager.getPendingMatchResult();
 		if (pendingResult) {
 			console.log("保留中のマッチ結果を処理します:", pendingResult);
@@ -74,8 +68,10 @@ class GuestTournamentController {
 			this.players = existingData.players;
 			console.log("トーナメント状態を復元しました:", existingData);
 		} else {
-			// 新しいトーナメントを作成
 			if (this.players.length === 0) {
+				console.warn(
+					"プレイヤー情報が見つかりません。デフォルト名を使用します。",
+				);
 				this.players = ["Player 1", "Player 2", "Player 3", "Player 4"];
 			}
 
