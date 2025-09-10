@@ -130,13 +130,19 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - blockchain
+      blockchain:
+        condition: service_started
+      vault:
+        condition: service_started
     volumes:
       - ./backend:/backend
       - ./backend/entrypoint.sh:/backend/entrypoint.sh
       - ./blockchain:/blockchain
       - backend_modules:/backend/node_modules
       - abi:/backend/src/infrastructure/abi
+    environment:
+      - VAULT_ADDR=http://vault:8201
+      - VAULT_TOKEN=myroot
 
   blockchain:
     container_name: blockchain
@@ -159,6 +165,21 @@ services:
       - ./nginx/server.conf:/etc/nginx/conf.d/zzz-server.conf:ro
       - server_certs:/etc/nginx/certs
 
+  vault:
+    container_name: vault
+    build: ./vault
+    ports:
+      - "8201:8201"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=myroot
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8201
+      - VAULT_ADDR=http://127.0.0.1:8201
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+
 volumes:
   frontend_modules:
   backend_modules:
@@ -167,6 +188,8 @@ volumes:
   logstashdata:
   kibanadata:
   filebeatdata:
+  vault_data:
+  vault_logs:
   
   abi:
     driver: local

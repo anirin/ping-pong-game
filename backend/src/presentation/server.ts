@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
@@ -14,11 +15,9 @@ import { registerUserChange } from "./route/user/usernameChange.js";
 import { registerWSRoutes } from "./websocket/ws.js";
 
 export async function buildServer() {
-	if (
-		!process.env.JWT_SECRET ||
-		!process.env.HTTPS_KEY ||
-		!process.env.HTTPS_CERT
-	) {
+	const vaultService = new VaultService();
+	const jwtSecret = await vaultService.getJwtSecret();
+	if (!process.env.HTTPS_KEY || !process.env.HTTPS_CERT) {
 		throw new Error("some SECRET is not set in environment variables");
 	}
 
@@ -40,7 +39,7 @@ export async function buildServer() {
 
 	// jwtの設定
 	await app.register(fastifyJwt, {
-		secret: process.env.JWT_SECRET as string,
+		secret: jwtSecret as string,
 	});
 
 	// jwtのデコレーター
