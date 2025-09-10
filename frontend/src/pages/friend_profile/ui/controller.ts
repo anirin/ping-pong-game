@@ -27,7 +27,7 @@ export async function mountFriendProfile(
 	card.className = "friend-card";
 
 	const img = document.createElement("img");
-	img.src = user.avatar_url;
+	img.src = user.avatar_url || "/default.png";
 	img.alt = "User Avatar";
 	img.className = "avatar";
 
