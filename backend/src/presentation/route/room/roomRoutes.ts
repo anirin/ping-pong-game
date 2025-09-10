@@ -21,28 +21,31 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 	const userService = new UserService(userRepository);
 
 	// POST /rooms: ルーム作成 (変更なし)
-	app.post<{ Body: { mode?: string } }>("/api/rooms", async (request, reply) => {
-		const token = request.headers.authorization?.replace("Bearer ", "");
-		try {
-			if (!token) throw Error("no JWT included");
-			const owner_id = decodeJWT(app, token);
-			if (!owner_id || !(await userService.getUserById(owner_id))) {
-				return reply
-					.status(400)
-					.send({ error: "invalid JWT or non existing user" });
+	app.post<{ Body: { mode?: string } }>(
+		"/api/rooms",
+		async (request, reply) => {
+			const token = request.headers.authorization?.replace("Bearer ", "");
+			try {
+				if (!token) throw Error("no JWT included");
+				const owner_id = decodeJWT(app, token);
+				if (!owner_id || !(await userService.getUserById(owner_id))) {
+					return reply
+						.status(400)
+						.send({ error: "invalid JWT or non existing user" });
+				}
+				const room = await RoomService.createRoom(owner_id);
+				console.log("create room success: ", room);
+				return reply.status(201).send({
+					id: room.id,
+					mode: room.mode,
+					status: room.status,
+					createdAt: room.createdAt,
+				});
+			} catch (error: any) {
+				return reply.status(500).send({ error: error.message });
 			}
-			const room = await RoomService.createRoom(owner_id);
-			console.log("create room success: ", room);
-			return reply.status(201).send({
-				id: room.id,
-				mode: room.mode,
-				status: room.status,
-				createdAt: room.createdAt,
-			});
-		} catch (error: any) {
-			return reply.status(500).send({ error: error.message });
-		}
-	});
+		},
+	);
 }
 
 export async function RoomWSHandler(
