@@ -5,6 +5,7 @@ import type { MatchHistory } from "@domain/model/entity/match/MatchHistory.js";
 import { AppDataSource } from "@infrastructure/data-source.js";
 import { MatchEntity } from "@infrastructure/entity/match/MatchEntity.js";
 import { TypeORMMatchRepository } from "@infrastructure/repository/match/TypeORMMatchRepository.js";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 import type {
 	MatchIncomingMsg,
 	MatchOutgoingMsg,
@@ -13,7 +14,6 @@ import type { FastifyInstance } from "fastify";
 import jwt from "jsonwebtoken";
 import type { Repository } from "typeorm";
 import type { WebSocketContext } from "../../websocket/ws-manager.js";
-import { VaultService } from "@infrastructure/vault/VaultService.js";
 
 // 重複リクエストを防ぐためのMap
 const pendingStartRequests = new Set<string>();

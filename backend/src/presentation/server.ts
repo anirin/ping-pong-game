@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import fastifyWebSocket from "@fastify/websocket";
+import { VaultService } from "@infrastructure/vault/VaultService.js";
 import { registerUserRoutes } from "@presentation/route/user/userRoutes.js";
 import fastify from "fastify";
 import fs from "fs";
@@ -12,7 +13,6 @@ import { registerMatchRoutes } from "./route/match/matchRoutes.js";
 import { registerRoomRoutes } from "./route/room/roomRoutes.js";
 import { registerUserChange } from "./route/user/usernameChange.js";
 import { registerWSRoutes } from "./websocket/ws.js";
-import { VaultService } from "@infrastructure/vault/VaultService.js";
 
 export async function buildServer() {
 	const vaultService = new VaultService();

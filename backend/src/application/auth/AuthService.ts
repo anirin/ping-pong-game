@@ -7,8 +7,8 @@ import type {
 import type { UserRepository } from "@domain/interface/repository/users/UserRepository.js";
 import { User } from "@domain/model/entity/user/User.js";
 import { Username } from "@domain/model/value-object/user/User.js";
-import { randomUUID } from "crypto";
 import { VaultService } from "@infrastructure/vault/VaultService.js";
+import { randomUUID } from "crypto";
 export class AuthService {
 	private vaultService: VaultService = new VaultService();
 	constructor(
