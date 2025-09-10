@@ -126,7 +126,7 @@ export class MatchController {
 	private setupEventListeners(): void {
 		this.setupReadyButton();
 		this.setupKeyboardListeners();
-		window.addEventListener("popstate", this.cleanup.bind(this), {
+		window.addEventListener("popstate", this.handlePopState.bind(this), {
 			once: true,
 		});
 	}
@@ -153,23 +153,6 @@ export class MatchController {
 		}
 	}
 
-	// クリーンアップ
-	private cleanup(): void {
-		try {
-			// WebSocket接続とコールバックをクリーンアップ
-			this.matchAPI.removeCallback();
-			this.matchAPI.destroy();
-
-			// マッチループを停止
-			this.stopMatchLoop();
-
-			// イベントリスナーを削除
-			window.removeEventListener("keydown", this.handleKeyDownRef);
-			window.removeEventListener("keyup", this.handleKeyUpRef);
-		} catch (error) {
-			console.error("Cleanup error:", error);
-		}
-	}
 
 	private prepareMatch(): void {
 		// ready button の処理を行う
@@ -766,5 +749,10 @@ export class MatchController {
 				modal.parentNode.removeChild(modal);
 			}
 		}, delay);
+	}
+
+	// 戻るボタンが押されたときの処理
+	private handlePopState(): void {
+		navigate("/");
 	}
 }
