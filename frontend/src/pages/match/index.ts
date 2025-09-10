@@ -47,17 +47,11 @@ function setupEventListeners(state: MatchPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		if (document.hidden && !state.isDestroyed) {
-			console.log("マッチページが非表示になりました");
-		} else if (!document.hidden && !state.isDestroyed) {
-			console.log("マッチページが表示されました");
-		}
+		return;
 	};
 
 	const handlePageHide = () => {
-		if (!state.isDestroyed && state.controller) {
-			console.log("ページが非表示になりました - リソースを節約");
-		}
+		return;
 	};
 
 	// 基本的なイベントリスナーのみ設定
@@ -95,8 +89,6 @@ function createCleanupFunction(state: MatchPageState): () => void {
 				state.controller.destroy();
 				state.controller = null;
 			}
-
-			console.log("マッチページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

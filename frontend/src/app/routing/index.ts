@@ -180,7 +180,6 @@ export function navigate(to?: string) {
 			currentCleanup = result;
 		}
 	} else {
-		console.log("No match found. Redirecting to home.");
 		window.history.replaceState({}, "", "/");
 		const cleanupFn = renderHomePage();
 		if (typeof cleanupFn === "function") {

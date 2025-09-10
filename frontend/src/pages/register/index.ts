@@ -23,8 +23,6 @@ async function handleRegisterSubmit(event: SubmitEvent): Promise<void> {
 		password: passwordInput.value,
 	};
 
-	console.log("Sending data to backend:", userData);
-
 	try {
 		// fetch APIを使ってバックエンドにPOSTリクエストを送信
 		const response = await fetch(`${VITE_BASE_URL}/auth/register`, {
@@ -38,7 +36,6 @@ async function handleRegisterSubmit(event: SubmitEvent): Promise<void> {
 		// レスポンスが成功（HTTPステータスが200番台）かどうかをチェック
 		if (response.ok) {
 			// 成功した場合
-			console.log("User registered successfully!");
 			alert("登録が成功しました！ログインページに移動します。");
 
 			// ログインページへリダイレクト（パスはご自身のプロジェクトに合わせてください）

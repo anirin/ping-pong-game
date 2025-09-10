@@ -12,7 +12,7 @@ interface GuestTournamentPageState {
 	isDestroyed: boolean;
 }
 
-export function renderGuestTournamentPage(params?: { [key: string]: string }) {
+export function renderGuestTournamentPage() {
 	const app = document.getElementById("app");
 	if (!app) {
 		console.error("アプリケーションのルート要素が見つかりません");
@@ -27,7 +27,7 @@ export function renderGuestTournamentPage(params?: { [key: string]: string }) {
 
 	try {
 		app.innerHTML = html;
-		state.controller = createGuestTournamentController(params);
+		state.controller = createGuestTournamentController();
 		setupEventListeners(state);
 		return createCleanupFunction(state);
 	} catch (error) {
@@ -46,17 +46,11 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		if (document.hidden && !state.isDestroyed) {
-			console.log("ゲストトーナメントページが非表示になりました");
-		} else if (!document.hidden && !state.isDestroyed) {
-			console.log("ゲストトーナメントページが表示されました");
-		}
+		return;
 	};
 
 	const handlePageHide = () => {
-		if (!state.isDestroyed && state.controller) {
-			console.log("ページが非表示になりました - リソースを節約");
-		}
+		return;
 	};
 
 	// ゲストページでは戻るボタンを許可
@@ -96,8 +90,6 @@ function createCleanupFunction(state: GuestTournamentPageState): () => void {
 			}
 
 			// ゲストページでは履歴修正は不要
-
-			console.log("ゲストトーナメントページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

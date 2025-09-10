@@ -9,7 +9,6 @@ export class RoomController {
 	private dataUpdateCallback: (state: RoomState, action?: string) => void;
 
 	constructor(params?: { [key: string]: string }) {
-		console.log("RoomController constructor");
 		if (params && params.roomId) {
 			this.roomId = params.roomId;
 		}
@@ -87,19 +86,16 @@ export class RoomController {
 
 		if (action === "DELETE") {
 			// ルームが削除された場合の処理
-			console.log("Room deleted");
 			this.handleRoomDeleted();
 			return;
 		}
 
 		if (action === "FORCE_LOBBY") {
 			// 強制的にlobbyに戻す処理
-			console.log("Force lobby");
 			this.handleForceLobby();
 			return;
 		}
 
-		console.log("RoomController: データ更新を受信", state);
 		this.updateUI(state);
 	}
 
@@ -111,8 +107,6 @@ export class RoomController {
 	private handleRoomDeleted(): void {
 		// ルーム削除時の処理
 		const message = "Room owner has left. Redirecting to home page.";
-
-		console.log(`Room deleted - Message: ${message}`);
 
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
@@ -127,8 +121,6 @@ export class RoomController {
 		// 強制的にlobbyに戻す処理
 		const message =
 			"A user has been disconnected for too long. Returning to lobby.";
-
-		console.log(`Force lobby - Message: ${message}`);
 
 		// ユーザーに通知を表示
 		this.showForceLobbyNotification(message);
@@ -354,7 +346,6 @@ export class RoomController {
 	public destroy(): void {
 		this.roomAPI.removeCallback();
 		this.roomAPI.destroy();
-		console.log("RoomController destroyed");
 	}
 }
 
