@@ -5,10 +5,8 @@ import {
 	TournamentStateManager,
 } from "./tournamentState.js";
 
-export function createGuestTournamentController(params?: {
-	[key: string]: string;
-}) {
-	const controller = new GuestTournamentController(params);
+export function createGuestTournamentController() {
+	const controller = new GuestTournamentController();
 	return {
 		destroy: () => controller.destroy(),
 	};
@@ -22,7 +20,7 @@ class GuestTournamentController {
 	private gameLoopInterval: number | null = null;
 	private stateManager: TournamentStateManager;
 
-	constructor(params?: { [key: string]: string }) {
+	constructor() {
 		// 状態管理マネージャーを初期化
 		this.stateManager = TournamentStateManager.getInstance();
 		const urlParams = new URLSearchParams(window.location.search);
