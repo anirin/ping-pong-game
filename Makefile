@@ -1,12 +1,14 @@
 NAME=ping-pong-game
 COMPOSE_FILE=./compose.yml
 COMPOSE=docker compose -f $(COMPOSE_FILE)
-APP_IMAGE=$(NAME)-frontend $(NAME)-backend $(NAME)-blockchain
+APP_IMAGE=$(NAME)-frontend $(NAME)-backend $(NAME)-blockchain $(NAME)-vault
 APP_VOLUME=frontend_modules backend_modules
 
 all: $(NAME)
 
 $(NAME):
+	$(SHELL) make-volume.sh
+	$(SHELL) gen-env.sh
 	$(COMPOSE) up -d
 
 clean:
@@ -30,4 +32,4 @@ fclean-host:
 
 re: fclean all
 
-re-right: fclean-local all
+re-light: fclean-local all
