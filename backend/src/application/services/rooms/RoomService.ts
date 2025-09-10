@@ -171,7 +171,6 @@ export class RoomUserService {
 		if (!user) throw Error("no user found");
 		const room = await this.roomRepository.findById(roomid);
 		if (!room) throw Error("no room found");
-		if (room.isFull()) throw Error("the room is full");
 
 		// 既に参加しているかチェック
 		const participants = await this.roomRepository.findParticipants(roomid);
@@ -180,6 +179,9 @@ export class RoomUserService {
 			console.log(`User ${userid} is already in room ${roomid}`);
 			return true; // 既に参加済みの場合は成功として扱う
 		}
+
+		// 新規参加の場合のみ満員チェック
+		if (room.isFull()) throw Error("the room is full");
 
 		participants.push(user);
 		return this.roomRepository.storeParticipants(roomid, participants);
