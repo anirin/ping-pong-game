@@ -85,7 +85,6 @@ export class MatchController {
 
 			// // todo ここは navigate
 			// window.location.pathname = "/" ;
-			console.log("Match initialization error:", error);
 		}
 	}
 
@@ -97,7 +96,6 @@ export class MatchController {
 		for (let i = 0; i < maxRetries; i++) {
 			const matchData = this.matchAPI.getMatchData();
 			if (matchData !== null) {
-				console.log(`Match data received after ${i * retryInterval}ms`);
 				return;
 			}
 
@@ -151,15 +149,7 @@ export class MatchController {
 			this.player1ScoreEl = document.getElementById("player1-score");
 			this.player2ScoreEl = document.getElementById("player2-score");
 
-			// ログ出力（デバッグ用）
-			console.log("DOM elements setup completed:", {
-				canvas: !!this.canvas,
-				readyButton: !!this.readyButton,
-				playerRoleEl: !!this.playerRoleEl,
-				matchStatusEl: !!this.matchStatusEl,
-				player1ScoreEl: !!this.player1ScoreEl,
-				player2ScoreEl: !!this.player2ScoreEl,
-			});
+
 		} catch (error) {
 			console.error("Failed to setup DOM elements:", error);
 			throw error; // 上位にエラーを伝播
@@ -169,7 +159,6 @@ export class MatchController {
 	// クリーンアップ
 	private cleanup(): void {
 		try {
-			console.log("[DEBUG] MatchController.cleanup() called");
 			// WebSocket接続とコールバックをクリーンアップ
 			this.matchAPI.removeCallback();
 			this.matchAPI.destroy();
@@ -180,7 +169,6 @@ export class MatchController {
 			// イベントリスナーを削除
 			window.removeEventListener("keydown", this.handleKeyDownRef);
 			window.removeEventListener("keyup", this.handleKeyUpRef);
-			console.log("[DEBUG] MatchController.cleanup() completed");
 		} catch (error) {
 			console.error("Cleanup error:", error);
 		}
@@ -309,17 +297,14 @@ export class MatchController {
 	private startMatchLoop(): void {
 		// 既にマッチループが動いている場合は何もしない
 		if (this.animationFrameId !== null) {
-			console.log("Match loop is already running");
 			return;
 		}
 
-		console.log("Starting match loop");
 		this.matchLoop();
 	}
 
 	private stopMatchLoop(): void {
 		if (this.animationFrameId !== null) {
-			console.log("Stopping match loop");
 			cancelAnimationFrame(this.animationFrameId);
 			this.animationFrameId = null;
 		}
@@ -328,9 +313,7 @@ export class MatchController {
 	private matchLoop(): void {
 		if (!this.canvas) {
 			this.canvasErrorCount++;
-			console.warn(
-				`Canvas element missing, error count: ${this.canvasErrorCount}`,
-			);
+
 
 			// 最大エラー回数に達した場合はmatch loopを停止
 			if (this.canvasErrorCount >= this.maxCanvasErrors) {
@@ -361,7 +344,6 @@ export class MatchController {
 	private updateMyPaddle(): void {
 		// WebSocket接続状態を確認
 		if (!this.matchAPI.isConnected()) {
-			console.warn("WebSocket not connected, skipping paddle update");
 			return;
 		}
 
@@ -421,9 +403,7 @@ export class MatchController {
 			const correctionSpeed = Math.min(0.5, error / 10);
 			this.myPredictedPaddleY += correctionError * correctionSpeed;
 
-			console.log(
-				`Position correction: error=${error.toFixed(2)}, speed=${correctionSpeed.toFixed(2)}`,
-			);
+
 		}
 	}
 
@@ -441,7 +421,6 @@ export class MatchController {
 			(this.serverState.status === "playing" ||
 				this.serverState.status === "finished")
 		) {
-			console.warn("Cannot set ready state: match is not in scheduled state");
 			return;
 		}
 
@@ -457,13 +436,11 @@ export class MatchController {
 
 	private draw(): void {
 		if (!this.canvas) {
-			console.warn("Canvas element not found in DOM");
 			return;
 		}
 
 		const ctx = this.canvas.getContext("2d");
 		if (!ctx) {
-			console.warn("Canvas context not available");
 			return;
 		}
 
@@ -479,7 +456,6 @@ export class MatchController {
 	}
 
 	public destroy(): void {
-		console.log("[DEBUG] MatchController.destroy() called");
 		// マッチループを停止
 		this.stopMatchLoop();
 
@@ -495,7 +471,6 @@ export class MatchController {
 		// 全ての値を初期化
 		this.resetAllValues();
 
-		console.log("[DEBUG] MatchController destroyed");
 	}
 
 	// 全ての値を初期化
@@ -531,7 +506,6 @@ export class MatchController {
 				this.handleReadyButtonClick(),
 			);
 		} else {
-			console.warn("Ready button not found in DOM during setup");
 		}
 	}
 
@@ -661,12 +635,10 @@ export class MatchController {
 				this.serverState?.status === "playing" &&
 				this.animationFrameId === null
 			) {
-				console.log("Match is playing - starting game loop on reload");
 				this.startMatchLoop();
 			}
 		} else if (action === "match_started") {
 			// マッチ開始時の処理
-			console.log("Match started - starting game loop");
 			this.updateReadyButtonState();
 			this.startMatchLoop();
 		}
@@ -677,7 +649,6 @@ export class MatchController {
 		const reason = data?.reason || "unknown";
 		const message = data?.message || "Room has been deleted.";
 
-		console.log(`Match room deleted - Reason: ${reason}, Message: ${message}`);
 
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
@@ -695,7 +666,6 @@ export class MatchController {
 			data?.message ||
 			"A user has been disconnected for too long. Returning to lobby.";
 
-		console.log(`Match force lobby - Reason: ${reason}, Message: ${message}`);
 
 		// ユーザーに通知を表示
 		this.showForceLobbyNotification(message);

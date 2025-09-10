@@ -46,7 +46,6 @@ export class TournamentAPI {
 		null;
 
 	constructor() {
-		console.log("TournamentAPI constructor");
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 	}
@@ -101,11 +100,9 @@ export class TournamentAPI {
 	// ------------------------------------------------------------
 
 	private handleMessage(message: WebSocketMessage): void {
-		console.log("TournamentAPI received message:", message);
 
 		if (message.status === "Room" && message.data?.action === "DELETE") {
 			// ルーム削除の通知
-			console.log("TournamentAPI: Room deleted", message.data);
 			if (this.controllerCallback) {
 				this.controllerCallback(message.data, "room_deleted");
 			}
@@ -114,7 +111,6 @@ export class TournamentAPI {
 
 		if (message.status === "Room" && message.data?.action === "FORCE_LOBBY") {
 			// 強制的にlobbyに戻す通知
-			console.log("TournamentAPI: Force lobby", message.data);
 			if (this.controllerCallback) {
 				this.controllerCallback(message.data, "force_lobby");
 			}
@@ -123,7 +119,6 @@ export class TournamentAPI {
 
 		if (message.status === "Match" && message.data?.type === "match_finished") {
 			// マッチ終了の通知
-			console.log("TournamentAPI: Match finished", message.data);
 			if (this.controllerCallback) {
 				this.controllerCallback(message.data, "match_finished");
 			}
@@ -136,7 +131,6 @@ export class TournamentAPI {
 
 		if (message.data) {
 			if ("type" in message.data && message.data.type === "navigate_to_match") {
-				console.log("TournamentAPI: navigate_to_match received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "navigate_to_match");
 				}
@@ -147,7 +141,6 @@ export class TournamentAPI {
 				"type" in message.data &&
 				message.data.type === "tournament_finished"
 			) {
-				console.log("TournamentAPI: tournament_finished received");
 				if (this.controllerCallback) {
 					this.controllerCallback(message.data, "tournament_finished");
 				}
@@ -155,7 +148,6 @@ export class TournamentAPI {
 			}
 
 			// トーナメントデータの受信
-			console.log("TournamentAPI: tournament data received", message.data);
 			this.tournamentData = message.data as TournamentData;
 
 			if (this.controllerCallback) {

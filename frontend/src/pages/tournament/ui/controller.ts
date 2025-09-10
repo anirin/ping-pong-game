@@ -16,7 +16,6 @@ export class TournamentController {
 	private userId: string | null = null;
 
 	constructor(params?: { [key: string]: string }) {
-		console.log("TournamentController constructor", params);
 		this.roomId = params?.roomId || null;
 		this.userId = this.getUserId();
 		this.controllerCallback = this.handleMessage.bind(this);
@@ -57,15 +56,12 @@ export class TournamentController {
 			wsManager.isConnected() &&
 			wsManager.getCurrentRoomId() === this.roomId
 		) {
-			console.log(`Already connected to room ${this.roomId} for tournament`);
 			return;
 		}
 
-		console.log(`Connecting to room ${this.roomId} for tournament`);
 
 		try {
 			await wsManager.connect(this.roomId);
-			console.log("WebSocket connection established for tournament");
 		} catch (error) {
 			console.error("Failed to connect to WebSocket for tournament:", error);
 			throw error;
@@ -109,7 +105,6 @@ export class TournamentController {
 
 				const tournamentData = this.tournamentAPI.getCurrentTournament();
 				if (tournamentData) {
-					console.log("Tournament data received:", tournamentData);
 					this.updateLocalData();
 					resolve();
 				} else if (dataRetryCount >= maxDataRetries) {
@@ -120,9 +115,6 @@ export class TournamentController {
 					reject(new Error("トーナメントデータの取得に失敗しました。"));
 				} else {
 					dataRetryCount++;
-					console.log(
-						`Waiting for tournament data... (${dataRetryCount}/${maxDataRetries})`,
-					);
 					setTimeout(checkData, dataRetryDelay);
 				}
 			};
@@ -144,44 +136,30 @@ export class TournamentController {
 		try {
 			switch (action) {
 				case "data_update":
-					console.log("TournamentController: データ更新を受信");
 					this.updateLocalData();
 					this.updateTournamentDisplay().catch((error) => {
 						console.error("トーナメント表示の更新に失敗:", error);
 					});
 					break;
 				case "match_finished":
-					console.log("TournamentController: マッチ終了を受信");
 					this.updateLocalData();
 					this.updateTournamentDisplay().catch((error) => {
 						console.error("トーナメント表示の更新に失敗:", error);
 					});
 					break;
 				case "navigate_to_match":
-					console.log(
-						"TournamentController: マッチへのナビゲーションを受信",
-						data.matchId,
-					);
 					this.handleNavigationToMatch(data.matchId);
 					break;
 				case "tournament_finished":
-					console.log(
-						"TournamentController: トーナメント終了を受信",
-						data.winner_id,
-						data.tournament_id,
-					);
 					this.handleTournamentFinished(data.winner_id);
 					break;
 				case "room_deleted":
-					console.log("TournamentController: ルーム削除を受信", data);
 					this.handleRoomDeleted(data);
 					break;
 				case "force_lobby":
-					console.log("TournamentController: 強制lobby遷移を受信", data);
 					this.handleForceLobby(data);
 					break;
 				default:
-					console.log("TournamentController: 不明なアクション", action);
 			}
 		} catch (error) {
 			console.error("メッセージ処理中にエラーが発生:", error);
@@ -216,9 +194,7 @@ export class TournamentController {
 		const reason = data?.reason || "unknown";
 		const message = data?.message || "Room has been deleted.";
 
-		console.log(
-			`Tournament room deleted - Reason: ${reason}, Message: ${message}`,
-		);
+
 
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
@@ -238,9 +214,6 @@ export class TournamentController {
 			data?.message ||
 			"A user has been disconnected for too long. Returning to lobby.";
 
-		console.log(
-			`Tournament force lobby - Reason: ${reason}, Message: ${message}`,
-		);
 
 		// ユーザーに通知を表示
 		this.showForceLobbyNotification(message);
@@ -377,21 +350,7 @@ export class TournamentController {
 		}
 
 		try {
-			console.log("Match 1 data:", {
-				id: this.match1.id,
-				score1: this.match1.score1,
-				score2: this.match1.score2,
-				status: this.match1.status,
-				winnerId: this.match1.winnerId,
-			});
 
-			console.log("Match 2 data:", {
-				id: this.match2.id,
-				score1: this.match2.score1,
-				score2: this.match2.score2,
-				status: this.match2.status,
-				winnerId: this.match2.winnerId,
-			});
 
 			this.updateMatchDisplay(this.match1, {
 				player1NameId: "player-name-1-1",

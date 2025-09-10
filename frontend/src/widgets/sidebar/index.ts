@@ -7,7 +7,6 @@ function isLoggedIn(): boolean {
 }
 
 async function handleLogout(): Promise<void> {
-	console.log("Logging out...");
 
 	const token = localStorage.getItem("accessToken");
 	if (token) {
@@ -29,9 +28,7 @@ async function handleLogout(): Promise<void> {
 						response.status,
 					);
 				} else {
-					console.log(
-						"Successfully notified backend to set user status to offline.",
-					);
+
 				}
 			}
 		} catch (error) {

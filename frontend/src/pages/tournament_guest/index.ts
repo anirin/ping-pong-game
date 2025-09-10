@@ -47,15 +47,12 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 
 	const handleVisibilityChange = () => {
 		if (document.hidden && !state.isDestroyed) {
-			console.log("ゲストトーナメントページが非表示になりました");
 		} else if (!document.hidden && !state.isDestroyed) {
-			console.log("ゲストトーナメントページが表示されました");
 		}
 	};
 
 	const handlePageHide = () => {
 		if (!state.isDestroyed && state.controller) {
-			console.log("ページが非表示になりました - リソースを節約");
 		}
 	};
 
@@ -97,7 +94,6 @@ function createCleanupFunction(state: GuestTournamentPageState): () => void {
 
 			// ゲストページでは履歴修正は不要
 
-			console.log("ゲストトーナメントページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

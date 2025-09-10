@@ -34,7 +34,6 @@ export class RoomAPI {
 		| null = null;
 
 	constructor() {
-		console.log("RoomAPI constructor");
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 	}
@@ -55,7 +54,6 @@ export class RoomAPI {
 
 			if (message.data && message.data.action === "DELETE") {
 				// ルーム削除の処理
-				console.log("Room deleted:", message.data);
 				if (this.controllerCallback) {
 					this.controllerCallback(this.getRoomState(), "DELETE");
 				}
@@ -64,7 +62,6 @@ export class RoomAPI {
 
 			if (message.data && message.data.action === "FORCE_LOBBY") {
 				// 強制的にlobbyに戻す処理
-				console.log("Force lobby:", message.data);
 				if (this.controllerCallback) {
 					this.controllerCallback(this.getRoomState(), "FORCE_LOBBY");
 				}
@@ -108,7 +105,6 @@ export class RoomAPI {
 				}
 
 				this.roomState.isWsConnected = true;
-				console.log("Connected to room:", roomId);
 				return; // 成功したら終了
 			} catch (error) {
 				console.error(`WebSocket connection attempt ${attempt} failed:`, error);
@@ -120,7 +116,6 @@ export class RoomAPI {
 
 				// リトライ前に少し待機（指数バックオフ）
 				const delay = Math.min(1000 * 2 ** (attempt - 1), 5000);
-				console.log(`Retrying connection in ${delay}ms...`);
 				await new Promise((resolve) => setTimeout(resolve, delay));
 			}
 		}

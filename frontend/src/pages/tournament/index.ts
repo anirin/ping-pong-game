@@ -47,15 +47,12 @@ function setupEventListeners(state: TournamentPageState): void {
 
 	const handleVisibilityChange = () => {
 		if (document.hidden && !state.isDestroyed) {
-			console.log("トーナメントページが非表示になりました");
 		} else if (!document.hidden && !state.isDestroyed) {
-			console.log("トーナメントページが表示されました");
 		}
 	};
 
 	const handlePageHide = () => {
 		if (!state.isDestroyed && state.controller) {
-			console.log("ページが非表示になりました - リソースを節約");
 		}
 	};
 
@@ -95,7 +92,6 @@ function createCleanupFunction(state: TournamentPageState): () => void {
 				state.controller = null;
 			}
 
-			console.log("トーナメントページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

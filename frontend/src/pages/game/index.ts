@@ -72,7 +72,6 @@
 // 	}
 
 // 	private cleanup(): void {
-// 		console.log("Cleaning up game resources...");
 // 		// WebSocketの購読を解除
 // 		this.wsManager.unsubscribe("Match", this.handleMatchMessage.bind(this));
 // 		if (this.animationFrameId) {
@@ -117,7 +116,6 @@
 // 			// マッチメッセージのハンドラーを登録
 // 			this.wsManager.subscribe("Match", this.handleMatchMessage.bind(this));
 
-// 			console.log("Game WebSocket connection established.");
 // 		} catch (error) {
 // 			console.error("WebSocket接続エラー:", error);
 // 			alert("WebSocket接続に失敗しました。");
@@ -137,9 +135,7 @@
 // 					this.myPlayerNumber = null;
 // 				}
 
-// 				console.log(
-// 					`You are assigned as ${this.myPlayerNumber || "spectator"}`,
-// 				);
+
 // 			} else {
 // 				console.error("Player IDs are missing in the data from the server.");
 // 			}
