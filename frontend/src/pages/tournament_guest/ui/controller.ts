@@ -22,7 +22,7 @@ class GuestTournamentController {
 	private gameLoopInterval: number | null = null;
 	private stateManager: TournamentStateManager;
 
-	constructor() {
+	constructor(params?: { [key: string]: string }) {
 		// 状態管理マネージャーを初期化
 		this.stateManager = TournamentStateManager.getInstance();
 		const urlParams = new URLSearchParams(window.location.search);
@@ -97,7 +97,6 @@ class GuestTournamentController {
 			this.stateManager.setCurrentMatchIndex(0);
 		}
 
-		// デバッグ用：状態をログ出力
 		this.stateManager.logState();
 
 		this.updateTournamentDisplay();
@@ -312,6 +311,7 @@ class GuestTournamentController {
 		const finalScore2 = document.getElementById("player-score-final-2");
 		if (finalScore1) finalScore1.textContent = finalMatch.score1.toString();
 		if (finalScore2) finalScore2.textContent = finalMatch.score2.toString();
+
 	}
 
 	private completeTournament(): void {
@@ -361,6 +361,7 @@ class GuestTournamentController {
 		score1: number,
 		score2: number,
 	): void {
+
 		// 状態管理マネージャーでマッチ結果を更新
 		this.stateManager.updateMatchResult(matchId, winner, score1, score2);
 
@@ -371,9 +372,11 @@ class GuestTournamentController {
 			return;
 		}
 
+
 		// マッチ結果を確認
 		const match = updatedData.matches.find((m) => m.id === matchId);
 		if (match) {
+
 			// 表示を更新
 			this.updateTournamentDisplay();
 
@@ -395,6 +398,7 @@ class GuestTournamentController {
 		const currentMatch = tournamentData.matches[currentMatchIndex];
 
 		if (currentMatch && currentMatch.status === "completed") {
+
 			// 状態管理マネージャーを更新
 			this.stateManager.advanceToNextMatch();
 
@@ -417,7 +421,6 @@ class GuestTournamentController {
 				// 次のマッチの準備
 				this.updateNextMatchInfo();
 			}
-		} else {
 		}
 	}
 
@@ -463,6 +466,7 @@ class GuestTournamentController {
 	}
 
 	private returnToLobby(): void {
+
 		// 状態管理マネージャーを完全にクリア
 		this.stateManager.clearState();
 
@@ -484,5 +488,6 @@ class GuestTournamentController {
 		if (tournamentData && tournamentData.status === "completed") {
 			this.stateManager.clearState();
 		}
+
 	}
 }
