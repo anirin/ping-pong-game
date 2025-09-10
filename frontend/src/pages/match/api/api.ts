@@ -42,16 +42,11 @@ export class MatchAPI {
 
 	constructor() {
 		this.wsManager = WebSocketManager.getInstance();
-		console.log(
-			"[DEBUG] WebSocket接続状態:",
-			this.wsManager.getConnectionState(),
-		);
 		this.messageHandler = this.handleMessage.bind(this);
 		this.wsManager.setCallback(this.messageHandler);
 		this.readyPlayers.clear();
 		this.isReady = false;
 		this.initializeUserId();
-		console.log("[DEBUG] MatchAPI constructor completed");
 	}
 
 	// getter
@@ -102,10 +97,8 @@ export class MatchAPI {
 
 	// destroy
 	public destroy(): void {
-		console.log("[DEBUG] MatchAPI.destroy() called");
 		this.wsManager.removeCallback();
 		this.resetAllValues();
-		console.log("[DEBUG] MatchAPI.destroy() completed");
 	}
 
 	// WebSocket接続を確保
@@ -119,13 +112,11 @@ export class MatchAPI {
 		}
 
 		if (this.wsManager.isConnected()) {
-			console.log(`Already connected to room ${roomId} for match`);
 			return;
 		}
 
 		try {
 			await this.wsManager.connect(roomId);
-			console.log("WebSocket connection established for match");
 		} catch (error) {
 			console.error("Failed to connect to WebSocket for match:", error);
 			throw error;
@@ -135,13 +126,6 @@ export class MatchAPI {
 	// 送信 マッチ情報の取得
 	public sendMatchStart(): void {
 		// WebSocket接続状態を確認し、接続されていない場合は警告を出す
-		if (!this.wsManager.isConnected()) {
-			console.warn(
-				"WebSocket is not connected. MatchAPI may not receive messages.",
-			);
-		}
-
-		console.log("マッチ情報の取得を送信しました");
 
 		this.wsManager.sendMessage({
 			status: "Match",
@@ -168,7 +152,6 @@ export class MatchAPI {
 
 		// 既にready状態の場合は何もしない
 		if (this.isReady) {
-			console.log("Already ready, skipping send");
 			return;
 		}
 
@@ -255,16 +238,8 @@ export class MatchAPI {
 
 		const playerRole = this.getPlayerRole();
 		if (playerRole === "spectator") {
-			console.log("Spectator cannot set ready state, ignoring");
 			return;
 		}
-
-		console.log("Sending ready message to server:", {
-			status: "Match",
-			action: "ready",
-			matchId: this.matchId,
-			data: { isReady },
-		});
 
 		this.wsManager.sendMessage({
 			status: "Match",
@@ -281,7 +256,6 @@ export class MatchAPI {
 				const payload = JSON.parse(atob(token.split(".")[1]));
 				if (payload.id) {
 					this.userId = payload.id;
-					console.log("User ID initialized:", this.userId);
 				}
 			}
 		} catch (error) {
@@ -290,18 +264,11 @@ export class MatchAPI {
 	}
 
 	private resetAllValues(): void {
-		console.log(
-			"[DEBUG] MatchAPI.resetAllValues() called - matchData will be reset to null",
-		);
 		this.matchId = null;
 		this.userId = null;
 		this.matchData = null;
 		this.controllerCallback = null;
 		this.readyPlayers.clear();
 		this.isReady = false;
-		console.log(
-			"[DEBUG] MatchAPI.resetAllValues() completed - matchData is now:",
-			this.matchData,
-		);
 	}
 }

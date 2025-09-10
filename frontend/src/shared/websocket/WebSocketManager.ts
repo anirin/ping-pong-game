@@ -72,7 +72,6 @@ export class WebSocketManager {
 	public async connect(roomId: string): Promise<void> {
 		// 既に同じルームに接続済みの場合は何もしない
 		if (this.isConnected() && this.currentRoomId === roomId) {
-			console.log(`Already connected to room ${roomId}`);
 			return;
 		}
 
@@ -121,15 +120,11 @@ export class WebSocketManager {
 	private handleExistingConnection(roomId: string): void {
 		// 異なるルームに接続している場合は切断
 		if (this.currentRoomId && this.currentRoomId !== roomId) {
-			console.log(
-				`Disconnecting from room ${this.currentRoomId} to connect to ${roomId}`,
-			);
 			this.disconnect();
 		}
 
 		// 既存のWebSocket接続がある場合は切断
 		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			console.log("Closing existing WebSocket connection");
 			this.disconnect();
 		}
 	}
@@ -169,18 +164,15 @@ export class WebSocketManager {
 
 		this.ws.onmessage = (event) => {
 			// debug
-			console.log("WebSocketメッセージ:", event.data);
 			this.handleWebSocketMessage(event);
 		};
 
 		this.ws.onclose = (_event) => {
-			console.log("websocket manager : onclose called");
 			// todo : error handlingがまだ甘い
 			this.ws = null;
 		};
 
-		this.ws.onerror = (error) => {
-			console.log("websocket manager : onerror called", error);
+		this.ws.onerror = () => {
 			reject(new Error("WebSocket接続エラー"));
 		};
 	}

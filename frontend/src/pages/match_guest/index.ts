@@ -12,7 +12,7 @@ interface GuestMatchPageState {
 	isDestroyed: boolean;
 }
 
-export async function renderGuestMatchPage(params?: { [key: string]: string }) {
+export async function renderGuestMatchPage() {
 	const app = document.getElementById("app");
 	if (!app) {
 		console.error("アプリケーションのルート要素が見つかりません");
@@ -27,7 +27,7 @@ export async function renderGuestMatchPage(params?: { [key: string]: string }) {
 
 	try {
 		app.innerHTML = html;
-		state.controller = new GuestMatchController(params);
+		state.controller = new GuestMatchController();
 		await state.controller.render();
 		setupEventListeners(state);
 		return createCleanupFunction(state);
@@ -47,17 +47,11 @@ function setupEventListeners(state: GuestMatchPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		if (document.hidden && !state.isDestroyed) {
-			console.log("ゲストマッチページが非表示になりました");
-		} else if (!document.hidden && !state.isDestroyed) {
-			console.log("ゲストマッチページが表示されました");
-		}
+		return;
 	};
 
 	const handlePageHide = () => {
-		if (!state.isDestroyed && state.controller) {
-			console.log("ページが非表示になりました - リソースを節約");
-		}
+		return;
 	};
 
 	// ゲストページでは戻るボタンを許可
@@ -97,8 +91,6 @@ function createCleanupFunction(state: GuestMatchPageState): () => void {
 			}
 
 			// ゲストページでは履歴修正は不要
-
-			console.log("ゲストマッチページのクリーンアップが完了しました");
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

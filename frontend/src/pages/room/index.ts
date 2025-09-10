@@ -13,7 +13,6 @@ function cleanupRoomPage() {
 		roomController.destroy();
 		roomController = null;
 	}
-	console.log("ルームページのクリーンアップ完了");
 }
 
 // ページ離脱時のイベントリスナーを追加
