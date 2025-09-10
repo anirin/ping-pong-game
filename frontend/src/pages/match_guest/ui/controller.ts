@@ -31,6 +31,7 @@ export class GuestMatchController {
 	private matchId: string | null = null;
 	private player1: string = "Player 1";
 	private player2: string = "Player 2";
+	private round: number = 1;
 	private animationFrameId: number | null = null;
 	private gameState: GuestMatchState;
 	// プレイヤー1の操作状態
@@ -44,7 +45,7 @@ export class GuestMatchController {
 	private isDestroyed: boolean = false;
 	private gameLoopInterval: ReturnType<typeof setInterval> | null = null;
 
-	constructor() {
+	constructor(params?: { [key: string]: string }) {
 		// グローバル状態からマッチ情報を取得
 		this.loadMatchInfoFromGlobalState();
 
@@ -410,6 +411,13 @@ export class GuestMatchController {
 			);
 			const stateManager = TournamentStateManager.getInstance();
 
+			console.log("マッチ結果を保存します:", {
+				matchId: this.matchId,
+				winner: winner,
+				score1: this.gameState.score1,
+				score2: this.gameState.score2,
+			});
+
 			stateManager.setPendingMatchResult(
 				this.matchId || "",
 				winner,
@@ -517,5 +525,7 @@ export class GuestMatchController {
 			clearInterval(this.gameLoopInterval);
 			this.gameLoopInterval = null;
 		}
+
+		console.log("GuestMatchController destroyed");
 	}
 }
