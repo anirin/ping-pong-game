@@ -1,18 +1,6 @@
 #! /bin/sh
 
-if [ ! -f .env ]; then
-    echo "no .env file here";
-    exit 1;
-fi;
-
-set -a
-source .env
-set +a
-
-if [ x${DATA_ROOT} == x ]; then
-    echo "no DATA_ROOT set";
-    exit 1;
-fi;
+DATA_ROOT=./data
 
 mkdir -p ${DATA_ROOT}/files/abi
 mkdir -p ${DATA_ROOT}/certs/server
