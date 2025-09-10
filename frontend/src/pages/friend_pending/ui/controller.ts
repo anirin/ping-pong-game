@@ -25,7 +25,7 @@ export async function mountFriendPending(
 
 		const img = document.createElement("img");
 
-		img.src = friend.avatar_url;
+		img.src = friend.avatar_url || "/default.png";
 		// 設定していない時のavatorの表示
 		img.alt = "User Avatar";
 		img.className = "avatar_url";

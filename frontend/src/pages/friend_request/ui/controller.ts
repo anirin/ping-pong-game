@@ -66,7 +66,7 @@ export async function mountFriendRequest(
 		card.className = "friend-card";
 
 		const img = document.createElement("img");
-		img.src = user.avatar;
+		img.src = user.avatar || "/default.png";
 		img.alt = "User Avatar";
 		img.className = "avatar";
 

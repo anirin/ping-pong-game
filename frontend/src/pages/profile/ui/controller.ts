@@ -90,7 +90,7 @@ export async function mountProfile(root: HTMLElement) {
 		card.className = "user-profile";
 
 		const img = document.createElement("img");
-		img.src = match.opponentAvatarUrl;
+		img.src = match.opponentAvatarUrl || "/default.png";
 		img.alt = "User Avatar";
 		img.className = "avatar_url";
 
