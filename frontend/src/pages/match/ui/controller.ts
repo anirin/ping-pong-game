@@ -153,7 +153,6 @@ export class MatchController {
 		}
 	}
 
-
 	private prepareMatch(): void {
 		// ready button の処理を行う
 		// 2名がbuttonを押したら開始、buttonの取り消し操作はできない
