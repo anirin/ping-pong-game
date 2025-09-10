@@ -56,7 +56,6 @@ class TournamentStateManager {
 	// トーナメントデータを設定
 	public setTournamentData(data: GuestTournamentData): void {
 		this.state.data = data;
-		console.log("トーナメントデータを設定:", data);
 	}
 
 	// トーナメントデータを取得
@@ -70,7 +69,6 @@ class TournamentStateManager {
 	): void {
 		if (this.state.data) {
 			this.state.data.status = status;
-			console.log("トーナメントステータスを更新:", status);
 		}
 	}
 
@@ -84,14 +82,12 @@ class TournamentStateManager {
 		const match = this.state.data.matches.find((m) => m.id === matchId);
 		if (match) {
 			match.status = status;
-			console.log(`マッチ ${matchId} のステータスを更新:`, status);
 		}
 	}
 
 	// 現在のマッチインデックスを設定
 	public setCurrentMatchIndex(index: number): void {
 		this.state.currentMatchIndex = index;
-		console.log("マッチインデックスを設定:", index);
 	}
 
 	// 現在のマッチインデックスを取得
@@ -117,9 +113,6 @@ class TournamentStateManager {
 			match.score2 = score2;
 			match.status = "completed";
 			match.winner = winner;
-			console.log(
-				`マッチ結果を更新: ${match.player1} vs ${match.player2} - 勝者: ${winner} (${score1}-${score2})`,
-			);
 		}
 	}
 
@@ -131,7 +124,6 @@ class TournamentStateManager {
 		}
 
 		this.state.currentMatchIndex++;
-		console.log("次のマッチに進む:", this.state.currentMatchIndex);
 	}
 
 	// 決勝戦を追加
@@ -146,7 +138,6 @@ class TournamentStateManager {
 			(match) => match.round === 2,
 		);
 		if (existingFinalMatch) {
-			console.log("決勝戦は既に存在します:", existingFinalMatch);
 			return;
 		}
 
@@ -164,9 +155,6 @@ class TournamentStateManager {
 		this.state.data.currentRound = 2;
 		// 決勝戦のインデックスは配列の最後の要素
 		this.state.currentMatchIndex = this.state.data.matches.length - 1;
-		console.log("決勝戦を追加:", finalMatch);
-		console.log("決勝戦のインデックス:", this.state.currentMatchIndex);
-		console.log("現在のマッチ数:", this.state.data.matches.length);
 	}
 
 	// トーナメントを完了
@@ -178,7 +166,6 @@ class TournamentStateManager {
 
 		this.state.data.winner = winner;
 		this.state.data.status = "completed";
-		console.log("トーナメント完了:", winner);
 	}
 
 	// 現在のマッチを設定（マッチ開始時に呼び出し）
@@ -194,7 +181,6 @@ class TournamentStateManager {
 			player2,
 			round,
 		};
-		console.log("現在のマッチを設定:", this.state.currentMatch);
 	}
 
 	// 現在のマッチを取得
@@ -210,7 +196,6 @@ class TournamentStateManager {
 	// 現在のマッチをクリア
 	public clearCurrentMatch(): void {
 		this.state.currentMatch = null;
-		console.log("現在のマッチをクリアしました");
 	}
 
 	// マッチ結果を保存（マッチ完了時に呼び出し）
@@ -226,7 +211,6 @@ class TournamentStateManager {
 			score1,
 			score2,
 		};
-		console.log("マッチ結果を保存:", this.state.pendingMatchResult);
 	}
 
 	// 保留中のマッチ結果を取得
@@ -242,7 +226,6 @@ class TournamentStateManager {
 	// 保留中のマッチ結果をクリア
 	public clearPendingMatchResult(): void {
 		this.state.pendingMatchResult = null;
-		console.log("保留中のマッチ結果をクリアしました");
 	}
 
 	// 状態をクリア
@@ -253,7 +236,6 @@ class TournamentStateManager {
 			currentMatch: null,
 			pendingMatchResult: null,
 		};
-		console.log("トーナメント状態をクリア");
 	}
 
 	// 現在の状態を取得
@@ -263,10 +245,7 @@ class TournamentStateManager {
 
 	// デバッグ用：状態をログ出力
 	public logState(): void {
-		console.log("=== トーナメント状態 ===");
-		console.log("データ:", this.state.data);
-		console.log("現在のマッチインデックス:", this.state.currentMatchIndex);
-		console.log("========================");
+		return;
 	}
 }
 

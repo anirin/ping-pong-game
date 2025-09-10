@@ -31,7 +31,6 @@ export class GuestMatchController {
 	private matchId: string | null = null;
 	private player1: string = "Player 1";
 	private player2: string = "Player 2";
-	private round: number = 1;
 	private animationFrameId: number | null = null;
 	private gameState: GuestMatchState;
 	// プレイヤー1の操作状態
@@ -45,18 +44,9 @@ export class GuestMatchController {
 	private isDestroyed: boolean = false;
 	private gameLoopInterval: ReturnType<typeof setInterval> | null = null;
 
-	constructor(params?: { [key: string]: string }) {
-		console.log("GuestMatchController constructor", params);
-
+	constructor() {
 		// グローバル状態からマッチ情報を取得
 		this.loadMatchInfoFromGlobalState();
-
-		console.log("マッチ情報を設定:", {
-			matchId: this.matchId,
-			player1: this.player1,
-			player2: this.player2,
-			round: this.round,
-		});
 
 		this.handleKeyDownRef = this.handleKeyDown.bind(this);
 		this.handleKeyUpRef = this.handleKeyUp.bind(this);
@@ -87,16 +77,10 @@ export class GuestMatchController {
 				this.matchId = currentMatch.matchId;
 				this.player1 = currentMatch.player1;
 				this.player2 = currentMatch.player2;
-				this.round = currentMatch.round;
-				console.log("グローバル状態からマッチ情報を取得:", currentMatch);
 			} else {
-				console.warn(
-					"グローバル状態にマッチ情報が見つかりません。デフォルト値を使用します。",
-				);
 				this.matchId = "unknown-match";
 				this.player1 = "Player 1";
 				this.player2 = "Player 2";
-				this.round = 1;
 			}
 		} catch (error) {
 			console.error(
@@ -106,7 +90,6 @@ export class GuestMatchController {
 			this.matchId = "unknown-match";
 			this.player1 = "Player 1";
 			this.player2 = "Player 2";
-			this.round = 1;
 		}
 	}
 
@@ -424,13 +407,6 @@ export class GuestMatchController {
 			);
 			const stateManager = TournamentStateManager.getInstance();
 
-			console.log("マッチ結果を保存します:", {
-				matchId: this.matchId,
-				winner: winner,
-				score1: this.gameState.score1,
-				score2: this.gameState.score2,
-			});
-
 			stateManager.setPendingMatchResult(
 				this.matchId || "",
 				winner,
@@ -538,7 +514,5 @@ export class GuestMatchController {
 			clearInterval(this.gameLoopInterval);
 			this.gameLoopInterval = null;
 		}
-
-		console.log("GuestMatchController destroyed");
 	}
 }
