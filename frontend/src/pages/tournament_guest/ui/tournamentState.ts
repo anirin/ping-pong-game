@@ -246,7 +246,7 @@ class TournamentStateManager {
 
 	// デバッグ用：状態をログ出力
 	public logState(): void {
-
+		return ;
 	}
 }
 

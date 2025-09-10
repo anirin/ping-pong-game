@@ -27,8 +27,6 @@ async function handleLogout(): Promise<void> {
 						"Failed to notify backend of logout. Status:",
 						response.status,
 					);
-				} else {
-
 				}
 			}
 		} catch (error) {

@@ -159,7 +159,6 @@ export class TournamentController {
 				case "force_lobby":
 					this.handleForceLobby(data);
 					break;
-				default:
 			}
 		} catch (error) {
 			console.error("メッセージ処理中にエラーが発生:", error);

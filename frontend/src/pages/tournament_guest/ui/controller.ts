@@ -344,7 +344,6 @@ class GuestTournamentController {
 						this.returnToLobby();
 					}, 3000);
 				}
-			} else {
 			}
 		}
 	}
@@ -364,8 +363,6 @@ class GuestTournamentController {
 			const finalMatch = tournamentData.matches.find(
 				(match) => match.round === 2,
 			);
-			if (finalMatch) {
-			}
 		}
 	}
 

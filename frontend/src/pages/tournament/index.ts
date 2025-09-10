@@ -46,14 +46,11 @@ function setupEventListeners(state: TournamentPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		if (document.hidden && !state.isDestroyed) {
-		} else if (!document.hidden && !state.isDestroyed) {
-		}
+		return ;
 	};
 
 	const handlePageHide = () => {
-		if (!state.isDestroyed && state.controller) {
-		}
+		return ;
 	};
 
 	// 基本的なイベントリスナーのみ設定

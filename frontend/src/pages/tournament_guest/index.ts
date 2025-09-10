@@ -46,14 +46,11 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		if (document.hidden && !state.isDestroyed) {
-		} else if (!document.hidden && !state.isDestroyed) {
-		}
+		return ;
 	};
 
 	const handlePageHide = () => {
-		if (!state.isDestroyed && state.controller) {
-		}
+		return ;
 	};
 
 	// ゲストページでは戻るボタンを許可

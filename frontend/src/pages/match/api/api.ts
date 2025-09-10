@@ -126,9 +126,6 @@ export class MatchAPI {
 	// 送信 マッチ情報の取得
 	public sendMatchStart(): void {
 		// WebSocket接続状態を確認し、接続されていない場合は警告を出す
-		if (!this.wsManager.isConnected()) {
-
-		}
 
 
 		this.wsManager.sendMessage({
