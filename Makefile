@@ -29,3 +29,5 @@ fclean-host:
 	docker volume rm $(docker volume ls -q)
 
 re: fclean all
+
+re-right: fclean-local all
