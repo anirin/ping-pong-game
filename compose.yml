@@ -87,6 +87,7 @@ services:
   frontend:
     container_name: frontend
     build: ./frontend
+    image: frontend
     restart: always
     volumes:
       - ./frontend:/app
@@ -97,6 +98,7 @@ services:
   backend:
     container_name: backend
     build: ./backend
+    image: backend
     restart: always
     depends_on:
       blockchain:
@@ -113,6 +115,7 @@ services:
   blockchain:
     container_name: blockchain
     build: ./blockchain
+    image: blockchain
     restart: always
     volumes:
       - ./blockchain:/app
@@ -134,6 +137,7 @@ services:
   vault:
     container_name: vault
     build: ./vault
+    image: vault
     ports:
       - "8201:8201"
     env_file:
