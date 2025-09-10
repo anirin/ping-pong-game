@@ -12,7 +12,7 @@ interface GuestMatchPageState {
 	isDestroyed: boolean;
 }
 
-export async function renderGuestMatchPage(params?: { [key: string]: string }) {
+export async function renderGuestMatchPage() {
 	const app = document.getElementById("app");
 	if (!app) {
 		console.error("アプリケーションのルート要素が見つかりません");
@@ -27,7 +27,7 @@ export async function renderGuestMatchPage(params?: { [key: string]: string }) {
 
 	try {
 		app.innerHTML = html;
-		state.controller = new GuestMatchController(params);
+		state.controller = new GuestMatchController();
 		await state.controller.render();
 		setupEventListeners(state);
 		return createCleanupFunction(state);

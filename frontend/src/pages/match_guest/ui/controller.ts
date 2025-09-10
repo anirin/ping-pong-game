@@ -31,7 +31,6 @@ export class GuestMatchController {
 	private matchId: string | null = null;
 	private player1: string = "Player 1";
 	private player2: string = "Player 2";
-	private round: number = 1;
 	private animationFrameId: number | null = null;
 	private gameState: GuestMatchState;
 	// プレイヤー1の操作状態
@@ -45,7 +44,7 @@ export class GuestMatchController {
 	private isDestroyed: boolean = false;
 	private gameLoopInterval: ReturnType<typeof setInterval> | null = null;
 
-	constructor(params?: { [key: string]: string }) {
+	constructor() {
 		// グローバル状態からマッチ情報を取得
 		this.loadMatchInfoFromGlobalState();
 
@@ -78,12 +77,10 @@ export class GuestMatchController {
 				this.matchId = currentMatch.matchId;
 				this.player1 = currentMatch.player1;
 				this.player2 = currentMatch.player2;
-				this.round = currentMatch.round;
 			} else {
 				this.matchId = "unknown-match";
 				this.player1 = "Player 1";
 				this.player2 = "Player 2";
-				this.round = 1;
 			}
 		} catch (error) {
 			console.error(
@@ -93,7 +90,6 @@ export class GuestMatchController {
 			this.matchId = "unknown-match";
 			this.player1 = "Player 1";
 			this.player2 = "Player 2";
-			this.round = 1;
 		}
 	}
 
