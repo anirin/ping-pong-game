@@ -46,10 +46,8 @@ export class GuestMatchController {
 	private gameLoopInterval: ReturnType<typeof setInterval> | null = null;
 
 	constructor(params?: { [key: string]: string }) {
-
 		// グローバル状態からマッチ情報を取得
 		this.loadMatchInfoFromGlobalState();
-
 
 		this.handleKeyDownRef = this.handleKeyDown.bind(this);
 		this.handleKeyUpRef = this.handleKeyUp.bind(this);
@@ -82,7 +80,6 @@ export class GuestMatchController {
 				this.player2 = currentMatch.player2;
 				this.round = currentMatch.round;
 			} else {
-
 				this.matchId = "unknown-match";
 				this.player1 = "Player 1";
 				this.player2 = "Player 2";
@@ -414,7 +411,6 @@ export class GuestMatchController {
 			);
 			const stateManager = TournamentStateManager.getInstance();
 
-
 			stateManager.setPendingMatchResult(
 				this.matchId || "",
 				winner,
@@ -522,6 +518,5 @@ export class GuestMatchController {
 			clearInterval(this.gameLoopInterval);
 			this.gameLoopInterval = null;
 		}
-
 	}
 }

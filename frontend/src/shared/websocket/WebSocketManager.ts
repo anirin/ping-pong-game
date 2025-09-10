@@ -120,7 +120,6 @@ export class WebSocketManager {
 	private handleExistingConnection(roomId: string): void {
 		// 異なるルームに接続している場合は切断
 		if (this.currentRoomId && this.currentRoomId !== roomId) {
-
 			this.disconnect();
 		}
 

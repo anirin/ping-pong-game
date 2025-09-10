@@ -7,7 +7,6 @@ function isLoggedIn(): boolean {
 }
 
 async function handleLogout(): Promise<void> {
-
 	const token = localStorage.getItem("accessToken");
 	if (token) {
 		try {

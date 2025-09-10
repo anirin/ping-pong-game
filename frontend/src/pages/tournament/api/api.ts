@@ -100,7 +100,6 @@ export class TournamentAPI {
 	// ------------------------------------------------------------
 
 	private handleMessage(message: WebSocketMessage): void {
-
 		if (message.status === "Room" && message.data?.action === "DELETE") {
 			// ルーム削除の通知
 			if (this.controllerCallback) {

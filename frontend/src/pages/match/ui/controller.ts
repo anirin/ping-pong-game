@@ -82,7 +82,6 @@ export class MatchController {
 			this.prepareMatch();
 		} catch (error) {
 			// alert("Failed to start match");
-
 			// // todo ここは navigate
 			// window.location.pathname = "/" ;
 		}
@@ -148,8 +147,6 @@ export class MatchController {
 			this.matchStatusEl = document.getElementById("match-status");
 			this.player1ScoreEl = document.getElementById("player1-score");
 			this.player2ScoreEl = document.getElementById("player2-score");
-
-
 		} catch (error) {
 			console.error("Failed to setup DOM elements:", error);
 			throw error; // 上位にエラーを伝播
@@ -314,7 +311,6 @@ export class MatchController {
 		if (!this.canvas) {
 			this.canvasErrorCount++;
 
-
 			// 最大エラー回数に達した場合はmatch loopを停止
 			if (this.canvasErrorCount >= this.maxCanvasErrors) {
 				console.error("Too many canvas errors, stopping match loop");
@@ -402,8 +398,6 @@ export class MatchController {
 			// エラーが大きいほど補正速度を上げる
 			const correctionSpeed = Math.min(0.5, error / 10);
 			this.myPredictedPaddleY += correctionError * correctionSpeed;
-
-
 		}
 	}
 
@@ -470,7 +464,6 @@ export class MatchController {
 
 		// 全ての値を初期化
 		this.resetAllValues();
-
 	}
 
 	// 全ての値を初期化
@@ -648,7 +641,6 @@ export class MatchController {
 		const reason = data?.reason || "unknown";
 		const message = data?.message || "Room has been deleted.";
 
-
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
 
@@ -664,7 +656,6 @@ export class MatchController {
 		const message =
 			data?.message ||
 			"A user has been disconnected for too long. Returning to lobby.";
-
 
 		// ユーザーに通知を表示
 		this.showForceLobbyNotification(message);

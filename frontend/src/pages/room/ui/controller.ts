@@ -108,7 +108,6 @@ export class RoomController {
 		// ルーム削除時の処理
 		const message = "Room owner has left. Redirecting to home page.";
 
-
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
 
@@ -122,7 +121,6 @@ export class RoomController {
 		// 強制的にlobbyに戻す処理
 		const message =
 			"A user has been disconnected for too long. Returning to lobby.";
-
 
 		// ユーザーに通知を表示
 		this.showForceLobbyNotification(message);

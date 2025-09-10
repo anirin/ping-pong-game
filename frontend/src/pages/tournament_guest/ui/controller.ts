@@ -23,7 +23,6 @@ class GuestTournamentController {
 	private stateManager: TournamentStateManager;
 
 	constructor(params?: { [key: string]: string }) {
-
 		// 状態管理マネージャーを初期化
 		this.stateManager = TournamentStateManager.getInstance();
 		const urlParams = new URLSearchParams(window.location.search);
@@ -63,7 +62,6 @@ class GuestTournamentController {
 			this.players = existingData.players;
 		} else {
 			if (this.players.length === 0) {
-
 				this.players = ["Player 1", "Player 2", "Player 3", "Player 4"];
 			}
 
@@ -314,8 +312,6 @@ class GuestTournamentController {
 		const finalScore2 = document.getElementById("player-score-final-2");
 		if (finalScore1) finalScore1.textContent = finalMatch.score1.toString();
 		if (finalScore2) finalScore2.textContent = finalMatch.score2.toString();
-
-
 	}
 
 	private completeTournament(): void {
@@ -373,7 +369,6 @@ class GuestTournamentController {
 		score1: number,
 		score2: number,
 	): void {
-
 		// 状態管理マネージャーでマッチ結果を更新
 		this.stateManager.updateMatchResult(matchId, winner, score1, score2);
 
@@ -384,11 +379,9 @@ class GuestTournamentController {
 			return;
 		}
 
-
 		// マッチ結果を確認
 		const match = updatedData.matches.find((m) => m.id === matchId);
 		if (match) {
-
 			// 表示を更新
 			this.updateTournamentDisplay();
 
@@ -406,12 +399,10 @@ class GuestTournamentController {
 
 		const currentMatchIndex = this.stateManager.getCurrentMatchIndex();
 
-
 		// 現在のマッチが完了したかチェック
 		const currentMatch = tournamentData.matches[currentMatchIndex];
 
 		if (currentMatch && currentMatch.status === "completed") {
-
 			// 状態管理マネージャーを更新
 			this.stateManager.advanceToNextMatch();
 
@@ -420,7 +411,6 @@ class GuestTournamentController {
 			if (!updatedData) return;
 
 			const newMatchIndex = this.stateManager.getCurrentMatchIndex();
-
 
 			// すべてのマッチが完了したかチェック
 			if (newMatchIndex >= updatedData.matches.length) {
@@ -481,7 +471,6 @@ class GuestTournamentController {
 	}
 
 	private returnToLobby(): void {
-
 		// 状態管理マネージャーを完全にクリア
 		this.stateManager.clearState();
 
@@ -503,6 +492,5 @@ class GuestTournamentController {
 		if (tournamentData && tournamentData.status === "completed") {
 			this.stateManager.clearState();
 		}
-
 	}
 }

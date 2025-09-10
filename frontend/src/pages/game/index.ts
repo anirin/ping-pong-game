@@ -135,7 +135,6 @@
 // 					this.myPlayerNumber = null;
 // 				}
 
-
 // 			} else {
 // 				console.error("Player IDs are missing in the data from the server.");
 // 			}

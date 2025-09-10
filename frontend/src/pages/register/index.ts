@@ -23,7 +23,6 @@ async function handleRegisterSubmit(event: SubmitEvent): Promise<void> {
 		password: passwordInput.value,
 	};
 
-
 	try {
 		// fetch APIを使ってバックエンドにPOSTリクエストを送信
 		const response = await fetch(`${VITE_BASE_URL}/auth/register`, {

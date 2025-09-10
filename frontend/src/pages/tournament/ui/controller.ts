@@ -59,7 +59,6 @@ export class TournamentController {
 			return;
 		}
 
-
 		try {
 			await wsManager.connect(this.roomId);
 		} catch (error) {
@@ -193,8 +192,6 @@ export class TournamentController {
 		const reason = data?.reason || "unknown";
 		const message = data?.message || "Room has been deleted.";
 
-
-
 		// ユーザーに通知を表示
 		this.showRoomDeletedNotification(message);
 
@@ -212,7 +209,6 @@ export class TournamentController {
 		const message =
 			data?.message ||
 			"A user has been disconnected for too long. Returning to lobby.";
-
 
 		// ユーザーに通知を表示
 		this.showForceLobbyNotification(message);
@@ -349,8 +345,6 @@ export class TournamentController {
 		}
 
 		try {
-
-
 			this.updateMatchDisplay(this.match1, {
 				player1NameId: "player-name-1-1",
 				player2NameId: "player-name-1-2",

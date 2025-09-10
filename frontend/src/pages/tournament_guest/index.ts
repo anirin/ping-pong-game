@@ -46,11 +46,11 @@ function setupEventListeners(state: GuestTournamentPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		return ;
+		return;
 	};
 
 	const handlePageHide = () => {
-		return ;
+		return;
 	};
 
 	// ゲストページでは戻るボタンを許可
@@ -90,7 +90,6 @@ function createCleanupFunction(state: GuestTournamentPageState): () => void {
 			}
 
 			// ゲストページでは履歴修正は不要
-
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

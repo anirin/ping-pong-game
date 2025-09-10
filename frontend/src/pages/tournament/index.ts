@@ -46,11 +46,11 @@ function setupEventListeners(state: TournamentPageState): void {
 	};
 
 	const handleVisibilityChange = () => {
-		return ;
+		return;
 	};
 
 	const handlePageHide = () => {
-		return ;
+		return;
 	};
 
 	// 基本的なイベントリスナーのみ設定
@@ -88,7 +88,6 @@ function createCleanupFunction(state: TournamentPageState): () => void {
 				state.controller.destroy();
 				state.controller = null;
 			}
-
 		} catch (error) {
 			console.error("クリーンアップ中にエラーが発生しました:", error);
 		}

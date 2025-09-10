@@ -113,7 +113,6 @@ class TournamentStateManager {
 			match.score2 = score2;
 			match.status = "completed";
 			match.winner = winner;
-
 		}
 	}
 
@@ -246,7 +245,7 @@ class TournamentStateManager {
 
 	// デバッグ用：状態をログ出力
 	public logState(): void {
-		return ;
+		return;
 	}
 }
 
