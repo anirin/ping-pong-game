@@ -22,7 +22,7 @@ class GuestTournamentController {
 	private gameLoopInterval: number | null = null;
 	private stateManager: TournamentStateManager;
 
-	constructor(params?: { [key: string]: string }) {
+	constructor() {
 		// 状態管理マネージャーを初期化
 		this.stateManager = TournamentStateManager.getInstance();
 		const urlParams = new URLSearchParams(window.location.search);
@@ -352,14 +352,6 @@ class GuestTournamentController {
 		if (winnerSection) winnerSection.style.display = "block";
 		if (winnerName) winnerName.textContent = winner;
 		if (nextMatchSection) nextMatchSection.style.display = "none";
-
-		// 決勝戦の詳細結果を表示
-		const tournamentData = this.stateManager.getTournamentData();
-		if (tournamentData) {
-			const finalMatch = tournamentData.matches.find(
-				(match) => match.round === 2,
-			);
-		}
 	}
 
 	// マッチ結果を処理するメソッド

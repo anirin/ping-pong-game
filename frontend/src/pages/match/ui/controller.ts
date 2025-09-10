@@ -638,7 +638,6 @@ export class MatchController {
 
 	private handleRoomDeleted(data: any): void {
 		// ルーム削除時の処理
-		const reason = data?.reason || "unknown";
 		const message = data?.message || "Room has been deleted.";
 
 		// ユーザーに通知を表示
@@ -652,7 +651,6 @@ export class MatchController {
 
 	private handleForceLobby(data: any): void {
 		// 強制的にlobbyに戻す処理
-		const reason = data?.reason || "unknown";
 		const message =
 			data?.message ||
 			"A user has been disconnected for too long. Returning to lobby.";

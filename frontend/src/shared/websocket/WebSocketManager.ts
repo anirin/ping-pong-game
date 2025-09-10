@@ -172,7 +172,7 @@ export class WebSocketManager {
 			this.ws = null;
 		};
 
-		this.ws.onerror = (error) => {
+		this.ws.onerror = () => {
 			reject(new Error("WebSocket接続エラー"));
 		};
 	}
