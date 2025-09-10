@@ -88,16 +88,26 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 	});
 
 	fastify.post<{ Body: RegisterBody }>("/register", async (request, reply) => {
-		const { email, username, password } = request.body;
-		if (!email || !validator.isEmail(email)) {
+		const { email: rawEmail, username: rawUsername, password } = request.body;
+		const email = rawEmail ? validator.trim(rawEmail) : "";
+		const username = rawUsername
+			? validator.escape(validator.trim(rawUsername))
+			: "";
+
+		if (!validator.isEmail(email)) {
 			return reply.code(400).send({ message: "Invalid email" });
 		}
-		if (!username || username.length < 3) {
-			return reply.code(400).send({ message: "Invalid username" });
+		if (username.length < 3) {
+			return reply
+				.code(400)
+				.send({ message: "Username must be at least 3 characters long" });
 		}
 		if (!password || password.length < 6) {
-			return reply.code(400).send({ message: "Invalid password" });
+			return reply
+				.code(400)
+				.send({ message: "Password must be at least 6 characters long" });
 		}
+
 		try {
 			const result = await authService.register(email, username, password);
 			return result;
@@ -107,7 +117,10 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 	});
 
 	fastify.post<{ Body: LoginBody }>("/login", async (request, reply) => {
-		const { email, password } = request.body;
+		const { email: rawEmail, password } = request.body;
+
+		const email = rawEmail ? validator.trim(rawEmail) : "";
+
 		if (!email || !password) {
 			return reply.code(400).send({ message: "Email and password required" });
 		}
@@ -122,7 +135,9 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 	fastify.post<{ Body: { email?: string } }>(
 		"/2fa/setup",
 		async (request, reply) => {
-			const { email } = request.body;
+			const { email: rawEmail } = request.body;
+			const email = rawEmail ? validator.trim(rawEmail) : "";
+
 			if (!email) return reply.code(400).send({ message: "Email required" });
 
 			try {
@@ -135,7 +150,11 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 	);
 
 	fastify.post<{ Body: TwoFABody }>("/2fa/verify", async (request, reply) => {
-		const { email, token } = request.body;
+		const { email: rawEmail, token: rawToken } = request.body;
+
+		const email = rawEmail ? validator.trim(rawEmail) : "";
+		const token = rawToken ? validator.trim(rawToken) : "";
+
 		if (!email || !token)
 			return reply.code(400).send({ message: "Email and token required" });
 		try {
