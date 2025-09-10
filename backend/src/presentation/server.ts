@@ -55,7 +55,7 @@ export async function buildServer() {
 	await app.register(fastifyWebSocket);
 
 	// authのrouting?
-	await app.register(authRoutes, { prefix: "/auth" }); // todo : 書き方統一したい
+	await app.register(authRoutes, { prefix: "/api/auth" }); // todo : 書き方統一したい
 
 	await registerUserRoutes(app);
 	await registerRoomRoutes(app);

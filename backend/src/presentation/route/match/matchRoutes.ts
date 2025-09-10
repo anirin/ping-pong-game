@@ -145,7 +145,7 @@ export async function registerMatchRoutes(app: FastifyInstance) {
 
 	app.get<{
 		Params: { id: string };
-	}>("/match", async (request, reply) => {
+	}>("/api/match", async (request, reply) => {
 		const { id: friendId } = request.params;
 		const authHeader = request.headers["authorization"];
 

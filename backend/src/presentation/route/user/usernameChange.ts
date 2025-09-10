@@ -11,7 +11,7 @@ export async function registerUserChange(app: FastifyInstance) {
 
 	// PATCH /users/:id/username: ユーザー名変更
 	app.patch<{ Params: { id: string }; Body: { username: string } }>(
-		"/users/:id/username",
+		"/api/users/:id/username",
 		async (request, reply) => {
 			try {
 				const { id } = request.params;
@@ -47,7 +47,7 @@ export async function registerUserChange(app: FastifyInstance) {
 
 	// PATCH /users/:id/avatar: アバター更新
 	app.patch<{ Params: { id: string }; Body: { avatar: string } }>(
-		"/users/:id/avatar",
+		"/api/users/:id/avatar",
 		async (request, reply) => {
 			try {
 				const { id } = request.params;

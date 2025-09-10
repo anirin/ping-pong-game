@@ -17,7 +17,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 
 	app.get<{
 		Params: { id: string };
-	}>("/friend/:id", async (request, reply) => {
+	}>("/api/friend/:id", async (request, reply) => {
 		const { id: friendId } = request.params;
 		const authHeader = request.headers["authorization"];
 
@@ -52,7 +52,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 
 	app.patch<{
 		Params: { id: string };
-	}>("/friend/:id", async (request, reply) => {
+	}>("/api/friend/:id", async (request, reply) => {
 		const { id: friendId } = request.params;
 		const authHeader = request.headers["authorization"];
 
@@ -84,7 +84,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 
 	app.delete<{
 		Params: { id: string };
-	}>("/friend/:id", async (request, reply) => {
+	}>("/api/friend/:id", async (request, reply) => {
 		const { id: friendId } = request.params;
 		const authHeader = request.headers["authorization"];
 
@@ -114,7 +114,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 		}
 	});
 
-	app.get("/friends", async (request, reply) => {
+	app.get("/api/friends", async (request, reply) => {
 		try {
 			const authHeader = request.headers["authorization"];
 
@@ -137,7 +137,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 		}
 	});
 
-	app.get("/friends/pending", async (request, reply) => {
+	app.get("/api/friends/pending", async (request, reply) => {
 		try {
 			const authHeader = request.headers["authorization"];
 
@@ -162,7 +162,7 @@ export async function registerFriendRoutes(app: FastifyInstance) {
 	});
 
 	app.post<{ Body: { friendId: string } }>(
-		"/friends",
+		"/api/friends",
 		async (request, reply) => {
 			const { friendId } = request.body;
 			const authHeader = request.headers["authorization"];

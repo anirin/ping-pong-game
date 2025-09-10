@@ -12,7 +12,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
 
 	// POST /users: ユーザー登録
 	app.post<{ Body: { username: string; password: string } }>(
-		"/users",
+		"/api/users",
 		async (request, reply) => {
 			try {
 				const { username, password } = request.body;
@@ -36,28 +36,31 @@ export async function registerUserRoutes(app: FastifyInstance) {
 	);
 
 	// GET /users/:id: ユーザー取得
-	app.get<{ Params: { id: string } }>("/users/:id", async (request, reply) => {
-		try {
-			const { id } = request.params;
-			const user = await userService.getUserById(id);
-			if (!user) {
-				return reply.status(404).send({ error: "User not found" });
+	app.get<{ Params: { id: string } }>(
+		"/api/users/:id",
+		async (request, reply) => {
+			try {
+				const { id } = request.params;
+				const user = await userService.getUserById(id);
+				if (!user) {
+					return reply.status(404).send({ error: "User not found" });
+				}
+				return reply.status(200).send({
+					id: user.id,
+					username: user.username.value,
+					status: user.status,
+					createdAt: user.createdAt,
+					avatar: user.avatar?.value ?? null,
+				});
+			} catch (error: any) {
+				return reply.status(500).send({ error: error.message });
 			}
-			return reply.status(200).send({
-				id: user.id,
-				username: user.username.value,
-				status: user.status,
-				createdAt: user.createdAt,
-				avatar: user.avatar?.value ?? null,
-			});
-		} catch (error: any) {
-			return reply.status(500).send({ error: error.message });
-		}
-	});
+		},
+	);
 
 	// PATCH /users/:id/status: ステータス更新
 	app.patch<{ Params: { id: string }; Body: { status: string } }>(
-		"/users/:id/status",
+		"/api/users/:id/status",
 		async (request, reply) => {
 			try {
 				const { id } = request.params;
