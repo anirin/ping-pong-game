@@ -752,6 +752,25 @@ export class MatchController {
 
 	// 戻るボタンが押されたときの処理
 	private handlePopState(): void {
+		this.cleanup();
 		navigate("/");
+	}
+
+	// クリーンアップ
+	private cleanup(): void {
+		try {
+			// WebSocket接続とコールバックをクリーンアップ
+			this.matchAPI.removeCallback();
+			this.matchAPI.destroy();
+
+			// マッチループを停止
+			this.stopMatchLoop();
+
+			// イベントリスナーを削除
+			window.removeEventListener("keydown", this.handleKeyDownRef);
+			window.removeEventListener("keyup", this.handleKeyUpRef);
+		} catch (error) {
+			console.error("Cleanup error:", error);
+		}
 	}
 }
