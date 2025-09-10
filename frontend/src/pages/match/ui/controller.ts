@@ -126,7 +126,7 @@ export class MatchController {
 	private setupEventListeners(): void {
 		this.setupReadyButton();
 		this.setupKeyboardListeners();
-		window.addEventListener("popstate", this.cleanup.bind(this), {
+		window.addEventListener("popstate", this.handlePopState.bind(this), {
 			once: true,
 		});
 	}
@@ -150,24 +150,6 @@ export class MatchController {
 		} catch (error) {
 			console.error("Failed to setup DOM elements:", error);
 			throw error; // 上位にエラーを伝播
-		}
-	}
-
-	// クリーンアップ
-	private cleanup(): void {
-		try {
-			// WebSocket接続とコールバックをクリーンアップ
-			this.matchAPI.removeCallback();
-			this.matchAPI.destroy();
-
-			// マッチループを停止
-			this.stopMatchLoop();
-
-			// イベントリスナーを削除
-			window.removeEventListener("keydown", this.handleKeyDownRef);
-			window.removeEventListener("keyup", this.handleKeyUpRef);
-		} catch (error) {
-			console.error("Cleanup error:", error);
 		}
 	}
 
@@ -766,5 +748,29 @@ export class MatchController {
 				modal.parentNode.removeChild(modal);
 			}
 		}, delay);
+	}
+
+	// 戻るボタンが押されたときの処理
+	private handlePopState(): void {
+		this.cleanup();
+		navigate("/");
+	}
+
+	// クリーンアップ
+	private cleanup(): void {
+		try {
+			// WebSocket接続とコールバックをクリーンアップ
+			this.matchAPI.removeCallback();
+			this.matchAPI.destroy();
+
+			// マッチループを停止
+			this.stopMatchLoop();
+
+			// イベントリスナーを削除
+			window.removeEventListener("keydown", this.handleKeyDownRef);
+			window.removeEventListener("keyup", this.handleKeyUpRef);
+		} catch (error) {
+			console.error("Cleanup error:", error);
+		}
 	}
 }

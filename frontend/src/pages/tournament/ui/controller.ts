@@ -20,6 +20,7 @@ export class TournamentController {
 		this.userId = this.getUserId();
 		this.controllerCallback = this.handleMessage.bind(this);
 		this.tournamentAPI.setCallback(this.controllerCallback);
+		this.setupEventListeners();
 		this.initialize().catch((error) => {
 			console.error("TournamentController初期化エラー:", error);
 		});
@@ -648,10 +649,23 @@ export class TournamentController {
 		}, delay);
 	}
 
+	// イベントリスナーの設定
+	private setupEventListeners(): void {
+		window.addEventListener("popstate", this.handlePopState.bind(this));
+	}
+
+	// 戻るボタンが押されたときの処理
+	private handlePopState(): void {
+		navigate("/");
+	}
+
 	public destroy(): void {
 		this.isDestroyed = true;
 		this.tournamentAPI.removeCallback();
 		this.tournamentAPI.destroy();
+
+		// イベントリスナーを削除
+		window.removeEventListener("popstate", this.handlePopState.bind(this));
 
 		// 既存のモーダルをクリーンアップ
 		const existingModals = document.querySelectorAll(
