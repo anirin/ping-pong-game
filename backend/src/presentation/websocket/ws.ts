@@ -14,11 +14,11 @@ import type { WSIncomingMsg, WSOutgoingMsg } from "./ws-msg.js";
 
 export async function registerWSRoutes(app: FastifyInstance) {
 	app.get(
-		"/socket",
+		"/api/socket",
 		{ websocket: true },
 		async (connection: WebSocket.WebSocket, req) => {
 			const ws = connection;
-			const url = new URL(req.url, "https://localhost:8080/socket");
+			const url = new URL(req.url, "http://localhost:8080/socket");
 
 			let token: string | undefined;
 

@@ -12,7 +12,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
 
 	// POST /users: ユーザー登録
 	app.post<{ Body: { username: string; password: string } }>(
-		"/users",
+		"/api/users",
 		async (request, reply) => {
 			try {
 				const { username, password } = request.body;
@@ -36,7 +36,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
 	);
 
 	// GET /users/:id: ユーザー取得
-	app.get<{ Params: { id: string } }>("/users/:id", async (request, reply) => {
+	app.get<{ Params: { id: string } }>("/api/users/:id", async (request, reply) => {
 		try {
 			const { id } = request.params;
 			const user = await userService.getUserById(id);
@@ -57,7 +57,7 @@ export async function registerUserRoutes(app: FastifyInstance) {
 
 	// PATCH /users/:id/status: ステータス更新
 	app.patch<{ Params: { id: string }; Body: { status: string } }>(
-		"/users/:id/status",
+		"/api/users/:id/status",
 		async (request, reply) => {
 			try {
 				const { id } = request.params;

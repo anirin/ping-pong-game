@@ -11,8 +11,9 @@ export async function registerUserChange(app: FastifyInstance) {
 
 	// PATCH /users/:id/username: ユーザー名変更
 	app.patch<{ Params: { id: string }; Body: { username: string } }>(
-		"/users/:id/username",
+		"/api/users/:id/username",
 		async (request, reply) => {
+			console.log("into a func")
 			try {
 				const { id } = request.params;
 				const { username } = request.body;
@@ -20,6 +21,7 @@ export async function registerUserChange(app: FastifyInstance) {
 				if (!username) {
 					return reply.status(400).send({ error: "Username is required" });
 				}
+				console.log("-------------");
 
 				const user = await userService.updateUsername(id, username);
 				if (!user) {
@@ -34,6 +36,7 @@ export async function registerUserChange(app: FastifyInstance) {
 					avatar: user.avatar?.value ?? null,
 				});
 			} catch (error: any) {
+				console.log(error);
 				if (
 					error.code === "SQLITE_CONSTRAINT" &&
 					error.message.includes("users.username")
@@ -47,7 +50,7 @@ export async function registerUserChange(app: FastifyInstance) {
 
 	// PATCH /users/:id/avatar: アバター更新
 	app.patch<{ Params: { id: string }; Body: { avatar: string } }>(
-		"/users/:id/avatar",
+		"/api/users/:id/avatar",
 		async (request, reply) => {
 			try {
 				const { id } = request.params;

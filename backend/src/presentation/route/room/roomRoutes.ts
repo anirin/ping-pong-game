@@ -21,7 +21,7 @@ export async function registerRoomRoutes(app: FastifyInstance) {
 	const userService = new UserService(userRepository);
 
 	// POST /rooms: ルーム作成 (変更なし)
-	app.post<{ Body: { mode?: string } }>("/rooms", async (request, reply) => {
+	app.post<{ Body: { mode?: string } }>("/api/rooms", async (request, reply) => {
 		const token = request.headers.authorization?.replace("Bearer ", "");
 		try {
 			if (!token) throw Error("no JWT included");

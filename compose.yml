@@ -88,8 +88,6 @@ services:
     container_name: frontend
     build: ./frontend
     restart: always
-    ports:
-      - 5173:5173
     volumes:
       - ./frontend:/app
       - frontend_modules:/app/node_modules
@@ -100,8 +98,6 @@ services:
     container_name: backend
     build: ./backend
     restart: always
-    ports:
-      - "8080:8080"
     depends_on:
       blockchain:
         condition: service_started
@@ -130,7 +126,6 @@ services:
     user: "0:0"
     depends_on: [frontend, backend]
     ports:
-      - "80:80"
       - "443:443"
     volumes:
       - ./nginx/server.conf:/etc/nginx/conf.d/zzz-server.conf:ro
