@@ -20,13 +20,12 @@ services:
     env_file:
       - ./elk/elasticsearch/.env
     volumes:
-      # - ./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
       - es_certs:/usr/share/elasticsearch/config/certs
       - esdata:/usr/share/elasticsearch/data
     depends_on:
       - setup
-    ports:
-      - "9200:9200"
+    # ports:
+    #   - "9200:9200"
     mem_limit: ${ES_MEM_LIMIT}
 
   logstash:
@@ -57,6 +56,8 @@ services:
       - kibana_certs:/usr/share/kibana/config/kibana_certs:ro
       - kibanadata:/usr/share/kibana/data
       - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - ./elk/kibana/init.sh:/usr/share/kibana/init.sh
+    entrypoint: ["/bin/sh", "/usr/share/kibana/init.sh"]
     ports:
       - "5601:5601"
     depends_on:
