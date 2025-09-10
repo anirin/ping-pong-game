@@ -407,13 +407,6 @@ export class GuestMatchController {
 			);
 			const stateManager = TournamentStateManager.getInstance();
 
-			console.log("マッチ結果を保存します:", {
-				matchId: this.matchId,
-				winner: winner,
-				score1: this.gameState.score1,
-				score2: this.gameState.score2,
-			});
-
 			stateManager.setPendingMatchResult(
 				this.matchId || "",
 				winner,
@@ -521,7 +514,5 @@ export class GuestMatchController {
 			clearInterval(this.gameLoopInterval);
 			this.gameLoopInterval = null;
 		}
-
-		console.log("GuestMatchController destroyed");
 	}
 }
