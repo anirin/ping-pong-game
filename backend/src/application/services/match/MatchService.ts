@@ -152,7 +152,6 @@ export class MatchService {
 		this.clearReadyState(matchId);
 	}
 
-	// ★★★ この `finishMatch` メソッドを丸ごと置き換えてください ★★★
 	async finishMatch(
 		matchId: MatchId,
 		roomId: RoomId,
@@ -306,8 +305,7 @@ export class MatchService {
 			});
 		}
 
-		// 2名揃った場合は自動的にマッチを開始
-		if (readyCount >= 2) {
+		if (readyCount === 2) {
 			console.log(
 				`All players ready for match ${matchId}, starting match automatically`,
 			);
